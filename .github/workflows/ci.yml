@@ -29,7 +29,7 @@ permissions:
 env:
   GO_VERSION: '1.25.1'
   GOLANGCI_VERSION: 'latest'
-  GOLANGCILINT_VERSION: '2.3.1'
+  GOLANGCILINT_VERSION: '2.4.0'
   DOCKER_BUILDX_VERSION: 'v0.11.2'
 
 jobs:
@@ -199,7 +199,7 @@ jobs:
           echo "✅ Binary build successful"
           
           # Build Docker image locally (without push)
-          make docker.build
+          make do.build.images
           echo "✅ Docker image build successful"
           
           # Build Crossplane package locally (without push)

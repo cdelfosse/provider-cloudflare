@@ -34,7 +34,7 @@ comprehensive coverage of Cloudflare's cloud security, performance, and reliabil
 ✅ **Complete Test Coverage** - 100% test coverage for all clients and controllers  
 ✅ **Interface-Based Testing** - Modern testing framework with comprehensive mocking  
 ✅ **Production Ready** - Used in production environments with proven reliability  
-✅ **Modern Go** - Updated to Go 1.23 with latest dependencies  
+✅ **Modern Go** - Updated to Go 1.25.1 with latest dependencies  
 ✅ **Comprehensive Examples** - Detailed usage examples for all resource types  
 ✅ **Advanced Capabilities** - Support for complex scenarios like geographic routing, traffic steering, and advanced caching
 
@@ -49,7 +49,7 @@ kind: Provider
 metadata:
   name: provider-cloudflare
 spec:
-  package: ghcr.io/rossigee/provider-cloudflare:v0.6.1
+  package: ghcr.io/rossigee/provider-cloudflare:v0.9.1
 EOF
 ```
 

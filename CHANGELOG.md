@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.9.1] - 2025-09-16
+
+### Fixed
+- Build system compatibility with Go 1.25.1 by updating golangci-lint to v2.4.0
+- Build submodule initialization and standardization across all workflows
+- CI/CD workflow version consistency (Go 1.25.1 across CI, Release, Security)
+- Docker build target references in CI validation workflow
+- Documentation version mismatches updated to reflect current v0.9.1 release
+
+### Changed
+- Updated all documentation to reference Go 1.25.1 and current v0.9.1 version
+- Standardized golangci-lint version across Makefile and CI workflows
+- Improved build system reliability through proper submodule management
+
+### Infrastructure
+- **Build System**: Full compatibility with Go 1.25.1 and modern toolchain
+- **CI/CD**: Consistent versioning across all workflow files
+- **Documentation**: Accurate version references and installation instructions
+
 ## [v0.9.0] - 2025-08-14
 
 ### Added

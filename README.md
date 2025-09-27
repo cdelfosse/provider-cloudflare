@@ -40,6 +40,16 @@ comprehensive coverage of Cloudflare's cloud security, performance, and reliabil
 ✅ **Comprehensive Examples** - Detailed usage examples for all resource types
 ✅ **Advanced Capabilities** - Support for complex scenarios like geographic routing, traffic steering, and advanced caching
 
+## Status
+
+- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.9.1`
+- **Build Status**: ✅ `make lint` and `make test` passing
+- **Crossplane v2**: ✅ Fully migrated to v2-native architecture
+- **API Compatibility**: ✅ cloudflare-go v0.115.0, Go 1.25.1
+- **Production Ready**: ✅ Complete resource implementation with dual-scope support
+
+See [Current Status](docs/CURRENT-STATUS.md) for detailed technical information.
+
 ## Crossplane v2 Support
 
 This provider supports **both v1alpha1 (cluster-scoped)** and **v1beta1 (namespaced)** APIs for enhanced multi-tenancy:

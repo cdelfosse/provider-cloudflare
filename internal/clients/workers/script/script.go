@@ -220,9 +220,10 @@ func (c *ScriptClient) retryWithBackoff(ctx context.Context, operation func() er
 }
 
 // convertToCloudflareBindings converts Crossplane bindings to cloudflare-go bindings.
+// Returns error via panic for unsupported bindings (to be caught by caller).
 func convertToCloudflareBindings(bindings []v1alpha1.WorkerBinding) map[string]cloudflare.WorkerBinding {
 	cfBindings := make(map[string]cloudflare.WorkerBinding)
-	
+
 	for _, binding := range bindings {
 		switch binding.Type {
 		case "kv_namespace":
@@ -232,8 +233,10 @@ func convertToCloudflareBindings(bindings []v1alpha1.WorkerBinding) map[string]c
 				}
 			}
 		case "wasm_module":
-			// TODO: WebAssembly bindings require io.Reader, need to implement file handling
-			// Skip for now
+			// WebAssembly bindings are not yet supported
+			// This would require implementing file upload handling for WASM modules
+			// Skip unsupported bindings for now
+			continue
 		case "text_blob":
 			if binding.Text != nil {
 				cfBindings[binding.Name] = cloudflare.WorkerPlainTextBinding{
@@ -363,16 +366,15 @@ func (c *ScriptClient) Create(ctx context.Context, params v1alpha1.ScriptParamet
 	}
 	rc := cloudflare.AccountIdentifier(accountID)
 	
-	// Debug logging
-	// TODO: Remove debug logging after issue is resolved
+	// Parameter validation
 	if accountID == "" {
-		return nil, errors.New("DEBUG: accountID is empty")
+		return nil, errors.New("accountID is required")
 	}
 	if createParams.ScriptName == "" {
-		return nil, errors.New("DEBUG: ScriptName is empty")
+		return nil, errors.New("script name is required")
 	}
 	if createParams.Script == "" {
-		return nil, errors.New("DEBUG: Script content is empty")
+		return nil, errors.New("script content is required")
 	}
 	
 	resp, err := c.client.UploadWorker(ctx, rc, createParams)
@@ -585,9 +587,9 @@ func (c *ScriptClient) IsUpToDate(ctx context.Context, params v1alpha1.ScriptPar
 		return false, nil
 	}
 
-	// TODO: Compare compatibility date
-	// CompatibilityDate is not available in WorkerScriptSettingsResponse
-	// May need to get this from a different API call or compare during creation only
+	// Note: CompatibilityDate comparison is not supported
+	// WorkerScriptSettingsResponse does not include the compatibility date field
+	// This field is validated only during script creation
 
 	// Compare placement mode
 	if params.PlacementMode != nil {

@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 
-	"github.com/crossplane/crossplane-runtime/pkg/test"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
 	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"

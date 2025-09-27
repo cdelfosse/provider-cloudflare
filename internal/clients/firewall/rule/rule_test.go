@@ -25,21 +25,21 @@ import (
 
 	"github.com/rossigee/provider-cloudflare/apis/firewall/v1alpha1"
 
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
 	"github.com/rossigee/provider-cloudflare/internal/clients/firewall/rule/fake"
 
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
-	"github.com/crossplane/crossplane-runtime/pkg/test"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	rtfake "github.com/crossplane/crossplane-runtime/pkg/resource/fake"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	rtfake "github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 

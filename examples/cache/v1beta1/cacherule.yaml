@@ -1,0 +1,37 @@
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
+kind: CacheRule
+metadata:
+  name: api-cache-rule
+  namespace: production
+spec:
+  forProvider:
+    zone: "your-zone-id"
+    name: "API Cache Rule"
+    description: "Cache API responses with custom TTL"
+    expression: 'http.request.uri.path matches "^/api/v1/"'
+    enabled: true
+    action: "set_cache_settings"
+    actionParameters:
+      cache: true
+      cacheKey:
+        customKey:
+          query:
+            include: ["version", "format"]
+          header:
+            include: ["accept-encoding"]
+      edgeTtl:
+        mode: "override_origin"
+        default: 3600
+        statusCodeTtl:
+          - statusCode: 200
+            value: 7200
+          - statusCodeRange:
+              from: 400
+              to: 499
+            value: 300
+      browserTtl:
+        mode: "respect_origin"
+        default: 1800
+      respectOrigin: false
+  providerConfigRef:
+    name: default

@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 // DomainParameters define the desired state of a Cloudflare Workers Custom Domain.
@@ -126,11 +126,6 @@ func (mg *Domain) GetProviderConfigReference() *rtv1.Reference {
 	return mg.Spec.ProviderConfigReference
 }
 
-// GetPublishConnectionDetailsTo of this Domain.
-func (mg *Domain) GetPublishConnectionDetailsTo() *rtv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
-}
-
 // GetWriteConnectionSecretToReference of this Domain.
 func (mg *Domain) GetWriteConnectionSecretToReference() *rtv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
@@ -154,11 +149,6 @@ func (mg *Domain) SetManagementPolicies(r rtv1.ManagementPolicies) {
 // SetProviderConfigReference of this Domain.
 func (mg *Domain) SetProviderConfigReference(r *rtv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
-}
-
-// SetPublishConnectionDetailsTo of this Domain.
-func (mg *Domain) SetPublishConnectionDetailsTo(r *rtv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
 }
 
 // SetWriteConnectionSecretToReference of this Domain.

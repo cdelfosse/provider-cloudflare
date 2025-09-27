@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 // TotalTLSParameters define the desired state of Cloudflare Total TLS for a zone.
@@ -116,11 +116,6 @@ func (mg *TotalTLS) GetProviderConfigReference() *rtv1.Reference {
 	return mg.Spec.ProviderConfigReference
 }
 
-// GetPublishConnectionDetailsTo of this TotalTLS.
-func (mg *TotalTLS) GetPublishConnectionDetailsTo() *rtv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
-}
-
 // GetWriteConnectionSecretToReference of this TotalTLS.
 func (mg *TotalTLS) GetWriteConnectionSecretToReference() *rtv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
@@ -144,11 +139,6 @@ func (mg *TotalTLS) SetManagementPolicies(r rtv1.ManagementPolicies) {
 // SetProviderConfigReference of this TotalTLS.
 func (mg *TotalTLS) SetProviderConfigReference(r *rtv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
-}
-
-// SetPublishConnectionDetailsTo of this TotalTLS.
-func (mg *TotalTLS) SetPublishConnectionDetailsTo(r *rtv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
 }
 
 // SetWriteConnectionSecretToReference of this TotalTLS.

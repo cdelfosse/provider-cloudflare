@@ -17,33 +17,24 @@ limitations under the License.
 package loadbalancing
 
 import (
-	"time"
-
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/crossplane/crossplane-runtime/pkg/controller"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 )
 
 // Setup Load Balancer controllers.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	opts := controller.Options{
-		Logger:                  l,
-		GlobalRateLimiter:       nil, // Use default rate limiter
-		PollInterval:            1 * time.Minute,
-		MaxConcurrentReconciles: 1,
-	}
 
-	if err := SetupLoadBalancer(mgr, opts); err != nil {
+	if err := SetupLoadBalancer(mgr, l, rl); err != nil {
 		return err
 	}
 
-	if err := SetupMonitor(mgr, opts); err != nil {
+	if err := SetupMonitor(mgr, l, rl); err != nil {
 		return err
 	}
 
-	if err := SetupPool(mgr, opts); err != nil {
+	if err := SetupPool(mgr, l, rl); err != nil {
 		return err
 	}
 

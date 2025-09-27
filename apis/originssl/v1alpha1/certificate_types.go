@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 // CertificateParameters define the desired state of a Cloudflare Origin CA Certificate.
@@ -134,11 +134,6 @@ func (mg *Certificate) GetProviderConfigReference() *rtv1.Reference {
 	return mg.Spec.ProviderConfigReference
 }
 
-// GetPublishConnectionDetailsTo of this Certificate.
-func (mg *Certificate) GetPublishConnectionDetailsTo() *rtv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
-}
-
 // GetWriteConnectionSecretToReference of this Certificate.
 func (mg *Certificate) GetWriteConnectionSecretToReference() *rtv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
@@ -162,11 +157,6 @@ func (mg *Certificate) SetManagementPolicies(r rtv1.ManagementPolicies) {
 // SetProviderConfigReference of this Certificate.
 func (mg *Certificate) SetProviderConfigReference(r *rtv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
-}
-
-// SetPublishConnectionDetailsTo of this Certificate.
-func (mg *Certificate) SetPublishConnectionDetailsTo(r *rtv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
 }
 
 // SetWriteConnectionSecretToReference of this Certificate.

@@ -18,6 +18,7 @@ package workers
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,12 +27,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/event"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	providerv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
 	workersv1alpha1 "github.com/rossigee/provider-cloudflare/apis/workers/v1alpha1"
@@ -51,24 +52,27 @@ const (
 func SetupKVNamespace(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
 	name := managed.ControllerName(workersv1alpha1.KVNamespaceGroupKind)
 
-	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
+	o := controller.Options{
+		MaxConcurrentReconciles: 5,
+	}
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(workersv1alpha1.KVNamespaceGroupVersionKind),
 		managed.WithExternalConnecter(&kvConnector{
-			kube:         mgr.GetClient(),
-			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &providerv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: kvnamespace.NewClient,
+			kube: mgr.GetClient(),
+			newServiceFn: func(clientInterface clients.ClientInterface) *kvnamespace.KVNamespaceClient {
+				return kvnamespace.NewClient(clientInterface)
+			},
 		}),
 		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
-		managed.WithConnectionPublishers(cps...))
+		managed.WithPollInterval(5*time.Minute),
+		managed.WithInitializers(),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(controller.Options{
-			RateLimiter: nil, // Use default rate limiter
-		}).
+		WithOptions(o).
 		For(&workersv1alpha1.KVNamespace{}).
 		Complete(r)
 }
@@ -77,7 +81,6 @@ func SetupKVNamespace(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRate
 // is called.
 type kvConnector struct {
 	kube         client.Client
-	usage        resource.Tracker
 	newServiceFn func(clients.ClientInterface) *kvnamespace.KVNamespaceClient
 }
 
@@ -90,10 +93,6 @@ func (c *kvConnector) Connect(ctx context.Context, mg resource.Managed) (managed
 	cr, ok := mg.(*workersv1alpha1.KVNamespace)
 	if !ok {
 		return nil, errors.New(errNotKVNamespace)
-	}
-
-	if err := c.usage.Track(ctx, mg); err != nil {
-		return nil, errors.Wrap(err, errTrackPCUsageKV)
 	}
 
 	pc := &providerv1alpha1.ProviderConfig{}

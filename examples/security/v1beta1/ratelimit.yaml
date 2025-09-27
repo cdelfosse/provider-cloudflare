@@ -1,0 +1,33 @@
+apiVersion: security.cloudflare.m.crossplane.io/v1beta1
+kind: RateLimit
+metadata:
+  name: api-rate-limit
+  namespace: production
+spec:
+  forProvider:
+    zone: "your-zone-id"
+    description: "Rate limit for API endpoints"
+    disabled: false
+    match:
+      request:
+        methods: ["POST", "PUT", "DELETE"]
+        schemes: ["https"]
+        url: "*api*"
+      response:
+        statuses: [200, 201, 202]
+        originTraffic: false
+    bypass:
+      - name: "ip.src"
+        value: "192.168.1.0/24"
+    threshold: 100
+    period: 60
+    action:
+      mode: "challenge"
+      timeout: 300
+      response:
+        contentType: "application/json"
+        body: '{"error": "Rate limit exceeded", "retry_after": 60}'
+    correlate:
+      by: "nat"
+  providerConfigRef:
+    name: default

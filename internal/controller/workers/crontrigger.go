@@ -18,6 +18,7 @@ package workers
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/cloudflare/cloudflare-go"
@@ -27,12 +28,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/event"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	"github.com/rossigee/provider-cloudflare/apis/workers/v1alpha1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
@@ -67,9 +68,11 @@ func SetupCronTrigger(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRate
 		resource.ManagedKind(v1alpha1.CronTriggerGroupVersionKind),
 		managed.WithExternalConnecter(&cronTriggerConnector{
 			kube: mgr.GetClient(),
-			newCloudflareClientFn: func(cfg clients.Config) (*cloudflare.API, error) {
-				return clients.NewClient(cfg, hc)
+			newServiceFn: func(api *cloudflare.API) *crontriggerclient.CronTriggerClient {
+				adapter := clients.NewCloudflareAPIAdapter(api)
+				return crontriggerclient.NewClient(adapter)
 			},
+			httpClient: hc,
 		}),
 		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
@@ -88,8 +91,9 @@ func SetupCronTrigger(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRate
 // A cronTriggerConnector is expected to produce an ExternalClient when its Connect method
 // is called.
 type cronTriggerConnector struct {
-	kube                  client.Client
-	newCloudflareClientFn func(cfg clients.Config) (*cloudflare.API, error)
+	kube         client.Client
+	newServiceFn func(*cloudflare.API) *crontriggerclient.CronTriggerClient
+	httpClient   *http.Client
 }
 
 // Connect produces a valid configuration for a Cloudflare API
@@ -106,16 +110,12 @@ func (c *cronTriggerConnector) Connect(ctx context.Context, mg resource.Managed)
 		return nil, errors.Wrap(err, errCronTriggerClientConfig)
 	}
 
-	client, err := c.newCloudflareClientFn(*config)
+	client, err := clients.NewClient(*config, c.httpClient)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create the cron trigger client wrapper
-	adapter := clients.NewCloudflareAPIAdapter(client)
-	cronTriggerClient := crontriggerclient.NewClient(adapter)
-
-	return &cronTriggerExternal{client: cronTriggerClient}, nil
+	return &cronTriggerExternal{client: c.newServiceFn(client)}, nil
 }
 
 // An cronTriggerExternal observes, then either creates, updates, or deletes an

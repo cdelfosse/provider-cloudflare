@@ -19,16 +19,18 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 
 	"github.com/rossigee/provider-cloudflare/apis"
 	"github.com/rossigee/provider-cloudflare/internal/controller"
+	"github.com/rossigee/provider-cloudflare/internal/version"
 )
 
 func main() {
@@ -49,7 +51,15 @@ func main() {
 		ctrl.SetLogger(zl)
 	}
 
-	log.Debug("Starting", "sync-period", syncPeriod.String())
+	log.Info("Provider starting up",
+		"provider", "provider-cloudflare",
+		"version", version.Version,
+		"go-version", runtime.Version(),
+		"platform", runtime.GOOS+"/"+runtime.GOARCH,
+		"sync-period", syncPeriod.String(),
+		"leader-election", *leaderElection,
+		"leader-election-id", "crossplane-leader-election-provider-cloudflare",
+		"debug-mode", *debug)
 
 	cfg, err := ctrl.GetConfig()
 	kingpin.FatalIfError(err, "Cannot get API server rest config")

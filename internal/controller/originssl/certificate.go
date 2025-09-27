@@ -18,6 +18,7 @@ package originssl
 
 import (
 	"context"
+	"time"
 
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
@@ -27,12 +28,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/event"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	originsslv1alpha1 "github.com/rossigee/provider-cloudflare/apis/originssl/v1alpha1"
 	providerv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
@@ -52,24 +53,27 @@ const (
 func SetupCertificate(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
 	name := managed.ControllerName(originsslv1alpha1.CertificateKind)
 
-	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
+	o := controller.Options{
+		MaxConcurrentReconciles: 5,
+	}
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(originsslv1alpha1.CertificateGroupVersionKind),
 		managed.WithExternalConnecter(&certificateConnector{
-			kube:         mgr.GetClient(),
-			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &providerv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: certificate.NewClientFromAPI,
+			kube: mgr.GetClient(),
+			newServiceFn: func(api *cloudflare.API) *certificate.CloudflareOriginCertificateClient {
+				return certificate.NewClientFromAPI(api)
+			},
 		}),
 		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
-		managed.WithConnectionPublishers(cps...))
+		managed.WithPollInterval(5*time.Minute),
+		managed.WithInitializers(),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(controller.Options{
-			RateLimiter: nil, // Use default rate limiter
-		}).
+		WithOptions(o).
 		For(&originsslv1alpha1.Certificate{}).
 		Complete(r)
 }

@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 // RuleParameters are the configurable fields of an Email Routing Rule.

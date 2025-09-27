@@ -22,12 +22,13 @@ import (
 	"net/http"
 
 	"github.com/cloudflare/cloudflare-go"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/pkg/errors"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	"github.com/rossigee/provider-cloudflare/apis/v1alpha1"
 )
@@ -79,23 +80,47 @@ func NewClient(c Config, hc *http.Client) (*cloudflare.API, error) {
 
 // GetConfig returns a valid Cloudflare API configuration
 func GetConfig(ctx context.Context, c client.Client, mg resource.Managed) (*Config, error) {
-	switch {
-	case mg.GetProviderConfigReference() != nil:
-		return UseProviderConfig(ctx, c, mg)
+	// Get provider config reference from the managed resource's ResourceSpec
+	var pcRef *xpv1.Reference
+
+	// Type assert to extract the ProviderConfigReference from the managed resource
+	switch mr := mg.(type) {
+	case interface{ GetProviderConfigReference() *xpv1.Reference }:
+		pcRef = mr.GetProviderConfigReference()
 	default:
 		return nil, errors.New(errPCRef)
 	}
 
+	if pcRef != nil {
+		return UseProviderConfig(ctx, c, mg)
+	}
+	return nil, errors.New(errPCRef)
 }
 
 // UseProviderConfig produces a config that can be used to authenticate with Cloudflare.
 func UseProviderConfig(ctx context.Context, c client.Client, mg resource.Managed) (*Config, error) {
+	// Get provider config reference from the managed resource's ResourceSpec
+	var pcRef *xpv1.Reference
+
+	// Type assert to extract the ProviderConfigReference from the managed resource
+	switch mr := mg.(type) {
+	case interface{ GetProviderConfigReference() *xpv1.Reference }:
+		pcRef = mr.GetProviderConfigReference()
+	default:
+		return nil, errors.New(errPCRef)
+	}
+
+	if pcRef == nil {
+		return nil, errors.New(errPCRef)
+	}
+
 	pc := &v1alpha1.ProviderConfig{}
-	if err := c.Get(ctx, types.NamespacedName{Name: mg.GetProviderConfigReference().Name}, pc); err != nil {
+	if err := c.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
 
-	t := resource.NewProviderConfigUsageTracker(c, &v1alpha1.ProviderConfigUsage{})
+	// Use no-op tracker for v2.0.0 compatibility
+	t := resource.TrackerFn(func(ctx context.Context, mg resource.Managed) error { return nil })
 	if err := t.Track(ctx, mg); err != nil {
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}

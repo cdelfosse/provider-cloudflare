@@ -31,12 +31,32 @@ comprehensive coverage of Cloudflare's cloud security, performance, and reliabil
 
 ## Features
 
-✅ **Complete Test Coverage** - 100% test coverage for all clients and controllers  
-✅ **Interface-Based Testing** - Modern testing framework with comprehensive mocking  
-✅ **Production Ready** - Used in production environments with proven reliability  
-✅ **Modern Go** - Updated to Go 1.25.1 with latest dependencies  
-✅ **Comprehensive Examples** - Detailed usage examples for all resource types  
+✅ **Crossplane v2 Support** - Namespaced resources with enhanced multi-tenancy (7/20 API groups)
+✅ **Dual-Scope Architecture** - Both cluster-scoped (v1alpha1) and namespaced (v1beta1) APIs
+✅ **Complete Test Coverage** - 100% test coverage for all clients and controllers
+✅ **Interface-Based Testing** - Modern testing framework with comprehensive mocking
+✅ **Production Ready** - Used in production environments with proven reliability
+✅ **Modern Go** - Updated to Go 1.25.1 with latest dependencies
+✅ **Comprehensive Examples** - Detailed usage examples for all resource types
 ✅ **Advanced Capabilities** - Support for complex scenarios like geographic routing, traffic steering, and advanced caching
+
+## Crossplane v2 Support
+
+This provider supports **both v1alpha1 (cluster-scoped)** and **v1beta1 (namespaced)** APIs for enhanced multi-tenancy:
+
+### ✅ Available Namespaced APIs (v1beta1)
+- **DNS & Zones** - `dns.cloudflare.m.crossplane.io/v1beta1`, `zone.cloudflare.m.crossplane.io/v1beta1`
+- **Load Balancing** - `loadbalancing.cloudflare.m.crossplane.io/v1beta1`
+- **Security** - `rulesets.cloudflare.m.crossplane.io/v1beta1`, `security.cloudflare.m.crossplane.io/v1beta1`
+- **Performance** - `cache.cloudflare.m.crossplane.io/v1beta1`
+- **Edge Computing** - `workers.cloudflare.m.crossplane.io/v1beta1`
+
+### Migration Benefits
+- 🎯 **Namespace Isolation** - Resources scoped to Kubernetes namespaces
+- 🔐 **Enhanced RBAC** - Namespace-level permissions and access control
+- 🏗️ **Modern Patterns** - Crossplane v2 compliance and future-proof architecture
+
+See [v2 Migration Guide](docs/v2-migration-guide.md) for detailed examples and migration strategies.
 
 ## Installation
 

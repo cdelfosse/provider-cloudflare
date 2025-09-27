@@ -19,7 +19,7 @@ package v1alpha1
 
 import (
 	"context"
-	reference "github.com/crossplane/crossplane-runtime/pkg/reference"
+	reference "github.com/crossplane/crossplane-runtime/v2/pkg/reference"
 	errors "github.com/pkg/errors"
 	v1alpha1 "github.com/rossigee/provider-cloudflare/apis/zone/v1alpha1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,6 +35,7 @@ func (mg *Rule) ResolveReferences(ctx context.Context, c client.Reader) error {
 	rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
 		CurrentValue: reference.FromPtrValue(mg.Spec.ForProvider.Zone),
 		Extract:      reference.ExternalName(),
+		Namespace:    mg.GetNamespace(),
 		Reference:    mg.Spec.ForProvider.ZoneRef,
 		Selector:     mg.Spec.ForProvider.ZoneSelector,
 		To: reference.To{

@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 // UniversalSSLParameters define the desired state of Cloudflare Universal SSL for a zone.
@@ -96,11 +96,6 @@ func (mg *UniversalSSL) GetProviderConfigReference() *rtv1.Reference {
 	return mg.Spec.ProviderConfigReference
 }
 
-// GetPublishConnectionDetailsTo of this UniversalSSL.
-func (mg *UniversalSSL) GetPublishConnectionDetailsTo() *rtv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
-}
-
 // GetWriteConnectionSecretToReference of this UniversalSSL.
 func (mg *UniversalSSL) GetWriteConnectionSecretToReference() *rtv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
@@ -124,11 +119,6 @@ func (mg *UniversalSSL) SetManagementPolicies(r rtv1.ManagementPolicies) {
 // SetProviderConfigReference of this UniversalSSL.
 func (mg *UniversalSSL) SetProviderConfigReference(r *rtv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
-}
-
-// SetPublishConnectionDetailsTo of this UniversalSSL.
-func (mg *UniversalSSL) SetPublishConnectionDetailsTo(r *rtv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
 }
 
 // SetWriteConnectionSecretToReference of this UniversalSSL.

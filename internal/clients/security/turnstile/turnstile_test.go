@@ -27,7 +27,7 @@ import (
 	"k8s.io/utils/ptr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/crossplane/crossplane-runtime/pkg/test"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
 	"github.com/rossigee/provider-cloudflare/apis/security/v1alpha1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"

@@ -34,14 +34,28 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
-	rtfake "github.com/crossplane/crossplane-runtime/pkg/resource/fake"
-	"github.com/crossplane/crossplane-runtime/pkg/test"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	rtfake "github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
 	v1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
 )
+
+// testProviderConfigReferencer is a test helper that implements ProviderConfigReferencer
+type testProviderConfigReferencer struct {
+	*rtfake.Managed
+	Ref *xpv1.Reference
+}
+
+func (t *testProviderConfigReferencer) GetProviderConfigReference() *xpv1.Reference {
+	return t.Ref
+}
+
+func (t *testProviderConfigReferencer) SetProviderConfigReference(ref *xpv1.Reference) {
+	t.Ref = ref
+}
 
 func TestGetConfig(t *testing.T) {
 	errBoom := errors.New("boom")
@@ -100,10 +114,9 @@ func TestGetConfig(t *testing.T) {
 				},
 			},
 			args: args{
-				mg: &rtfake.Managed{
-					ProviderConfigReferencer: rtfake.ProviderConfigReferencer{
-						Ref: &xpv1.Reference{},
-					},
+				mg: &testProviderConfigReferencer{
+					Managed: &rtfake.Managed{},
+					Ref:     &xpv1.Reference{},
 				},
 			},
 			want: want{
@@ -127,10 +140,9 @@ func TestGetConfig(t *testing.T) {
 				},
 			},
 			args: args{
-				mg: &rtfake.Managed{
-					ProviderConfigReferencer: rtfake.ProviderConfigReferencer{
-						Ref: &xpv1.Reference{},
-					},
+				mg: &testProviderConfigReferencer{
+					Managed: &rtfake.Managed{},
+					Ref:     &xpv1.Reference{},
 				},
 			},
 			want: want{

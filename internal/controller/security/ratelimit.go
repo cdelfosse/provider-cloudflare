@@ -18,6 +18,7 @@ package security
 
 import (
 	"context"
+	"time"
 
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
@@ -27,15 +28,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/event"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	securityv1alpha1 "github.com/rossigee/provider-cloudflare/apis/security/v1alpha1"
-	providerv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	v1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	botmanagement "github.com/rossigee/provider-cloudflare/internal/clients/security/botmanagement"
 	ratelimit "github.com/rossigee/provider-cloudflare/internal/clients/security/ratelimit"
@@ -58,24 +59,28 @@ const (
 func SetupRateLimit(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
 	name := managed.ControllerName(securityv1alpha1.RateLimitKind)
 
-	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
+	o := controller.Options{
+		RateLimiter: nil, // Use default rate limiter
+		MaxConcurrentReconciles: 5,
+	}
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(securityv1alpha1.RateLimitGroupVersionKind),
 		managed.WithExternalConnecter(&rateLimitConnector{
-			kube:         mgr.GetClient(),
-			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &providerv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: ratelimit.NewClientFromAPI,
+			kube: mgr.GetClient(),
+			newServiceFn: func(api *cloudflare.API) *ratelimit.CloudflareRateLimitClient {
+				return ratelimit.NewClientFromAPI(api)
+			},
 		}),
 		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
-		managed.WithConnectionPublishers(cps...))
+		managed.WithPollInterval(5*time.Minute),
+		managed.WithInitializers(),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(controller.Options{
-			RateLimiter: nil, // Use default rate limiter
-		}).
+		WithOptions(o).
 		For(&securityv1alpha1.RateLimit{}).
 		Complete(r)
 }
@@ -84,7 +89,6 @@ func SetupRateLimit(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLi
 // is called.
 type rateLimitConnector struct {
 	kube         client.Client
-	usage        resource.Tracker
 	newServiceFn func(*cloudflare.API) *ratelimit.CloudflareRateLimitClient
 }
 
@@ -94,18 +98,9 @@ type rateLimitConnector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *rateLimitConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*securityv1alpha1.RateLimit)
+	_, ok := mg.(*securityv1alpha1.RateLimit)
 	if !ok {
 		return nil, errors.New(errNotRateLimit)
-	}
-
-	if err := c.usage.Track(ctx, mg); err != nil {
-		return nil, errors.Wrap(err, errTrackPCUsage)
-	}
-
-	pc := &providerv1alpha1.ProviderConfig{}
-	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
-		return nil, errors.Wrap(err, errGetPC)
 	}
 
 	// Get client configuration
@@ -217,24 +212,28 @@ func (c *rateLimitExternal) Disconnect(ctx context.Context) error {
 func SetupBotManagement(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
 	name := managed.ControllerName(securityv1alpha1.BotManagementKind)
 
-	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
+	o := controller.Options{
+		RateLimiter: nil, // Use default rate limiter
+		MaxConcurrentReconciles: 5,
+	}
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(securityv1alpha1.BotManagementGroupVersionKind),
 		managed.WithExternalConnecter(&botManagementConnector{
-			kube:         mgr.GetClient(),
-			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &providerv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: botmanagement.NewClientFromAPI,
+			kube: mgr.GetClient(),
+			newServiceFn: func(api *cloudflare.API) *botmanagement.CloudflareBotManagementClient {
+				return botmanagement.NewClientFromAPI(api)
+			},
 		}),
 		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
-		managed.WithConnectionPublishers(cps...))
+		managed.WithPollInterval(5*time.Minute),
+		managed.WithInitializers(),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(controller.Options{
-			RateLimiter: nil, // Use default rate limiter
-		}).
+		WithOptions(o).
 		For(&securityv1alpha1.BotManagement{}).
 		Complete(r)
 }
@@ -262,7 +261,7 @@ func (c *botManagementConnector) Connect(ctx context.Context, mg resource.Manage
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	pc := &providerv1alpha1.ProviderConfig{}
+	pc := &v1alpha1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -378,24 +377,28 @@ func (c *botManagementExternal) Disconnect(ctx context.Context) error {
 func SetupTurnstile(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
 	name := managed.ControllerName(securityv1alpha1.TurnstileKind)
 
-	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
+	o := controller.Options{
+		RateLimiter: nil, // Use default rate limiter
+		MaxConcurrentReconciles: 5,
+	}
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(securityv1alpha1.TurnstileGroupVersionKind),
 		managed.WithExternalConnecter(&turnstileConnector{
-			kube:         mgr.GetClient(),
-			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &providerv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: turnstile.NewClientFromAPI,
+			kube: mgr.GetClient(),
+			newServiceFn: func(api *cloudflare.API) *turnstile.CloudflareTurnstileClient {
+				return turnstile.NewClientFromAPI(api)
+			},
 		}),
 		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
-		managed.WithConnectionPublishers(cps...))
+		managed.WithPollInterval(5*time.Minute),
+		managed.WithInitializers(),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(controller.Options{
-			RateLimiter: nil, // Use default rate limiter
-		}).
+		WithOptions(o).
 		For(&securityv1alpha1.Turnstile{}).
 		Complete(r)
 }
@@ -404,7 +407,6 @@ func SetupTurnstile(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLi
 // is called.
 type turnstileConnector struct {
 	kube         client.Client
-	usage        resource.Tracker
 	newServiceFn func(*cloudflare.API) *turnstile.CloudflareTurnstileClient
 }
 
@@ -414,18 +416,9 @@ type turnstileConnector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *turnstileConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*securityv1alpha1.Turnstile)
+	_, ok := mg.(*securityv1alpha1.Turnstile)
 	if !ok {
 		return nil, errors.New(errNotTurnstile)
-	}
-
-	if err := c.usage.Track(ctx, mg); err != nil {
-		return nil, errors.Wrap(err, errTrackPCUsage)
-	}
-
-	pc := &providerv1alpha1.ProviderConfig{}
-	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
-		return nil, errors.Wrap(err, errGetPC)
 	}
 
 	// Get client configuration

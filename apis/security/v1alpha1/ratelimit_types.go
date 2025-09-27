@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 // RateLimitParameters define the desired state of a Cloudflare Rate Limit rule.
@@ -260,11 +260,6 @@ func (mg *RateLimit) GetProviderConfigReference() *rtv1.Reference {
 	return mg.Spec.ProviderConfigReference
 }
 
-// GetPublishConnectionDetailsTo of this RateLimit.
-func (mg *RateLimit) GetPublishConnectionDetailsTo() *rtv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
-}
-
 // GetWriteConnectionSecretToReference of this RateLimit.
 func (mg *RateLimit) GetWriteConnectionSecretToReference() *rtv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
@@ -288,11 +283,6 @@ func (mg *RateLimit) SetManagementPolicies(r rtv1.ManagementPolicies) {
 // SetProviderConfigReference of this RateLimit.
 func (mg *RateLimit) SetProviderConfigReference(r *rtv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
-}
-
-// SetPublishConnectionDetailsTo of this RateLimit.
-func (mg *RateLimit) SetPublishConnectionDetailsTo(r *rtv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
 }
 
 // SetWriteConnectionSecretToReference of this RateLimit.

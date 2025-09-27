@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-import xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+import xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 
 // GetCondition of this CacheRule.
 func (mg *CacheRule) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
@@ -37,11 +37,6 @@ func (mg *CacheRule) GetManagementPolicies() xpv1.ManagementPolicies {
 // GetProviderConfigReference of this CacheRule.
 func (mg *CacheRule) GetProviderConfigReference() *xpv1.Reference {
 	return mg.Spec.ProviderConfigReference
-}
-
-// GetPublishConnectionDetailsTo of this CacheRule.
-func (mg *CacheRule) GetPublishConnectionDetailsTo() *xpv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
 }
 
 // GetWriteConnectionSecretToReference of this CacheRule.
@@ -67,11 +62,6 @@ func (mg *CacheRule) SetManagementPolicies(r xpv1.ManagementPolicies) {
 // SetProviderConfigReference of this CacheRule.
 func (mg *CacheRule) SetProviderConfigReference(r *xpv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
-}
-
-// SetPublishConnectionDetailsTo of this CacheRule.
-func (mg *CacheRule) SetPublishConnectionDetailsTo(r *xpv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
 }
 
 // SetWriteConnectionSecretToReference of this CacheRule.

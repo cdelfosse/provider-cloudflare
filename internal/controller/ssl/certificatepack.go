@@ -18,6 +18,7 @@ package ssl
 
 import (
 	"context"
+	"time"
 
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
@@ -26,12 +27,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/event"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
@@ -54,8 +55,6 @@ func SetupCertificatePackController(mgr ctrl.Manager, l logging.Logger, rl workq
 		RateLimiter: nil, // Use default rate limiter
 	}
 
-	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
-
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(v1alpha1.CertificatePackGroupVersionKind),
 		managed.WithExternalConnecter(&certificatePackConnector{
@@ -66,7 +65,9 @@ func SetupCertificatePackController(mgr ctrl.Manager, l logging.Logger, rl workq
 		}),
 		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
-		managed.WithConnectionPublishers(cps...))
+		managed.WithPollInterval(5*time.Minute),
+		managed.WithInitializers(),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).

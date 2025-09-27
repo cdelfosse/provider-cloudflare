@@ -17,7 +17,7 @@ limitations under the License.
 
 package v1alpha1
 
-import xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+import xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 
 // GetCondition of this LoadBalancer.
 func (mg *LoadBalancer) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
@@ -37,11 +37,6 @@ func (mg *LoadBalancer) GetManagementPolicies() xpv1.ManagementPolicies {
 // GetProviderConfigReference of this LoadBalancer.
 func (mg *LoadBalancer) GetProviderConfigReference() *xpv1.Reference {
 	return mg.Spec.ProviderConfigReference
-}
-
-// GetPublishConnectionDetailsTo of this LoadBalancer.
-func (mg *LoadBalancer) GetPublishConnectionDetailsTo() *xpv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
 }
 
 // GetWriteConnectionSecretToReference of this LoadBalancer.
@@ -69,11 +64,6 @@ func (mg *LoadBalancer) SetProviderConfigReference(r *xpv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
 }
 
-// SetPublishConnectionDetailsTo of this LoadBalancer.
-func (mg *LoadBalancer) SetPublishConnectionDetailsTo(r *xpv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
-}
-
 // SetWriteConnectionSecretToReference of this LoadBalancer.
 func (mg *LoadBalancer) SetWriteConnectionSecretToReference(r *xpv1.SecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
@@ -97,11 +87,6 @@ func (mg *LoadBalancerMonitor) GetManagementPolicies() xpv1.ManagementPolicies {
 // GetProviderConfigReference of this LoadBalancerMonitor.
 func (mg *LoadBalancerMonitor) GetProviderConfigReference() *xpv1.Reference {
 	return mg.Spec.ProviderConfigReference
-}
-
-// GetPublishConnectionDetailsTo of this LoadBalancerMonitor.
-func (mg *LoadBalancerMonitor) GetPublishConnectionDetailsTo() *xpv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
 }
 
 // GetWriteConnectionSecretToReference of this LoadBalancerMonitor.
@@ -129,11 +114,6 @@ func (mg *LoadBalancerMonitor) SetProviderConfigReference(r *xpv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
 }
 
-// SetPublishConnectionDetailsTo of this LoadBalancerMonitor.
-func (mg *LoadBalancerMonitor) SetPublishConnectionDetailsTo(r *xpv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
-}
-
 // SetWriteConnectionSecretToReference of this LoadBalancerMonitor.
 func (mg *LoadBalancerMonitor) SetWriteConnectionSecretToReference(r *xpv1.SecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
@@ -159,11 +139,6 @@ func (mg *LoadBalancerPool) GetProviderConfigReference() *xpv1.Reference {
 	return mg.Spec.ProviderConfigReference
 }
 
-// GetPublishConnectionDetailsTo of this LoadBalancerPool.
-func (mg *LoadBalancerPool) GetPublishConnectionDetailsTo() *xpv1.PublishConnectionDetailsTo {
-	return mg.Spec.PublishConnectionDetailsTo
-}
-
 // GetWriteConnectionSecretToReference of this LoadBalancerPool.
 func (mg *LoadBalancerPool) GetWriteConnectionSecretToReference() *xpv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
@@ -187,11 +162,6 @@ func (mg *LoadBalancerPool) SetManagementPolicies(r xpv1.ManagementPolicies) {
 // SetProviderConfigReference of this LoadBalancerPool.
 func (mg *LoadBalancerPool) SetProviderConfigReference(r *xpv1.Reference) {
 	mg.Spec.ProviderConfigReference = r
-}
-
-// SetPublishConnectionDetailsTo of this LoadBalancerPool.
-func (mg *LoadBalancerPool) SetPublishConnectionDetailsTo(r *xpv1.PublishConnectionDetailsTo) {
-	mg.Spec.PublishConnectionDetailsTo = r
 }
 
 // SetWriteConnectionSecretToReference of this LoadBalancerPool.

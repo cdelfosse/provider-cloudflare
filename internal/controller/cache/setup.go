@@ -20,10 +20,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 )
 
 // Setup Cache controllers.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
+	// Setup v1alpha1 controllers (cluster-scoped)
 	return SetupCacheRule(mgr, l, rl)
 }

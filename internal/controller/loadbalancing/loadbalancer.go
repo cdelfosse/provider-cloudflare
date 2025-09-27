@@ -20,18 +20,20 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	"github.com/crossplane/crossplane-runtime/pkg/controller"
-	"github.com/crossplane/crossplane-runtime/pkg/event"
-	"github.com/crossplane/crossplane-runtime/pkg/ratelimiter"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
 	apisv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
@@ -48,36 +50,38 @@ const (
 )
 
 // SetupLoadBalancer adds a controller that reconciles LoadBalancer managed resources.
-func SetupLoadBalancer(mgr ctrl.Manager, o controller.Options) error {
+func SetupLoadBalancer(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
 	name := managed.ControllerName(v1alpha1.LoadBalancerGroupKind)
 
-	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
+	o := controller.Options{
+		MaxConcurrentReconciles: 5,
+	}
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(v1alpha1.LoadBalancerGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
-			kube:         mgr.GetClient(),
-			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: loadbalancing.NewLoadBalancerClient,
+			kube: mgr.GetClient(),
+			newServiceFn: func(cfg clients.Config, httpClient *http.Client) (loadbalancing.LoadBalancerClient, error) {
+				return loadbalancing.NewLoadBalancerClient(cfg, httpClient)
+			},
 		}),
-		managed.WithLogger(o.Logger.WithValues("controller", name)),
-		managed.WithPollInterval(o.PollInterval),
+		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
-		managed.WithConnectionPublishers(cps...))
+		managed.WithPollInterval(5*time.Minute),
+		managed.WithInitializers(),
+	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(o.ForControllerRuntime()).
-		WithEventFilter(resource.DesiredStateChanged()).
+		WithOptions(o).
 		For(&v1alpha1.LoadBalancer{}).
-		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
+		Complete(r)
 }
 
 // A connector is expected to produce an ExternalClient when its Connect method
 // is called.
 type connector struct {
 	kube         client.Client
-	usage        resource.Tracker
 	newServiceFn func(cfg clients.Config, httpClient *http.Client) (loadbalancing.LoadBalancerClient, error)
 }
 
@@ -92,9 +96,6 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.New(errNotLoadBalancer)
 	}
 
-	if err := c.usage.Track(ctx, mg); err != nil {
-		return nil, errors.Wrap(err, errTrackPCUsage)
-	}
 
 	pc := &apisv1alpha1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {

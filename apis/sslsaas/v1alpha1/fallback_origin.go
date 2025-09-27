@@ -25,8 +25,8 @@ import (
 	dns "github.com/rossigee/provider-cloudflare/apis/dns/v1alpha1"
 	zone "github.com/rossigee/provider-cloudflare/apis/zone/v1alpha1"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/reference"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reference"
 	"github.com/pkg/errors"
 )
 

@@ -42,7 +42,7 @@ comprehensive coverage of Cloudflare's cloud security, performance, and reliabil
 
 ## Status
 
-- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.9.1`
+- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.10.0`
 - **Build Status**: ✅ `make lint` and `make test` passing
 - **Crossplane v2**: ✅ Fully migrated to v2-native architecture
 - **API Compatibility**: ✅ cloudflare-go v0.115.0, Go 1.25.1
@@ -79,7 +79,7 @@ kind: Provider
 metadata:
   name: provider-cloudflare
 spec:
-  package: ghcr.io/rossigee/provider-cloudflare:v0.9.1
+  package: ghcr.io/rossigee/provider-cloudflare:v0.10.0
 EOF
 ```
 

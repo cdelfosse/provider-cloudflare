@@ -1,4 +1,4 @@
-apiVersion: rulesets.cloudflare.crossplane.io/v1alpha1
+apiVersion: rulesets.cloudflare.m.crossplane.io/v1beta1
 kind: Ruleset
 metadata:
   name: account-security-rules

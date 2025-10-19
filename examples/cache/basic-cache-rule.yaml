@@ -1,7 +1,8 @@
-apiVersion: cache.cloudflare.crossplane.io/v1alpha1
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
   name: basic-cache-rule
+  namespace: default  # Namespaced resource in v1beta1
 spec:
   forProvider:
     zone: your-zone-id-here  # Replace with your actual Cloudflare Zone ID

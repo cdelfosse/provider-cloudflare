@@ -1,4 +1,4 @@
-apiVersion: cache.cloudflare.crossplane.io/v1alpha1
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
   name: website-static-assets-cache
@@ -38,7 +38,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: cache.cloudflare.crossplane.io/v1alpha1
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
   name: website-api-cache
@@ -69,7 +69,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: cache.cloudflare.crossplane.io/v1alpha1
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
   name: website-bypass-admin
@@ -84,7 +84,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: cache.cloudflare.crossplane.io/v1alpha1
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
   name: website-html-cache
@@ -126,7 +126,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: cache.cloudflare.crossplane.io/v1alpha1
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
   name: website-dynamic-content

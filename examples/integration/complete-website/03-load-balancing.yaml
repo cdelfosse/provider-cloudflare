@@ -1,4 +1,4 @@
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerMonitor
 metadata:
   name: website-health-monitor
@@ -21,7 +21,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerPool
 metadata:
   name: website-primary-pool
@@ -48,7 +48,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerPool
 metadata:
   name: website-backup-pool
@@ -71,7 +71,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancer
 metadata:
   name: website-load-balancer

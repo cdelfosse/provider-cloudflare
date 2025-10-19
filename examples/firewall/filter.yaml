@@ -1,4 +1,4 @@
-apiVersion: firewall.cloudflare.crossplane.io/v1alpha1
+apiVersion: firewall.cloudflare.m.crossplane.io/v1beta1
 kind: Filter
 metadata:
   name: wordpress-logins 

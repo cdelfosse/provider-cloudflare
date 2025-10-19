@@ -31,8 +31,8 @@ comprehensive coverage of Cloudflare's cloud security, performance, and reliabil
 
 ## Features
 
-✅ **Crossplane v2 Support** - Namespaced resources with enhanced multi-tenancy (7/20 API groups)
-✅ **Dual-Scope Architecture** - Both cluster-scoped (v1alpha1) and namespaced (v1beta1) APIs
+✅ **Crossplane v2 Native** - Full v2 migration complete with namespaced resources
+✅ **v1beta1 APIs Only** - Modern namespaced APIs with `.m.` group naming (v1alpha1 removed)
 ✅ **Complete Test Coverage** - 100% test coverage for all clients and controllers
 ✅ **Interface-Based Testing** - Modern testing framework with comprehensive mocking
 ✅ **Production Ready** - Used in production environments with proven reliability
@@ -46,27 +46,28 @@ comprehensive coverage of Cloudflare's cloud security, performance, and reliabil
 - **Build Status**: ✅ `make lint` and `make test` passing
 - **Crossplane v2**: ✅ Fully migrated to v2-native architecture
 - **API Compatibility**: ✅ cloudflare-go v0.115.0, Go 1.25.1
-- **Production Ready**: ✅ Complete resource implementation with dual-scope support
+- **Production Ready**: ✅ Complete resource implementation with v1beta1 namespaced resources
 
 See [Current Status](docs/CURRENT-STATUS.md) for detailed technical information.
 
-## Crossplane v2 Support
+## Crossplane v2 Migration Complete
 
-This provider supports **both v1alpha1 (cluster-scoped)** and **v1beta1 (namespaced)** APIs for enhanced multi-tenancy:
+This provider has **fully migrated to Crossplane v2** with namespaced v1beta1 APIs only (v1alpha1 cluster-scoped APIs have been removed):
 
 ### ✅ Available Namespaced APIs (v1beta1)
 - **DNS & Zones** - `dns.cloudflare.m.crossplane.io/v1beta1`, `zone.cloudflare.m.crossplane.io/v1beta1`
 - **Load Balancing** - `loadbalancing.cloudflare.m.crossplane.io/v1beta1`
-- **Security** - `rulesets.cloudflare.m.crossplane.io/v1beta1`, `security.cloudflare.m.crossplane.io/v1beta1`
+- **Security** - `firewall.cloudflare.m.crossplane.io/v1beta1`, `security.cloudflare.m.crossplane.io/v1beta1`
 - **Performance** - `cache.cloudflare.m.crossplane.io/v1beta1`
-- **Edge Computing** - `workers.cloudflare.m.crossplane.io/v1beta1`
+- **Edge Computing** - `workers.cloudflare.m.crossplane.io/v1beta1`, `spectrum.cloudflare.m.crossplane.io/v1beta1`
+- **SSL/TLS** - `ssl.cloudflare.m.crossplane.io/v1beta1`, `sslsaas.cloudflare.m.crossplane.io/v1beta1`, `originssl.cloudflare.m.crossplane.io/v1beta1`
+- **Advanced** - `transform.cloudflare.m.crossplane.io/v1beta1`, `logpush.cloudflare.m.crossplane.io/v1beta1`, `emailrouting.cloudflare.m.crossplane.io/v1beta1`, `r2.cloudflare.m.crossplane.io/v1beta1`
 
-### Migration Benefits
-- 🎯 **Namespace Isolation** - Resources scoped to Kubernetes namespaces
+### v2 Benefits
+- 🎯 **Namespace Isolation** - All resources scoped to Kubernetes namespaces
 - 🔐 **Enhanced RBAC** - Namespace-level permissions and access control
-- 🏗️ **Modern Patterns** - Crossplane v2 compliance and future-proof architecture
-
-See [v2 Migration Guide](docs/v2-migration-guide.md) for detailed examples and migration strategies.
+- 🏗️ **Modern Patterns** - Full Crossplane v2 compliance and future-proof architecture
+- ⚡ **API Group Naming** - Consistent `.m.` naming convention for namespaced resources
 
 ## Installation
 
@@ -94,7 +95,7 @@ kubectl create secret generic cloudflare-secret \
 
 # Create ProviderConfig
 kubectl apply -f - <<EOF
-apiVersion: cloudflare.crossplane.io/v1beta1
+apiVersion: cloudflare.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -113,18 +114,16 @@ EOF
 ### DNS Zone Management
 
 ```yaml
-apiVersion: zone.cloudflare.crossplane.io/v1alpha1
+apiVersion: zone.cloudflare.m.crossplane.io/v1beta1
 kind: Zone
 metadata:
   name: example-zone
+  namespace: default  # Namespaced resource in v1beta1
 spec:
   forProvider:
-    zone: "example.com"
-    paused: false
-    settings:
-      ssl: "flexible"
-      alwaysUseHTTPS: "on"
-      minTLSVersion: "1.2"
+    name: "example.com"
+    type: "full"  # full, partial, or secondary
+    jumpStart: false
   providerConfigRef:
     name: default
 ```
@@ -132,10 +131,11 @@ spec:
 ### Load Balancer with Geographic Routing
 
 ```yaml
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancer
 metadata:
   name: api-load-balancer
+  namespace: default  # Namespaced resource in v1beta1
 spec:
   forProvider:
     zone: "your-zone-id"
@@ -150,22 +150,22 @@ spec:
     name: default
 ```
 
-### Modern WAF Ruleset
+### DNS Record
 
 ```yaml
-apiVersion: rulesets.cloudflare.crossplane.io/v1alpha1
-kind: Ruleset
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
+kind: Record
 metadata:
-  name: security-ruleset
+  name: example-a-record
+  namespace: default  # Namespaced resource in v1beta1
 spec:
   forProvider:
     zone: "your-zone-id"
-    name: "Custom Security Rules"
-    phase: "http_request_firewall_custom"
-    rules:
-      - expression: 'http.request.uri.path contains "/api/"'
-        action: "block"
-        description: "Block suspicious API requests"
+    name: "www"
+    type: "A"
+    content: "192.0.2.1"
+    ttl: 300
+    proxied: true
   providerConfigRef:
     name: default
 ```

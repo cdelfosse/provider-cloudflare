@@ -1,4 +1,4 @@
-apiVersion: sslsaas.cloudflare.crossplane.io/v1alpha1
+apiVersion: sslsaas.cloudflare.m.crossplane.io/v1beta1
 kind: FallbackOrigin
 metadata:
   name: fallback
@@ -10,7 +10,7 @@ spec:
   providerConfigRef:
     name: example
 ---
-apiVersion: sslsaas.cloudflare.crossplane.io/v1alpha1
+apiVersion: sslsaas.cloudflare.m.crossplane.io/v1beta1
 kind: FallbackOrigin
 metadata:
   name: fallback2

@@ -1,4 +1,4 @@
-apiVersion: zone.cloudflare.crossplane.io/v1alpha1
+apiVersion: zone.cloudflare.m.crossplane.io/v1beta1
 kind: Zone
 metadata:
   name: example

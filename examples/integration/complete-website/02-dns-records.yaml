@@ -1,4 +1,4 @@
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-root-a
@@ -14,7 +14,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-root-aaaa
@@ -30,7 +30,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-www
@@ -46,7 +46,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-api
@@ -62,7 +62,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-mail-mx
@@ -79,7 +79,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-mail-server
@@ -95,7 +95,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-txt-spf
@@ -110,7 +110,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-txt-dmarc
@@ -125,7 +125,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
   name: website-srv-sip

@@ -1,4 +1,4 @@
-apiVersion: sslsaas.cloudflare.crossplane.io/v1alpha1
+apiVersion: sslsaas.cloudflare.m.crossplane.io/v1beta1
 kind: CustomHostname
 metadata:
   name: example

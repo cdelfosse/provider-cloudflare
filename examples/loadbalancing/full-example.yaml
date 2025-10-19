@@ -2,7 +2,7 @@
 # This creates a monitor, pool, and load balancer together
 
 ---
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerMonitor
 metadata:
   name: production-health-check
@@ -30,7 +30,7 @@ spec:
     name: default
 
 ---
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerPool
 metadata:
   name: production-pool-us-east
@@ -76,7 +76,7 @@ spec:
     name: default
 
 ---
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerPool
 metadata:
   name: production-pool-us-west
@@ -111,7 +111,7 @@ spec:
     name: default
 
 ---
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancer
 metadata:
   name: production-api-lb

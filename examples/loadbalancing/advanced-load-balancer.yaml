@@ -1,4 +1,4 @@
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancer
 metadata:
   name: advanced-api-lb

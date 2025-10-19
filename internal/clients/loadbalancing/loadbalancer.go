@@ -24,7 +24,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -33,14 +33,40 @@ const (
 	errGetLoadBalancer    = "failed to get load balancer"
 	errUpdateLoadBalancer = "failed to update load balancer"
 	errDeleteLoadBalancer = "failed to delete load balancer"
+
+	errCreateLoadBalancerMonitor = "failed to create load balancer monitor"
+	errGetLoadBalancerMonitor    = "failed to get load balancer monitor"
+	errUpdateLoadBalancerMonitor = "failed to update load balancer monitor"
+	errDeleteLoadBalancerMonitor = "failed to delete load balancer monitor"
+
+	errCreateLoadBalancerPool = "failed to create load balancer pool"
+	errGetLoadBalancerPool    = "failed to get load balancer pool"
+	errUpdateLoadBalancerPool = "failed to update load balancer pool"
+	errDeleteLoadBalancerPool = "failed to delete load balancer pool"
 )
 
 // LoadBalancerClient interface for Cloudflare Load Balancer operations
 type LoadBalancerClient interface {
-	CreateLoadBalancer(ctx context.Context, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error)
-	GetLoadBalancer(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error)
-	UpdateLoadBalancer(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error)
-	DeleteLoadBalancer(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) error
+	CreateLoadBalancer(ctx context.Context, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error)
+	GetLoadBalancer(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error)
+	UpdateLoadBalancer(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error)
+	DeleteLoadBalancer(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) error
+}
+
+// MonitorClient interface for Cloudflare Load Balancer Monitor operations
+type MonitorClient interface {
+	CreateMonitor(ctx context.Context, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error)
+	GetMonitor(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error)
+	UpdateMonitor(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error)
+	DeleteMonitor(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) error
+}
+
+// PoolClient interface for Cloudflare Load Balancer Pool operations
+type PoolClient interface {
+	CreatePool(ctx context.Context, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error)
+	GetPool(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error)
+	UpdatePool(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error)
+	DeletePool(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) error
 }
 
 // NewLoadBalancerClient creates a new Cloudflare Load Balancer client
@@ -52,12 +78,38 @@ func NewLoadBalancerClient(cfg clients.Config, httpClient *http.Client) (LoadBal
 	return &loadBalancerClient{api: api}, nil
 }
 
+// NewMonitorClient creates a new Cloudflare Load Balancer Monitor client
+func NewMonitorClient(cfg clients.Config, httpClient *http.Client) (MonitorClient, error) {
+	api, err := clients.NewClient(cfg, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	return &monitorClient{api: api}, nil
+}
+
+// NewPoolClient creates a new Cloudflare Load Balancer Pool client
+func NewPoolClient(cfg clients.Config, httpClient *http.Client) (PoolClient, error) {
+	api, err := clients.NewClient(cfg, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	return &poolClient{api: api}, nil
+}
+
 type loadBalancerClient struct {
 	api *cloudflare.API
 }
 
+type monitorClient struct {
+	api *cloudflare.API
+}
+
+type poolClient struct {
+	api *cloudflare.API
+}
+
 // CreateLoadBalancer creates a new Cloudflare load balancer
-func (c *loadBalancerClient) CreateLoadBalancer(ctx context.Context, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+func (c *loadBalancerClient) CreateLoadBalancer(ctx context.Context, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 	lb := cloudflare.LoadBalancer{
 		DefaultPools: params.DefaultPools,
 	}
@@ -145,7 +197,7 @@ func (c *loadBalancerClient) CreateLoadBalancer(ctx context.Context, params v1al
 }
 
 // GetLoadBalancer retrieves a Cloudflare load balancer
-func (c *loadBalancerClient) GetLoadBalancer(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+func (c *loadBalancerClient) GetLoadBalancer(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 	rc := cloudflare.ZoneIdentifier(params.Zone)
 
 	lb, err := c.api.GetLoadBalancer(ctx, rc, lbID)
@@ -157,7 +209,7 @@ func (c *loadBalancerClient) GetLoadBalancer(ctx context.Context, lbID string, p
 }
 
 // UpdateLoadBalancer updates a Cloudflare load balancer
-func (c *loadBalancerClient) UpdateLoadBalancer(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+func (c *loadBalancerClient) UpdateLoadBalancer(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 	lb := cloudflare.LoadBalancer{
 		ID:           lbID,
 		DefaultPools: params.DefaultPools,
@@ -246,7 +298,7 @@ func (c *loadBalancerClient) UpdateLoadBalancer(ctx context.Context, lbID string
 }
 
 // DeleteLoadBalancer deletes a Cloudflare load balancer
-func (c *loadBalancerClient) DeleteLoadBalancer(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) error {
+func (c *loadBalancerClient) DeleteLoadBalancer(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) error {
 	rc := cloudflare.ZoneIdentifier(params.Zone)
 
 	err := c.api.DeleteLoadBalancer(ctx, rc, lbID)
@@ -270,7 +322,7 @@ func IsLoadBalancerNotFound(err error) bool {
 }
 
 // convertSessionAffinityAttributesToCloudflare converts session affinity attributes to Cloudflare format
-func convertSessionAffinityAttributesToCloudflare(attrs v1alpha1.SessionAffinityAttributes) *cloudflare.SessionAffinityAttributes {
+func convertSessionAffinityAttributesToCloudflare(attrs v1beta1.SessionAffinityAttributes) *cloudflare.SessionAffinityAttributes {
 	cfAttrs := &cloudflare.SessionAffinityAttributes{}
 
 	if attrs.SameSite != nil {
@@ -301,7 +353,7 @@ func convertSessionAffinityAttributesToCloudflare(attrs v1alpha1.SessionAffinity
 }
 
 // convertSessionAffinityAttributesForRuleOverrides converts session affinity attributes for rule overrides to Cloudflare format
-func convertSessionAffinityAttributesForRuleOverrides(attrs v1alpha1.SessionAffinityAttributes) *cloudflare.LoadBalancerRuleOverridesSessionAffinityAttrs {
+func convertSessionAffinityAttributesForRuleOverrides(attrs v1beta1.SessionAffinityAttributes) *cloudflare.LoadBalancerRuleOverridesSessionAffinityAttrs {
 	cfAttrs := &cloudflare.LoadBalancerRuleOverridesSessionAffinityAttrs{}
 
 	if attrs.SameSite != nil {
@@ -330,7 +382,7 @@ func convertSessionAffinityAttributesForRuleOverrides(attrs v1alpha1.SessionAffi
 }
 
 // convertRulesToCloudflare converts load balancer rules to Cloudflare format
-func convertRulesToCloudflare(rules []v1alpha1.LoadBalancerRule) []*cloudflare.LoadBalancerRule {
+func convertRulesToCloudflare(rules []v1beta1.LoadBalancerRule) []*cloudflare.LoadBalancerRule {
 	var cfRules []*cloudflare.LoadBalancerRule
 
 	for _, rule := range rules {
@@ -363,7 +415,7 @@ func convertRulesToCloudflare(rules []v1alpha1.LoadBalancerRule) []*cloudflare.L
 }
 
 // convertFixedResponseToCloudflare converts fixed response to Cloudflare format
-func convertFixedResponseToCloudflare(fixedResponse v1alpha1.LoadBalancerFixedResponse) *cloudflare.LoadBalancerFixedResponseData {
+func convertFixedResponseToCloudflare(fixedResponse v1beta1.LoadBalancerFixedResponse) *cloudflare.LoadBalancerFixedResponseData {
 	cfFixedResponse := &cloudflare.LoadBalancerFixedResponseData{}
 
 	if fixedResponse.MessageBody != nil {
@@ -386,7 +438,7 @@ func convertFixedResponseToCloudflare(fixedResponse v1alpha1.LoadBalancerFixedRe
 }
 
 // convertRuleOverridesToCloudflare converts rule overrides to Cloudflare format
-func convertRuleOverridesToCloudflare(overrides v1alpha1.LoadBalancerRuleOverrides) *cloudflare.LoadBalancerRuleOverrides {
+func convertRuleOverridesToCloudflare(overrides v1beta1.LoadBalancerRuleOverrides) *cloudflare.LoadBalancerRuleOverrides {
 	cfOverrides := &cloudflare.LoadBalancerRuleOverrides{}
 
 	if overrides.SessionAffinity != nil {
@@ -446,7 +498,7 @@ func convertRuleOverridesToCloudflare(overrides v1alpha1.LoadBalancerRuleOverrid
 }
 
 // convertRandomSteeringToCloudflare converts random steering to Cloudflare format
-func convertRandomSteeringToCloudflare(steering v1alpha1.RandomSteering) *cloudflare.RandomSteering {
+func convertRandomSteeringToCloudflare(steering v1beta1.RandomSteering) *cloudflare.RandomSteering {
 	cfSteering := &cloudflare.RandomSteering{}
 
 	if steering.DefaultWeight != nil {
@@ -468,7 +520,7 @@ func convertRandomSteeringToCloudflare(steering v1alpha1.RandomSteering) *cloudf
 }
 
 // convertAdaptiveRoutingToCloudflare converts adaptive routing to Cloudflare format
-func convertAdaptiveRoutingToCloudflare(routing v1alpha1.AdaptiveRouting) *cloudflare.AdaptiveRouting {
+func convertAdaptiveRoutingToCloudflare(routing v1beta1.AdaptiveRouting) *cloudflare.AdaptiveRouting {
 	cfRouting := &cloudflare.AdaptiveRouting{}
 
 	if routing.FailoverAcrossPools != nil {
@@ -479,7 +531,7 @@ func convertAdaptiveRoutingToCloudflare(routing v1alpha1.AdaptiveRouting) *cloud
 }
 
 // convertLocationStrategyToCloudflare converts location strategy to Cloudflare format
-func convertLocationStrategyToCloudflare(strategy v1alpha1.LocationStrategy) *cloudflare.LocationStrategy {
+func convertLocationStrategyToCloudflare(strategy v1beta1.LocationStrategy) *cloudflare.LocationStrategy {
 	cfStrategy := &cloudflare.LocationStrategy{}
 
 	if strategy.Mode != nil {
@@ -494,8 +546,8 @@ func convertLocationStrategyToCloudflare(strategy v1alpha1.LocationStrategy) *cl
 }
 
 // GenerateLoadBalancerObservation creates observation from Cloudflare load balancer
-func GenerateLoadBalancerObservation(lb *cloudflare.LoadBalancer) v1alpha1.LoadBalancerObservation {
-	observation := v1alpha1.LoadBalancerObservation{
+func GenerateLoadBalancerObservation(lb *cloudflare.LoadBalancer) v1beta1.LoadBalancerObservation {
+	observation := v1beta1.LoadBalancerObservation{
 		ID: lb.ID,
 	}
 
@@ -513,7 +565,7 @@ func GenerateLoadBalancerObservation(lb *cloudflare.LoadBalancer) v1alpha1.LoadB
 }
 
 // IsLoadBalancerUpToDate determines if the Cloudflare load balancer is up to date
-func IsLoadBalancerUpToDate(params *v1alpha1.LoadBalancerParameters, lb *cloudflare.LoadBalancer) bool {
+func IsLoadBalancerUpToDate(params *v1beta1.LoadBalancerParameters, lb *cloudflare.LoadBalancer) bool {
 	if params.Name != nil && *params.Name != lb.Name {
 		return false
 	}
@@ -562,3 +614,592 @@ func IsLoadBalancerUpToDate(params *v1alpha1.LoadBalancerParameters, lb *cloudfl
 
 	return true
 }
+
+// GenerateMonitorObservation creates observation from Cloudflare load balancer monitor
+func GenerateMonitorObservation(monitor *cloudflare.LoadBalancerMonitor) v1beta1.LoadBalancerMonitorObservation {
+	observation := v1beta1.LoadBalancerMonitorObservation{
+		ID: monitor.ID,
+	}
+
+	if monitor.CreatedOn != nil {
+		createdOn := monitor.CreatedOn.String()
+		observation.CreatedOn = &createdOn
+	}
+
+	if monitor.ModifiedOn != nil {
+		modifiedOn := monitor.ModifiedOn.String()
+		observation.ModifiedOn = &modifiedOn
+	}
+
+	return observation
+}
+
+// GeneratePoolObservation creates observation from Cloudflare load balancer pool
+func GeneratePoolObservation(pool *cloudflare.LoadBalancerPool) v1beta1.LoadBalancerPoolObservation {
+	observation := v1beta1.LoadBalancerPoolObservation{
+		ID: pool.ID,
+	}
+
+	if pool.CreatedOn != nil {
+		createdOn := pool.CreatedOn.String()
+		observation.CreatedOn = &createdOn
+	}
+
+	if pool.ModifiedOn != nil {
+		modifiedOn := pool.ModifiedOn.String()
+		observation.ModifiedOn = &modifiedOn
+	}
+
+	// Note: Healthy status might not be directly available in the pool struct
+	// This would need to be determined from origin health checks
+
+	return observation
+}
+
+// IsMonitorUpToDate determines if the Cloudflare load balancer monitor is up to date
+func IsMonitorUpToDate(params *v1beta1.LoadBalancerMonitorParameters, monitor *cloudflare.LoadBalancerMonitor) bool {
+	if params.Description != nil && *params.Description != monitor.Description {
+		return false
+	}
+
+	if params.Description == nil && monitor.Description != "" {
+		return false
+	}
+
+	if params.Type != monitor.Type {
+		return false
+	}
+
+	if params.Method != nil && *params.Method != monitor.Method {
+		return false
+	}
+
+	if params.Path != nil && *params.Path != monitor.Path {
+		return false
+	}
+
+	if params.Timeout != nil && *params.Timeout != monitor.Timeout {
+		return false
+	}
+
+	if params.Retries != nil && *params.Retries != monitor.Retries {
+		return false
+	}
+
+	if params.Interval != nil && *params.Interval != monitor.Interval {
+		return false
+	}
+
+	if params.ConsecutiveUp != nil && *params.ConsecutiveUp != monitor.ConsecutiveUp {
+		return false
+	}
+
+	if params.ConsecutiveDown != nil && *params.ConsecutiveDown != monitor.ConsecutiveDown {
+		return false
+	}
+
+	if params.Port != nil && uint16(*params.Port) != monitor.Port {
+		return false
+	}
+
+	if params.ExpectedBody != nil && *params.ExpectedBody != monitor.ExpectedBody {
+		return false
+	}
+
+	if params.ExpectedCodes != nil && *params.ExpectedCodes != monitor.ExpectedCodes {
+		return false
+	}
+
+	if params.FollowRedirects != nil && *params.FollowRedirects != monitor.FollowRedirects {
+		return false
+	}
+
+	if params.AllowInsecure != nil && *params.AllowInsecure != monitor.AllowInsecure {
+		return false
+	}
+
+	if params.ProbeZone != nil && *params.ProbeZone != monitor.ProbeZone {
+		return false
+	}
+
+	return true
+}
+
+// CreateMonitor creates a new Cloudflare load balancer monitor
+func (c *monitorClient) CreateMonitor(ctx context.Context, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+	monitor := cloudflare.LoadBalancerMonitor{
+		Type: params.Type,
+	}
+
+	if params.Description != nil {
+		monitor.Description = *params.Description
+	}
+
+	if params.Method != nil {
+		monitor.Method = *params.Method
+	}
+
+	if params.Path != nil {
+		monitor.Path = *params.Path
+	}
+
+	if params.Header != nil {
+		monitor.Header = params.Header
+	}
+
+	if params.Timeout != nil {
+		monitor.Timeout = *params.Timeout
+	}
+
+	if params.Retries != nil {
+		monitor.Retries = *params.Retries
+	}
+
+	if params.Interval != nil {
+		monitor.Interval = *params.Interval
+	}
+
+	if params.ConsecutiveUp != nil {
+		monitor.ConsecutiveUp = *params.ConsecutiveUp
+	}
+
+	if params.ConsecutiveDown != nil {
+		monitor.ConsecutiveDown = *params.ConsecutiveDown
+	}
+
+	if params.Port != nil {
+		monitor.Port = uint16(*params.Port)
+	}
+
+	if params.ExpectedBody != nil {
+		monitor.ExpectedBody = *params.ExpectedBody
+	}
+
+	if params.ExpectedCodes != nil {
+		monitor.ExpectedCodes = *params.ExpectedCodes
+	}
+
+	if params.FollowRedirects != nil {
+		monitor.FollowRedirects = *params.FollowRedirects
+	}
+
+	if params.AllowInsecure != nil {
+		monitor.AllowInsecure = *params.AllowInsecure
+	}
+
+	if params.ProbeZone != nil {
+		monitor.ProbeZone = *params.ProbeZone
+	}
+
+	var rc *cloudflare.ResourceContainer
+	if params.Account != nil {
+		rc = cloudflare.AccountIdentifier(*params.Account)
+	} else if params.Zone != nil {
+		rc = cloudflare.ZoneIdentifier(*params.Zone)
+	} else {
+		return nil, errors.New("either Account or Zone must be specified for load balancer monitor")
+	}
+
+	createParams := cloudflare.CreateLoadBalancerMonitorParams{
+		LoadBalancerMonitor: monitor,
+	}
+
+	result, err := c.api.CreateLoadBalancerMonitor(ctx, rc, createParams)
+	if err != nil {
+		return nil, errors.Wrap(err, errCreateLoadBalancerMonitor)
+	}
+
+	return &result, nil
+}
+
+// GetMonitor retrieves a Cloudflare load balancer monitor
+func (c *monitorClient) GetMonitor(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+	var rc *cloudflare.ResourceContainer
+	if params.Account != nil {
+		rc = cloudflare.AccountIdentifier(*params.Account)
+	} else if params.Zone != nil {
+		rc = cloudflare.ZoneIdentifier(*params.Zone)
+	} else {
+		return nil, errors.New("either Account or Zone must be specified for load balancer monitor")
+	}
+
+	monitor, err := c.api.GetLoadBalancerMonitor(ctx, rc, monitorID)
+	if err != nil {
+		return nil, errors.Wrap(err, errGetLoadBalancerMonitor)
+	}
+
+	return &monitor, nil
+}
+
+// UpdateMonitor updates a Cloudflare load balancer monitor
+func (c *monitorClient) UpdateMonitor(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+	monitor := cloudflare.LoadBalancerMonitor{
+		ID:   monitorID,
+		Type: params.Type,
+	}
+
+	if params.Description != nil {
+		monitor.Description = *params.Description
+	}
+
+	if params.Method != nil {
+		monitor.Method = *params.Method
+	}
+
+	if params.Path != nil {
+		monitor.Path = *params.Path
+	}
+
+	if params.Header != nil {
+		monitor.Header = params.Header
+	}
+
+	if params.Timeout != nil {
+		monitor.Timeout = *params.Timeout
+	}
+
+	if params.Retries != nil {
+		monitor.Retries = *params.Retries
+	}
+
+	if params.Interval != nil {
+		monitor.Interval = *params.Interval
+	}
+
+	if params.ConsecutiveUp != nil {
+		monitor.ConsecutiveUp = *params.ConsecutiveUp
+	}
+
+	if params.ConsecutiveDown != nil {
+		monitor.ConsecutiveDown = *params.ConsecutiveDown
+	}
+
+	if params.Port != nil {
+		monitor.Port = uint16(*params.Port)
+	}
+
+	if params.ExpectedBody != nil {
+		monitor.ExpectedBody = *params.ExpectedBody
+	}
+
+	if params.ExpectedCodes != nil {
+		monitor.ExpectedCodes = *params.ExpectedCodes
+	}
+
+	if params.FollowRedirects != nil {
+		monitor.FollowRedirects = *params.FollowRedirects
+	}
+
+	if params.AllowInsecure != nil {
+		monitor.AllowInsecure = *params.AllowInsecure
+	}
+
+	if params.ProbeZone != nil {
+		monitor.ProbeZone = *params.ProbeZone
+	}
+
+	var rc *cloudflare.ResourceContainer
+	if params.Account != nil {
+		rc = cloudflare.AccountIdentifier(*params.Account)
+	} else if params.Zone != nil {
+		rc = cloudflare.ZoneIdentifier(*params.Zone)
+	} else {
+		return nil, errors.New("either Account or Zone must be specified for load balancer monitor")
+	}
+
+	updateParams := cloudflare.UpdateLoadBalancerMonitorParams{
+		LoadBalancerMonitor: monitor,
+	}
+
+	result, err := c.api.UpdateLoadBalancerMonitor(ctx, rc, updateParams)
+	if err != nil {
+		return nil, errors.Wrap(err, errUpdateLoadBalancerMonitor)
+	}
+
+	return &result, nil
+}
+
+// DeleteMonitor deletes a Cloudflare load balancer monitor
+func (c *monitorClient) DeleteMonitor(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) error {
+	var rc *cloudflare.ResourceContainer
+	if params.Account != nil {
+		rc = cloudflare.AccountIdentifier(*params.Account)
+	} else if params.Zone != nil {
+		rc = cloudflare.ZoneIdentifier(*params.Zone)
+	} else {
+		return errors.New("either Account or Zone must be specified for load balancer monitor")
+	}
+
+	err := c.api.DeleteLoadBalancerMonitor(ctx, rc, monitorID)
+	if err != nil {
+		return errors.Wrap(err, errDeleteLoadBalancerMonitor)
+	}
+
+	return nil
+}
+
+// IsMonitorNotFound checks if error indicates monitor not found
+func IsMonitorNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Check for Cloudflare API not found errors
+	if cfErr := (*cloudflare.Error)(nil); errors.As(err, &cfErr) {
+		return cfErr.StatusCode == 404
+	}
+	return false
+}
+
+// CreatePool creates a new Cloudflare load balancer pool
+func (c *poolClient) CreatePool(ctx context.Context, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+	pool := cloudflare.LoadBalancerPool{}
+
+	if params.Name != nil {
+		pool.Name = *params.Name
+	}
+
+	if params.Description != nil {
+		pool.Description = *params.Description
+	}
+
+	if params.Enabled != nil {
+		pool.Enabled = *params.Enabled
+	}
+
+	if params.MinimumOrigins != nil {
+		pool.MinimumOrigins = params.MinimumOrigins
+	}
+
+	if params.Monitor != nil {
+		pool.Monitor = *params.Monitor
+	}
+
+	if params.NotificationEmail != nil {
+		pool.NotificationEmail = *params.NotificationEmail
+	}
+
+	if len(params.Origins) > 0 {
+		pool.Origins = convertOriginsToCloudflare(params.Origins)
+	}
+
+	// Note: OriginSteering may not be supported in the current cloudflare-go version
+	// if params.OriginSteering != nil {
+	//     pool.OriginSteering = convertOriginSteeringToCloudflare(*params.OriginSteering)
+	// }
+
+	if len(params.CheckRegions) > 0 {
+		pool.CheckRegions = params.CheckRegions
+	}
+
+	if params.Latitude != nil {
+		lat := float32(*params.Latitude)
+		pool.Latitude = &lat
+	}
+
+	if params.Longitude != nil {
+		lng := float32(*params.Longitude)
+		pool.Longitude = &lng
+	}
+
+	// Pools are account-level resources
+	rc := cloudflare.AccountIdentifier("") // Empty string means use the account from credentials
+
+	createParams := cloudflare.CreateLoadBalancerPoolParams{
+		LoadBalancerPool: pool,
+	}
+
+	result, err := c.api.CreateLoadBalancerPool(ctx, rc, createParams)
+	if err != nil {
+		return nil, errors.Wrap(err, errCreateLoadBalancerPool)
+	}
+
+	return &result, nil
+}
+
+// GetPool retrieves a Cloudflare load balancer pool
+func (c *poolClient) GetPool(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+	// Pools are account-level resources
+	rc := cloudflare.AccountIdentifier("") // Empty string means use the account from credentials
+
+	pool, err := c.api.GetLoadBalancerPool(ctx, rc, poolID)
+	if err != nil {
+		return nil, errors.Wrap(err, errGetLoadBalancerPool)
+	}
+
+	return &pool, nil
+}
+
+// UpdatePool updates a Cloudflare load balancer pool
+func (c *poolClient) UpdatePool(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+	pool := cloudflare.LoadBalancerPool{
+		ID: poolID,
+	}
+
+	if params.Name != nil {
+		pool.Name = *params.Name
+	}
+
+	if params.Description != nil {
+		pool.Description = *params.Description
+	}
+
+	if params.Enabled != nil {
+		pool.Enabled = *params.Enabled
+	}
+
+	if params.MinimumOrigins != nil {
+		pool.MinimumOrigins = params.MinimumOrigins
+	}
+
+	if params.Monitor != nil {
+		pool.Monitor = *params.Monitor
+	}
+
+	if params.NotificationEmail != nil {
+		pool.NotificationEmail = *params.NotificationEmail
+	}
+
+	if len(params.Origins) > 0 {
+		pool.Origins = convertOriginsToCloudflare(params.Origins)
+	}
+
+	// Note: OriginSteering may not be supported in the current cloudflare-go version
+	// if params.OriginSteering != nil {
+	//     pool.OriginSteering = convertOriginSteeringToCloudflare(*params.OriginSteering)
+	// }
+
+	if len(params.CheckRegions) > 0 {
+		pool.CheckRegions = params.CheckRegions
+	}
+
+	if params.Latitude != nil {
+		lat := float32(*params.Latitude)
+		pool.Latitude = &lat
+	}
+
+	if params.Longitude != nil {
+		lng := float32(*params.Longitude)
+		pool.Longitude = &lng
+	}
+
+	// Pools are account-level resources
+	rc := cloudflare.AccountIdentifier("") // Empty string means use the account from credentials
+
+	updateParams := cloudflare.UpdateLoadBalancerPoolParams{
+		LoadBalancer: pool,
+	}
+
+	result, err := c.api.UpdateLoadBalancerPool(ctx, rc, updateParams)
+	if err != nil {
+		return nil, errors.Wrap(err, errUpdateLoadBalancerPool)
+	}
+
+	return &result, nil
+}
+
+// DeletePool deletes a Cloudflare load balancer pool
+func (c *poolClient) DeletePool(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) error {
+	// Pools are account-level resources
+	rc := cloudflare.AccountIdentifier("") // Empty string means use the account from credentials
+
+	err := c.api.DeleteLoadBalancerPool(ctx, rc, poolID)
+	if err != nil {
+		return errors.Wrap(err, errDeleteLoadBalancerPool)
+	}
+
+	return nil
+}
+
+// IsPoolNotFound checks if error indicates pool not found
+func IsPoolNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Check for Cloudflare API not found errors
+	if cfErr := (*cloudflare.Error)(nil); errors.As(err, &cfErr) {
+		return cfErr.StatusCode == 404
+	}
+	return false
+}
+
+// IsPoolUpToDate determines if the Cloudflare load balancer pool is up to date
+func IsPoolUpToDate(params *v1beta1.LoadBalancerPoolParameters, pool *cloudflare.LoadBalancerPool) bool {
+	if params.Name != nil && *params.Name != pool.Name {
+		return false
+	}
+
+	if params.Description != nil && *params.Description != pool.Description {
+		return false
+	}
+
+	if params.Description == nil && pool.Description != "" {
+		return false
+	}
+
+	if params.Enabled != nil && *params.Enabled != pool.Enabled {
+		return false
+	}
+
+	if params.MinimumOrigins != nil && pool.MinimumOrigins != nil && *params.MinimumOrigins != *pool.MinimumOrigins {
+		return false
+	}
+
+	if params.Monitor != nil && *params.Monitor != pool.Monitor {
+		return false
+	}
+
+	if params.NotificationEmail != nil && *params.NotificationEmail != pool.NotificationEmail {
+		return false
+	}
+
+	if params.NotificationEmail == nil && pool.NotificationEmail != "" {
+		return false
+	}
+
+	// For origins and other complex fields, we'll do basic length checks
+	if len(params.Origins) != len(pool.Origins) {
+		return false
+	}
+
+	return true
+}
+
+// convertOriginsToCloudflare converts origins to Cloudflare format
+func convertOriginsToCloudflare(origins []v1beta1.LoadBalancerOrigin) []cloudflare.LoadBalancerOrigin {
+	var cfOrigins []cloudflare.LoadBalancerOrigin
+
+	for _, origin := range origins {
+		cfOrigin := cloudflare.LoadBalancerOrigin{
+			Name:    origin.Name,
+			Address: origin.Address,
+		}
+
+		if origin.Enabled != nil {
+			cfOrigin.Enabled = *origin.Enabled
+		}
+
+		if origin.Weight != nil {
+			cfOrigin.Weight = *origin.Weight
+		}
+
+		if origin.Header != nil {
+			cfOrigin.Header = origin.Header
+		}
+
+		cfOrigins = append(cfOrigins, cfOrigin)
+	}
+
+	return cfOrigins
+}
+
+// convertOriginSteeringToCloudflare converts origin steering to Cloudflare format
+// Note: Commented out as OriginSteering may not be supported in current cloudflare-go version
+// func convertOriginSteeringToCloudflare(steering v1beta1.OriginSteering) *cloudflare.OriginSteering {
+//     cfSteering := &cloudflare.OriginSteering{}
+// 
+//     if steering.Policy != nil {
+//         cfSteering.Policy = *steering.Policy
+//     }
+// 
+//     return cfSteering
+// }

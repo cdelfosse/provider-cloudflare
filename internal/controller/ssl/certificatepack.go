@@ -34,7 +34,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/ssl/certificatepack"
 )
@@ -49,14 +49,14 @@ const (
 
 // SetupCertificatePackController adds a controller that reconciles Certificate Pack managed resources.
 func SetupCertificatePackController(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.CertificatePackKind)
+	name := managed.ControllerName(v1beta1.CertificatePackKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.CertificatePackGroupVersionKind),
+		resource.ManagedKind(v1beta1.CertificatePackGroupVersionKind),
 		managed.WithExternalConnecter(&certificatePackConnector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (*cloudflare.API, error) {
@@ -72,7 +72,7 @@ func SetupCertificatePackController(mgr ctrl.Manager, l logging.Logger, rl workq
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.CertificatePack{}).
+		For(&v1beta1.CertificatePack{}).
 		Complete(r)
 }
 
@@ -88,7 +88,7 @@ type certificatePackConnector struct {
 // 2. Getting the credentials specified by the ProviderConfig.
 // 3. Using the credentials to form a client.
 func (c *certificatePackConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.CertificatePack)
+	_, ok := mg.(*v1beta1.CertificatePack)
 	if !ok {
 		return nil, errors.New(errNotCertificatePack)
 	}
@@ -118,7 +118,7 @@ type certificatePackExternal struct {
 }
 
 func (c *certificatePackExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.CertificatePack)
+	cr, ok := mg.(*v1beta1.CertificatePack)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotCertificatePack)
 	}
@@ -148,7 +148,7 @@ func (c *certificatePackExternal) Observe(ctx context.Context, mg resource.Manag
 }
 
 func (c *certificatePackExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.CertificatePack)
+	cr, ok := mg.(*v1beta1.CertificatePack)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotCertificatePack)
 	}
@@ -170,7 +170,7 @@ func (c *certificatePackExternal) Create(ctx context.Context, mg resource.Manage
 }
 
 func (c *certificatePackExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.CertificatePack)
+	cr, ok := mg.(*v1beta1.CertificatePack)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotCertificatePack)
 	}
@@ -190,7 +190,7 @@ func (c *certificatePackExternal) Update(ctx context.Context, mg resource.Manage
 }
 
 func (c *certificatePackExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.CertificatePack)
+	cr, ok := mg.(*v1beta1.CertificatePack)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotCertificatePack)
 	}

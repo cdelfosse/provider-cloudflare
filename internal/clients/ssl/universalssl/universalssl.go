@@ -23,7 +23,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -44,7 +44,7 @@ func NewClient(client UniversalSSLAPI) *CloudflareUniversalSSLClient {
 }
 
 // Get retrieves Universal SSL settings for a zone.
-func (c *CloudflareUniversalSSLClient) Get(ctx context.Context, zoneID string) (*v1alpha1.UniversalSSLObservation, error) {
+func (c *CloudflareUniversalSSLClient) Get(ctx context.Context, zoneID string) (*v1beta1.UniversalSSLObservation, error) {
 	settings, err := c.client.UniversalSSLSettingDetails(ctx, zoneID)
 	if err != nil {
 		if isNotFound(err) {
@@ -57,7 +57,7 @@ func (c *CloudflareUniversalSSLClient) Get(ctx context.Context, zoneID string) (
 }
 
 // Update updates Universal SSL settings for a zone.
-func (c *CloudflareUniversalSSLClient) Update(ctx context.Context, params v1alpha1.UniversalSSLParameters) (*v1alpha1.UniversalSSLObservation, error) {
+func (c *CloudflareUniversalSSLClient) Update(ctx context.Context, params v1beta1.UniversalSSLParameters) (*v1beta1.UniversalSSLObservation, error) {
 	settings := convertParametersToUniversalSSL(params)
 	
 	result, err := c.client.EditUniversalSSLSetting(ctx, params.Zone, settings)
@@ -69,7 +69,7 @@ func (c *CloudflareUniversalSSLClient) Update(ctx context.Context, params v1alph
 }
 
 // IsUpToDate checks if the Universal SSL settings are up to date.
-func (c *CloudflareUniversalSSLClient) IsUpToDate(ctx context.Context, params v1alpha1.UniversalSSLParameters, obs v1alpha1.UniversalSSLObservation) (bool, error) {
+func (c *CloudflareUniversalSSLClient) IsUpToDate(ctx context.Context, params v1beta1.UniversalSSLParameters, obs v1beta1.UniversalSSLObservation) (bool, error) {
 	// Compare configurable parameters
 	if obs.Enabled != nil && params.Enabled != *obs.Enabled {
 		return false, nil
@@ -79,15 +79,15 @@ func (c *CloudflareUniversalSSLClient) IsUpToDate(ctx context.Context, params v1
 }
 
 // convertParametersToUniversalSSL converts UniversalSSLParameters to cloudflare.UniversalSSLSetting.
-func convertParametersToUniversalSSL(params v1alpha1.UniversalSSLParameters) cloudflare.UniversalSSLSetting {
+func convertParametersToUniversalSSL(params v1beta1.UniversalSSLParameters) cloudflare.UniversalSSLSetting {
 	return cloudflare.UniversalSSLSetting{
 		Enabled: params.Enabled,
 	}
 }
 
 // convertUniversalSSLToObservation converts cloudflare.UniversalSSLSetting to UniversalSSLObservation.
-func convertUniversalSSLToObservation(settings cloudflare.UniversalSSLSetting) *v1alpha1.UniversalSSLObservation {
-	obs := &v1alpha1.UniversalSSLObservation{
+func convertUniversalSSLToObservation(settings cloudflare.UniversalSSLSetting) *v1beta1.UniversalSSLObservation {
+	obs := &v1beta1.UniversalSSLObservation{
 		Enabled: &settings.Enabled,
 	}
 

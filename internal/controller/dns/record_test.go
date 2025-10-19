@@ -25,8 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/dns/v1alpha1"
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/dns/v1beta1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	records "github.com/rossigee/provider-cloudflare/internal/clients/records"
 	"github.com/rossigee/provider-cloudflare/internal/clients/records/fake"
@@ -50,26 +50,26 @@ import (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-type recordModifier func(*v1alpha1.Record)
+type recordModifier func(*v1beta1.Record)
 
 func withType(typ string) recordModifier {
-	return func(r *v1alpha1.Record) { r.Spec.ForProvider.Type = &typ }
+	return func(r *v1beta1.Record) { r.Spec.ForProvider.Type = &typ }
 }
 
 func withTTL(ttl int64) recordModifier {
-	return func(r *v1alpha1.Record) { r.Spec.ForProvider.TTL = &ttl }
+	return func(r *v1beta1.Record) { r.Spec.ForProvider.TTL = &ttl }
 }
 
 func withExternalName(recordID string) recordModifier {
-	return func(r *v1alpha1.Record) { meta.SetExternalName(r, recordID) }
+	return func(r *v1beta1.Record) { meta.SetExternalName(r, recordID) }
 }
 
 func withZone(zoneID string) recordModifier {
-	return func(r *v1alpha1.Record) { r.Spec.ForProvider.Zone = &zoneID }
+	return func(r *v1beta1.Record) { r.Spec.ForProvider.Zone = &zoneID }
 }
 
-func record(m ...recordModifier) *v1alpha1.Record {
-	cr := &v1alpha1.Record{}
+func record(m ...recordModifier) *v1beta1.Record {
+	cr := &v1beta1.Record{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -112,8 +112,8 @@ func TestConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.Record{
-					Spec: v1alpha1.RecordSpec{
+				mg: &v1beta1.Record{
+					Spec: v1beta1.RecordSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -126,7 +126,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -142,8 +142,8 @@ func TestConnect(t *testing.T) {
 				newClient: records.NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.Record{
-					Spec: v1alpha1.RecordSpec{
+				mg: &v1beta1.Record{
+					Spec: v1beta1.RecordSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -208,7 +208,7 @@ func TestObserve(t *testing.T) {
 				client: &fake.MockClient{},
 			},
 			args: args{
-				mg: &v1alpha1.Record{},
+				mg: &v1beta1.Record{},
 			},
 			want: want{
 				o: managed.ExternalObservation{ResourceExists: false},

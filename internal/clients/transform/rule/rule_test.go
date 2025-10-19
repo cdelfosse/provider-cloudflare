@@ -24,12 +24,12 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/utils/ptr"
 
-	"github.com/rossigee/provider-cloudflare/apis/transform/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/transform/v1beta1"
 )
 
 func TestUpToDate(t *testing.T) {
 	type args struct {
-		spec *v1alpha1.RuleParameters
+		spec *v1beta1.RuleParameters
 		rule cloudflare.RulesetRule
 	}
 
@@ -52,7 +52,7 @@ func TestUpToDate(t *testing.T) {
 		"UpToDateExpressionDifferent": {
 			reason: "UpToDate should return false if the expression differs",
 			args: args{
-				spec: &v1alpha1.RuleParameters{
+				spec: &v1beta1.RuleParameters{
 					Expression: `http.request.uri.path eq "/old"`,
 					Action:     "rewrite",
 				},
@@ -68,7 +68,7 @@ func TestUpToDate(t *testing.T) {
 		"UpToDateActionDifferent": {
 			reason: "UpToDate should return false if the action differs",
 			args: args{
-				spec: &v1alpha1.RuleParameters{
+				spec: &v1beta1.RuleParameters{
 					Expression: `http.request.uri.path eq "/test"`,
 					Action:     "rewrite",
 				},
@@ -84,7 +84,7 @@ func TestUpToDate(t *testing.T) {
 		"UpToDateDescriptionDifferent": {
 			reason: "UpToDate should return false if the description differs",
 			args: args{
-				spec: &v1alpha1.RuleParameters{
+				spec: &v1beta1.RuleParameters{
 					Expression:  `http.request.uri.path eq "/test"`,
 					Action:      "rewrite",
 					Description: ptr.To("Old description"),
@@ -102,7 +102,7 @@ func TestUpToDate(t *testing.T) {
 		"UpToDateEnabledDifferent": {
 			reason: "UpToDate should return false if the enabled status differs",
 			args: args{
-				spec: &v1alpha1.RuleParameters{
+				spec: &v1beta1.RuleParameters{
 					Expression: `http.request.uri.path eq "/test"`,
 					Action:     "rewrite",
 					Enabled:    ptr.To(true),
@@ -120,7 +120,7 @@ func TestUpToDate(t *testing.T) {
 		"UpToDateIdentical": {
 			reason: "UpToDate should return true if all fields match",
 			args: args{
-				spec: &v1alpha1.RuleParameters{
+				spec: &v1beta1.RuleParameters{
 					Expression:  `http.request.uri.path eq "/test"`,
 					Action:      "rewrite",
 					Description: ptr.To("Test rule"),
@@ -140,7 +140,7 @@ func TestUpToDate(t *testing.T) {
 		"UpToDateActionParametersNilSpec": {
 			reason: "UpToDate should return false if spec has no action parameters but rule does",
 			args: args{
-				spec: &v1alpha1.RuleParameters{
+				spec: &v1beta1.RuleParameters{
 					Expression: `http.request.uri.path eq "/test"`,
 					Action:     "rewrite",
 				},
@@ -159,11 +159,11 @@ func TestUpToDate(t *testing.T) {
 		"UpToDateActionParametersNilRule": {
 			reason: "UpToDate should return false if rule has no action parameters but spec does",
 			args: args{
-				spec: &v1alpha1.RuleParameters{
+				spec: &v1beta1.RuleParameters{
 					Expression: `http.request.uri.path eq "/test"`,
 					Action:     "rewrite",
-					ActionParameters: &v1alpha1.RuleActionParameters{
-						URI: &v1alpha1.URITransform{},
+					ActionParameters: &v1beta1.RuleActionParameters{
+						URI: &v1beta1.URITransform{},
 					},
 				},
 				rule: cloudflare.RulesetRule{
@@ -200,7 +200,7 @@ func TestGenerateObservation(t *testing.T) {
 
 	obs := GenerateObservation(rule, rulesetID)
 
-	expectedObs := v1alpha1.RuleObservation{
+	expectedObs := v1beta1.RuleObservation{
 		ID:        "test-rule-id",
 		RulesetID: "test-ruleset-id",
 		Version:   "1",

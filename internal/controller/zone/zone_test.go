@@ -37,42 +37,33 @@ import (
 	rtfake "github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
-	"github.com/rossigee/provider-cloudflare/apis/zone/v1alpha1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
+	zonev1beta1 "github.com/rossigee/provider-cloudflare/apis/zone/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	zones "github.com/rossigee/provider-cloudflare/internal/clients/zones"
 	"github.com/rossigee/provider-cloudflare/internal/clients/zones/fake"
 )
 
-type zoneModifier func(*v1alpha1.Zone)
+type zoneModifier func(*zonev1beta1.Zone)
 
 func withAccount(sValue *string) zoneModifier {
-	return func(r *v1alpha1.Zone) { r.Spec.ForProvider.AccountID = sValue }
-}
-func withEdgeCacheTTL(sValue *int64) zoneModifier {
-	return func(r *v1alpha1.Zone) { r.Spec.ForProvider.Settings.EdgeCacheTTL = sValue }
+	return func(r *zonev1beta1.Zone) { r.Spec.ForProvider.AccountID = sValue }
 }
 func withExternalName(zoneID string) zoneModifier {
-	return func(r *v1alpha1.Zone) { meta.SetExternalName(r, zoneID) }
-}
-func withNS(sValue []string) zoneModifier {
-	return func(r *v1alpha1.Zone) { r.Spec.ForProvider.VanityNameServers = sValue }
+	return func(r *zonev1beta1.Zone) { meta.SetExternalName(r, zoneID) }
 }
 func withPaused(paused *bool) zoneModifier {
-	return func(r *v1alpha1.Zone) { r.Spec.ForProvider.Paused = paused }
+	return func(r *zonev1beta1.Zone) { r.Spec.ForProvider.Paused = paused }
 }
 func withPlan(sValue *string) zoneModifier {
-	return func(r *v1alpha1.Zone) { r.Spec.ForProvider.PlanID = sValue }
+	return func(r *zonev1beta1.Zone) { r.Spec.ForProvider.PlanID = sValue }
 }
 func withType(typ *string) zoneModifier {
-	return func(r *v1alpha1.Zone) { r.Spec.ForProvider.Type = typ }
-}
-func withZeroRTT(sValue *string) zoneModifier {
-	return func(r *v1alpha1.Zone) { r.Spec.ForProvider.Settings.ZeroRTT = sValue }
+	return func(r *zonev1beta1.Zone) { r.Spec.ForProvider.Type = typ }
 }
 
-func zone(m ...zoneModifier) *v1alpha1.Zone {
-	cr := &v1alpha1.Zone{}
+func zone(m ...zoneModifier) *zonev1beta1.Zone {
+	cr := &zonev1beta1.Zone{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -115,8 +106,8 @@ func TestConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.Zone{
-					Spec: v1alpha1.ZoneSpec{
+				mg: &zonev1beta1.Zone{
+					Spec: zonev1beta1.ZoneSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -129,7 +120,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -145,8 +136,8 @@ func TestConnect(t *testing.T) {
 				newClient: zones.NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.Zone{
-					Spec: v1alpha1.ZoneSpec{
+				mg: &zonev1beta1.Zone{
+					Spec: zonev1beta1.ZoneSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -226,7 +217,7 @@ func TestObserve(t *testing.T) {
 				client: fake.MockClient{},
 			},
 			args: args{
-				mg: &v1alpha1.Zone{},
+				mg: &zonev1beta1.Zone{},
 			},
 			want: want{
 				o: managed.ExternalObservation{ResourceExists: false},
@@ -273,10 +264,8 @@ func TestObserve(t *testing.T) {
 					// Paused is different than input params, this will trigger
 					// ResourceUpToDate: false
 					withPaused(ptr.To(false)),
-					withEdgeCacheTTL(ptr.To[int64](7200)),
 					withAccount(ptr.To("a1234")),
 					withPlan(ptr.To("a1235")),
-					withNS([]string{"ns1.lele.com", "ns2.woowoo.org"}),
 				),
 			},
 			want: want{
@@ -311,14 +300,13 @@ func TestObserve(t *testing.T) {
 					withPaused(ptr.To(false)),
 					withAccount(ptr.To("a1234")),
 					withPlan(ptr.To("a1235")),
-					withNS([]string{"ns1.lele.com", "ns2.woowoo.org"}),
 				),
 			},
 			want: want{
 				o: managed.ExternalObservation{
 					ResourceExists:          true,
 					ResourceUpToDate:        false,
-					ResourceLateInitialized: true,
+					ResourceLateInitialized: false,
 				},
 				err: nil,
 			},
@@ -344,11 +332,8 @@ func TestObserve(t *testing.T) {
 				mg: zone(
 					withExternalName("1234beef"),
 					withPaused(ptr.To(true)),
-					withEdgeCacheTTL(ptr.To[int64](7200)),
-					withZeroRTT(ptr.To("off")),
 					withAccount(ptr.To("a1234")),
 					withPlan(ptr.To("a1235")),
-					withNS([]string{"ns1.lele.com", "ns2.woowoo.org"}),
 				),
 			},
 			want: want{
@@ -502,7 +487,7 @@ func TestUpdate(t *testing.T) {
 				client: fake.MockClient{},
 			},
 			args: args{
-				mg: &v1alpha1.Zone{},
+				mg: &zonev1beta1.Zone{},
 			},
 			want: want{
 				o:   managed.ExternalUpdate{},
@@ -578,7 +563,6 @@ func TestUpdate(t *testing.T) {
 					withExternalName("1234beef"),
 					withPaused(ptr.To(true)),
 					withType(ptr.To("full")),
-					withEdgeCacheTTL(ptr.To[int64](900)),
 				),
 			},
 			want: want{
@@ -639,7 +623,7 @@ func TestDelete(t *testing.T) {
 				client: fake.MockClient{},
 			},
 			args: args{
-				mg: &v1alpha1.Zone{},
+				mg: &zonev1beta1.Zone{},
 			},
 			want: want{
 				err: errors.New(errZoneDeletion),
@@ -677,7 +661,6 @@ func TestDelete(t *testing.T) {
 					withExternalName("1234beef"),
 					withPaused(ptr.To(true)),
 					withType(ptr.To("full")),
-					withEdgeCacheTTL(ptr.To[int64](900)),
 				),
 			},
 			want: want{

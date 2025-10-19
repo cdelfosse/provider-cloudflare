@@ -16,7 +16,7 @@ spec:
     listKind: LoadBalancerList
     plural: loadbalancers
     singular: loadbalancer
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
@@ -25,11 +25,14 @@ spec:
     - jsonPath: .status.conditions[?(@.type=='Synced')].status
       name: SYNCED
       type: string
-    - jsonPath: .status.atProvider.name
-      name: NAME
+    - jsonPath: .status.atProvider.id
+      name: ID
       type: string
-    - jsonPath: .status.atProvider.status
-      name: STATUS
+    - jsonPath: .spec.forProvider.zone
+      name: ZONE
+      type: string
+    - jsonPath: .spec.forProvider.steeringPolicy
+      name: STEERING
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: AGE
@@ -37,8 +40,8 @@ spec:
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: A LoadBalancer provides load balancing and traffic steering for
-          web applications
+        description: LoadBalancer is a managed resource that represents a Cloudflare
+          Load Balancer
         properties:
           apiVersion:
             description: |-
@@ -58,7 +61,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: A LoadBalancerSpec defines the desired state of a LoadBalancer.
+            description: LoadBalancerSpec defines the desired state of LoadBalancer
             properties:
               deletionPolicy:
                 default: Delete
@@ -78,6 +81,100 @@ spec:
                 description: LoadBalancerParameters define the desired state of a
                   Cloudflare Load Balancer
                 properties:
+                  adaptiveRouting:
+                    description: AdaptiveRouting contains adaptive routing configuration.
+                    properties:
+                      failoverAcrossPools:
+                        description: FailoverAcrossPools enables failover across pools
+                          when no healthy origins exist.
+                        type: boolean
+                    type: object
+                  countryPools:
+                    additionalProperties:
+                      items:
+                        type: string
+                      type: array
+                    description: CountryPools maps countries to pool lists for country-steering.
+                    type: object
+                  defaultPoolRefs:
+                    description: DefaultPoolRefs is a list of references to LoadBalancerPool
+                      resources.
+                    items:
+                      description: A Reference to a named object.
+                      properties:
+                        name:
+                          description: Name of the referenced object.
+                          type: string
+                        policy:
+                          description: Policies for referencing.
+                          properties:
+                            resolution:
+                              default: Required
+                              description: |-
+                                Resolution specifies whether resolution of this reference is required.
+                                The default is 'Required', which means the reconcile will fail if the
+                                reference cannot be resolved. 'Optional' means this reference will be
+                                a no-op if it cannot be resolved.
+                              enum:
+                              - Required
+                              - Optional
+                              type: string
+                            resolve:
+                              description: |-
+                                Resolve specifies when this reference should be resolved. The default
+                                is 'IfNotPresent', which will attempt to resolve the reference only when
+                                the corresponding field is not present. Use 'Always' to resolve the
+                                reference on every reconcile.
+                              enum:
+                              - Always
+                              - IfNotPresent
+                              type: string
+                          type: object
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  defaultPoolSelector:
+                    description: DefaultPoolSelector selects references to LoadBalancerPool
+                      resources.
+                    properties:
+                      matchControllerRef:
+                        description: |-
+                          MatchControllerRef ensures an object with the same controller reference
+                          as the selecting object is selected.
+                        type: boolean
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: MatchLabels ensures an object with matching labels
+                          is selected.
+                        type: object
+                      policy:
+                        description: Policies for selection.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    type: object
                   defaultPools:
                     description: DefaultPools is the list of pool IDs ordered by their
                       failover priority.
@@ -95,13 +192,122 @@ spec:
                     description: FallbackPool is the pool ID to use when all other
                       pools are unhealthy.
                     type: string
+                  fallbackPoolRef:
+                    description: FallbackPoolRef is a reference to a LoadBalancerPool
+                      resource to use as fallback.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  fallbackPoolSelector:
+                    description: FallbackPoolSelector selects a reference to a LoadBalancerPool
+                      resource as fallback.
+                    properties:
+                      matchControllerRef:
+                        description: |-
+                          MatchControllerRef ensures an object with the same controller reference
+                          as the selecting object is selected.
+                        type: boolean
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: MatchLabels ensures an object with matching labels
+                          is selected.
+                        type: object
+                      policy:
+                        description: Policies for selection.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    type: object
+                  locationStrategy:
+                    description: LocationStrategy contains location strategy configuration.
+                    properties:
+                      mode:
+                        description: |-
+                          Mode determines how to get the client IP for location-based steering.
+                          Valid values: "pop", "resolver_ip"
+                        type: string
+                      preferECSRegion:
+                        description: PreferECSRegion controls whether to prefer the
+                          ECS region.
+                        type: string
+                    type: object
                   name:
                     description: Name is the DNS name for this load balancer.
                     type: string
+                  popPools:
+                    additionalProperties:
+                      items:
+                        type: string
+                      type: array
+                    description: PopPools maps Cloudflare PoPs to pool lists for pop-steering.
+                    type: object
                   proxied:
                     description: Proxied indicates whether traffic should be proxied
                       through Cloudflare.
                     type: boolean
+                  randomSteering:
+                    description: RandomSteering contains random steering configuration.
+                    properties:
+                      defaultWeight:
+                        description: DefaultWeight is the default weight for pools
+                          not specified in PoolWeights.
+                        type: string
+                      poolWeights:
+                        additionalProperties:
+                          type: string
+                        description: PoolWeights maps pool IDs to their weights.
+                        type: object
+                    type: object
                   regionPools:
                     additionalProperties:
                       items:
@@ -109,19 +315,220 @@ spec:
                       type: array
                     description: RegionPools maps regions to pool lists for geo-steering.
                     type: object
+                  rules:
+                    description: Rules contains traffic steering rules for advanced
+                      routing.
+                    items:
+                      description: LoadBalancerRule represents a traffic steering
+                        rule
+                      properties:
+                        condition:
+                          description: Condition is the expression that determines
+                            when this rule applies.
+                          type: string
+                        disabled:
+                          description: Disabled indicates whether the rule is disabled.
+                          type: boolean
+                        fixedResponse:
+                          description: FixedResponse contains a fixed response configuration.
+                          properties:
+                            contentType:
+                              description: ContentType is the Content-Type header
+                                value.
+                              type: string
+                            location:
+                              description: Location is the Location header value for
+                                redirects.
+                              type: string
+                            messageBody:
+                              description: MessageBody is the response body content.
+                              type: string
+                            statusCode:
+                              description: StatusCode is the HTTP status code to return.
+                              type: integer
+                          type: object
+                        name:
+                          description: Name is a human-readable name for the rule.
+                          type: string
+                        overrides:
+                          description: Overrides contains pool and routing overrides
+                            for this rule.
+                          properties:
+                            adaptiveRouting:
+                              description: AdaptiveRouting overrides adaptive routing
+                                configuration.
+                              properties:
+                                failoverAcrossPools:
+                                  description: FailoverAcrossPools enables failover
+                                    across pools when no healthy origins exist.
+                                  type: boolean
+                              type: object
+                            countryPools:
+                              additionalProperties:
+                                items:
+                                  type: string
+                                type: array
+                              description: CountryPools overrides the country pools.
+                              type: object
+                            defaultPools:
+                              description: DefaultPools overrides the default pools.
+                              items:
+                                type: string
+                              type: array
+                            fallbackPool:
+                              description: FallbackPool overrides the fallback pool.
+                              type: string
+                            locationStrategy:
+                              description: LocationStrategy overrides location strategy
+                                configuration.
+                              properties:
+                                mode:
+                                  description: |-
+                                    Mode determines how to get the client IP for location-based steering.
+                                    Valid values: "pop", "resolver_ip"
+                                  type: string
+                                preferECSRegion:
+                                  description: PreferECSRegion controls whether to
+                                    prefer the ECS region.
+                                  type: string
+                              type: object
+                            popPools:
+                              additionalProperties:
+                                items:
+                                  type: string
+                                type: array
+                              description: PopPools overrides the PoP pools.
+                              type: object
+                            randomSteering:
+                              description: RandomSteering overrides random steering
+                                configuration.
+                              properties:
+                                defaultWeight:
+                                  description: DefaultWeight is the default weight
+                                    for pools not specified in PoolWeights.
+                                  type: string
+                                poolWeights:
+                                  additionalProperties:
+                                    type: string
+                                  description: PoolWeights maps pool IDs to their
+                                    weights.
+                                  type: object
+                              type: object
+                            regionPools:
+                              additionalProperties:
+                                items:
+                                  type: string
+                                type: array
+                              description: RegionPools overrides the region pools.
+                              type: object
+                            sessionAffinity:
+                              description: SessionAffinity overrides the session affinity
+                                setting.
+                              type: string
+                            sessionAffinityAttributes:
+                              description: SessionAffinityAttributes overrides session
+                                affinity attributes.
+                              properties:
+                                drainDuration:
+                                  description: DrainDuration is how long to honor
+                                    session affinity when a pool becomes unhealthy.
+                                  type: integer
+                                headers:
+                                  description: Headers contains headers for session
+                                    affinity.
+                                  items:
+                                    type: string
+                                  type: array
+                                requireAllHeaders:
+                                  description: RequireAllHeaders indicates whether
+                                    all headers must match for session affinity.
+                                  type: boolean
+                                sameSite:
+                                  description: |-
+                                    SameSite controls the SameSite attribute for session affinity cookies.
+                                    Valid values: "Auto", "Lax", "None", "Strict"
+                                  type: string
+                                secure:
+                                  description: Secure indicates whether the session
+                                    affinity cookie should be secure.
+                                  type: string
+                                zeroDowntimeFailover:
+                                  description: |-
+                                    ZeroDowntimeFailover controls zero-downtime failover.
+                                    Valid values: "none", "sticky", "temporary"
+                                  type: string
+                              type: object
+                            sessionAffinityTtl:
+                              description: SessionAffinityTTL overrides the session
+                                affinity TTL.
+                              type: integer
+                            steeringPolicy:
+                              description: SteeringPolicy overrides the steering policy.
+                              type: string
+                            ttl:
+                              description: TTL overrides the DNS TTL.
+                              type: integer
+                          type: object
+                        priority:
+                          description: Priority controls the order of rule execution
+                            (lower values execute first).
+                          type: integer
+                        terminates:
+                          description: Terminates indicates whether to stop processing
+                            rules after this one.
+                          type: boolean
+                      required:
+                      - condition
+                      - name
+                      - priority
+                      type: object
+                    type: array
                   sessionAffinity:
                     description: |-
                       SessionAffinity controls session stickiness.
                       Valid values: "none", "cookie", "ip_cookie"
                     type: string
+                  sessionAffinityAttributes:
+                    description: SessionAffinityAttributes contains session affinity
+                      configuration.
+                    properties:
+                      drainDuration:
+                        description: DrainDuration is how long to honor session affinity
+                          when a pool becomes unhealthy.
+                        type: integer
+                      headers:
+                        description: Headers contains headers for session affinity.
+                        items:
+                          type: string
+                        type: array
+                      requireAllHeaders:
+                        description: RequireAllHeaders indicates whether all headers
+                          must match for session affinity.
+                        type: boolean
+                      sameSite:
+                        description: |-
+                          SameSite controls the SameSite attribute for session affinity cookies.
+                          Valid values: "Auto", "Lax", "None", "Strict"
+                        type: string
+                      secure:
+                        description: Secure indicates whether the session affinity
+                          cookie should be secure.
+                        type: string
+                      zeroDowntimeFailover:
+                        description: |-
+                          ZeroDowntimeFailover controls zero-downtime failover.
+                          Valid values: "none", "sticky", "temporary"
+                        type: string
+                    type: object
                   sessionAffinityTtl:
                     description: SessionAffinityTTL is the TTL for session affinity
                       in seconds.
                     type: integer
                   steeringPolicy:
                     description: |-
-                      SteeringPolicy determines the load balancing steering policy.
-                      Valid values: "off", "geo", "dynamic_latency", "random", "proximity", "least_outstanding_requests"
+                      SteeringPolicy controls pool selection logic.
+                      Valid values: "off", "geo", "dynamic_latency", "random", "proximity",
+                      "least_outstanding_requests", "least_connections"
                     type: string
                   ttl:
                     description: TTL is the DNS TTL for the load balancer.
@@ -221,29 +628,20 @@ spec:
             - forProvider
             type: object
           status:
-            description: A LoadBalancerStatus represents the observed state of a LoadBalancer.
+            description: LoadBalancerStatus defines the observed state of LoadBalancer
             properties:
               atProvider:
-                description: LoadBalancerObservation contains the observable fields
-                  of a LoadBalancer
+                description: LoadBalancerObservation represents the observed state
+                  of a Cloudflare Load Balancer
                 properties:
                   createdOn:
-                    description: CreatedOn indicates when this load balancer was created
-                    format: date-time
+                    description: CreatedOn is when the load balancer was created.
                     type: string
                   id:
-                    description: ID is the unique identifier for the load balancer
+                    description: ID is the load balancer ID.
                     type: string
                   modifiedOn:
-                    description: ModifiedOn indicates when this load balancer was
-                      last modified
-                    format: date-time
-                    type: string
-                  name:
-                    description: Name is the DNS name for this load balancer
-                    type: string
-                  status:
-                    description: Status indicates the status of the load balancer
+                    description: ModifiedOn is when the load balancer was last modified.
                     type: string
                 type: object
               conditions:

@@ -33,7 +33,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	fallbackorigin "github.com/rossigee/provider-cloudflare/internal/clients/sslsaas/fallbackorigin"
 	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
@@ -52,7 +52,7 @@ const (
 
 // SetupFallbackOrigin adds a controller that reconciles FallbackOrigin managed resources.
 func SetupFallbackOrigin(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.FallbackOriginGroupKind)
+	name := managed.ControllerName(v1beta1.FallbackOriginGroupKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -61,7 +61,7 @@ func SetupFallbackOrigin(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedR
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.FallbackOriginGroupVersionKind),
+		resource.ManagedKind(v1beta1.FallbackOriginGroupVersionKind),
 		managed.WithExternalConnecter(&fallbackOriginConnector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (fallbackorigin.Client, error) {
@@ -78,7 +78,7 @@ func SetupFallbackOrigin(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedR
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.FallbackOrigin{}).
+		For(&v1beta1.FallbackOrigin{}).
 		Complete(r)
 }
 
@@ -92,7 +92,7 @@ type fallbackOriginConnector struct {
 // Connect produces a valid configuration for a Cloudflare API
 // instance, and returns it as an external client.
 func (c *fallbackOriginConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.FallbackOrigin)
+	_, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return nil, errors.New(errNotFallbackOrigin)
 	}
@@ -118,7 +118,7 @@ type fallbackOriginExternal struct {
 }
 
 func (e *fallbackOriginExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.FallbackOrigin)
+	cr, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotFallbackOrigin)
 	}
@@ -149,7 +149,7 @@ func (e *fallbackOriginExternal) Observe(ctx context.Context, mg resource.Manage
 }
 
 func (e *fallbackOriginExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.FallbackOrigin)
+	cr, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotFallbackOrigin)
 	}
@@ -175,7 +175,7 @@ func (e *fallbackOriginExternal) Create(ctx context.Context, mg resource.Managed
 }
 
 func (e *fallbackOriginExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.FallbackOrigin)
+	cr, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotFallbackOrigin)
 	}
@@ -195,7 +195,7 @@ func (e *fallbackOriginExternal) Update(ctx context.Context, mg resource.Managed
 }
 
 func (e *fallbackOriginExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.FallbackOrigin)
+	cr, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotFallbackOrigin)
 	}

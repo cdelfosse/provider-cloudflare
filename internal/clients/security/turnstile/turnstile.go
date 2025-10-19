@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/security/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/security/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -53,14 +53,14 @@ func NewClientFromAPI(api *cloudflare.API) *CloudflareTurnstileClient {
 }
 
 // Create creates a new Turnstile widget.
-func (c *CloudflareTurnstileClient) Create(ctx context.Context, params v1alpha1.TurnstileParameters) (*v1alpha1.TurnstileObservation, error) {
+func (c *CloudflareTurnstileClient) Create(ctx context.Context, params v1beta1.TurnstileParameters) (*v1beta1.TurnstileObservation, error) {
 	rc := &cloudflare.ResourceContainer{
 		Identifier: params.AccountID,
 		Type:       cloudflare.AccountType,
 	}
 
 	createParams := convertParametersToCreateTurnstile(params)
-	
+
 	widget, err := c.client.CreateTurnstileWidget(ctx, rc, createParams)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create turnstile widget")
@@ -70,7 +70,7 @@ func (c *CloudflareTurnstileClient) Create(ctx context.Context, params v1alpha1.
 }
 
 // Get retrieves a Turnstile widget by site key.
-func (c *CloudflareTurnstileClient) Get(ctx context.Context, accountID, siteKey string) (*v1alpha1.TurnstileObservation, error) {
+func (c *CloudflareTurnstileClient) Get(ctx context.Context, accountID, siteKey string) (*v1beta1.TurnstileObservation, error) {
 	rc := &cloudflare.ResourceContainer{
 		Identifier: accountID,
 		Type:       cloudflare.AccountType,
@@ -88,14 +88,14 @@ func (c *CloudflareTurnstileClient) Get(ctx context.Context, accountID, siteKey 
 }
 
 // Update updates a Turnstile widget.
-func (c *CloudflareTurnstileClient) Update(ctx context.Context, siteKey string, params v1alpha1.TurnstileParameters) (*v1alpha1.TurnstileObservation, error) {
+func (c *CloudflareTurnstileClient) Update(ctx context.Context, siteKey string, params v1beta1.TurnstileParameters) (*v1beta1.TurnstileObservation, error) {
 	rc := &cloudflare.ResourceContainer{
 		Identifier: params.AccountID,
 		Type:       cloudflare.AccountType,
 	}
 
 	updateParams := convertParametersToUpdateTurnstile(siteKey, params)
-	
+
 	widget, err := c.client.UpdateTurnstileWidget(ctx, rc, updateParams)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot update turnstile widget")
@@ -123,7 +123,7 @@ func (c *CloudflareTurnstileClient) Delete(ctx context.Context, accountID, siteK
 }
 
 // IsUpToDate checks if the Turnstile widget is up to date.
-func (c *CloudflareTurnstileClient) IsUpToDate(ctx context.Context, params v1alpha1.TurnstileParameters, obs v1alpha1.TurnstileObservation) (bool, error) {
+func (c *CloudflareTurnstileClient) IsUpToDate(ctx context.Context, params v1beta1.TurnstileParameters, obs v1beta1.TurnstileObservation) (bool, error) {
 	// Compare configurable parameters
 	if obs.Name != nil && params.Name != *obs.Name {
 		return false, nil
@@ -154,7 +154,7 @@ func (c *CloudflareTurnstileClient) IsUpToDate(ctx context.Context, params v1alp
 }
 
 // convertParametersToCreateTurnstile converts TurnstileParameters to cloudflare.CreateTurnstileWidgetParams.
-func convertParametersToCreateTurnstile(params v1alpha1.TurnstileParameters) cloudflare.CreateTurnstileWidgetParams {
+func convertParametersToCreateTurnstile(params v1beta1.TurnstileParameters) cloudflare.CreateTurnstileWidgetParams {
 	createParams := cloudflare.CreateTurnstileWidgetParams{
 		Name:    params.Name,
 		Domains: params.Domains,
@@ -180,7 +180,7 @@ func convertParametersToCreateTurnstile(params v1alpha1.TurnstileParameters) clo
 }
 
 // convertParametersToUpdateTurnstile converts TurnstileParameters to cloudflare.UpdateTurnstileWidgetParams.
-func convertParametersToUpdateTurnstile(siteKey string, params v1alpha1.TurnstileParameters) cloudflare.UpdateTurnstileWidgetParams {
+func convertParametersToUpdateTurnstile(siteKey string, params v1beta1.TurnstileParameters) cloudflare.UpdateTurnstileWidgetParams {
 	updateParams := cloudflare.UpdateTurnstileWidgetParams{
 		SiteKey: siteKey,
 	}
@@ -204,8 +204,8 @@ func convertParametersToUpdateTurnstile(siteKey string, params v1alpha1.Turnstil
 }
 
 // convertTurnstileToObservation converts cloudflare.TurnstileWidget to TurnstileObservation.
-func convertTurnstileToObservation(widget cloudflare.TurnstileWidget) *v1alpha1.TurnstileObservation {
-	obs := &v1alpha1.TurnstileObservation{
+func convertTurnstileToObservation(widget cloudflare.TurnstileWidget) *v1beta1.TurnstileObservation {
+	obs := &v1beta1.TurnstileObservation{
 		SiteKey:      &widget.SiteKey,
 		Secret:       &widget.Secret,
 		Name:         &widget.Name,

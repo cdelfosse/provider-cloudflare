@@ -22,13 +22,13 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/pkg/errors"
 
 	"github.com/cloudflare/cloudflare-go"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/zone/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/zone/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -115,9 +115,9 @@ const (
 
 // toMinifySettings converts an interface from the Cloudflare API
 // into a MinifySettings type.
-func toMinifySettings(in interface{}) *v1alpha1.MinifySettings {
+func toMinifySettings(in interface{}) *v1beta1.MinifySettings {
 	if m, ok := in.(map[string]interface{}); ok {
-		minifySettings := &v1alpha1.MinifySettings{}
+		minifySettings := &v1beta1.MinifySettings{}
 		for key, value := range m {
 			sval := clients.ToString(value)
 			switch key {
@@ -138,9 +138,9 @@ func toMinifySettings(in interface{}) *v1alpha1.MinifySettings {
 
 // toMobileRedirectSettings converts an interface from the Cloudflare API
 // into a MinifySettings type.
-func toMobileRedirectSettings(in interface{}) *v1alpha1.MobileRedirectSettings {
+func toMobileRedirectSettings(in interface{}) *v1beta1.MobileRedirectSettings {
 	if m, ok := in.(map[string]interface{}); ok {
-		mobileRedirectSettings := &v1alpha1.MobileRedirectSettings{}
+		mobileRedirectSettings := &v1beta1.MobileRedirectSettings{}
 		for key, value := range m {
 			switch key {
 			case cfsMobileRedirectStatus:
@@ -159,9 +159,9 @@ func toMobileRedirectSettings(in interface{}) *v1alpha1.MobileRedirectSettings {
 }
 
 // toStrictTransportSecuritySettings
-func toStrictTransportSecuritySettings(in interface{}) *v1alpha1.StrictTransportSecuritySettings {
+func toStrictTransportSecuritySettings(in interface{}) *v1beta1.StrictTransportSecuritySettings {
 	if m, ok := in.(map[string]interface{}); ok {
-		stsSettings := &v1alpha1.StrictTransportSecuritySettings{}
+		stsSettings := &v1beta1.StrictTransportSecuritySettings{}
 		for key, value := range m {
 			switch key {
 			case cfsStrictTransportSecurityEnabled:
@@ -184,9 +184,9 @@ func toStrictTransportSecuritySettings(in interface{}) *v1alpha1.StrictTransport
 
 // toSecurityHeaderSettings converts an interface from the Cloudflare API
 // into a SecurityHeaderSettings type.
-func toSecurityHeaderSettings(in interface{}) *v1alpha1.SecurityHeaderSettings {
+func toSecurityHeaderSettings(in interface{}) *v1beta1.SecurityHeaderSettings {
 	if m, ok := in.(map[string]interface{}); ok {
-		securityHeaderSettings := &v1alpha1.SecurityHeaderSettings{}
+		securityHeaderSettings := &v1beta1.SecurityHeaderSettings{}
 		for key, value := range m {
 			switch key { //nolint:gocritic
 			case cfsStrictTransportSecurity:
@@ -230,30 +230,31 @@ func NewClient(cfg clients.Config, hc *http.Client) (Client, error) {
 }
 
 // GenerateObservation creates an observation of a cloudflare Zone
-func GenerateObservation(in cloudflare.Zone) v1alpha1.ZoneObservation {
-	return v1alpha1.ZoneObservation{
-		AccountID:         in.Account.ID,
-		Account:           in.Account.Name,
-		DevModeTimer:      in.DevMode,
-		OriginalNS:        in.OriginalNS,
-		OriginalRegistrar: in.OriginalRegistrar,
-		OriginalDNSHost:   in.OriginalDNSHost,
-		NameServers:       in.NameServers,
-		PlanID:            in.Plan.ID,
-		Plan:              in.Plan.Name,
-		PlanPendingID:     in.PlanPending.ID,
-		PlanPending:       in.PlanPending.Name,
-		Status:            in.Status,
-		Betas:             in.Betas,
-		DeactReason:       in.DeactReason,
-		VerificationKey:   in.VerificationKey,
-		VanityNameServers: in.VanityNS,
+func GenerateObservation(in cloudflare.Zone) v1beta1.ZoneObservation {
+	observation := v1beta1.ZoneObservation{
+		AccountID:   in.Account.ID,
+		Account:     in.Account.Name,
+		NameServers: in.NameServers,
+		Plan:        in.Plan.Name,
+		Status:      in.Status,
 	}
+
+	// Set timestamps if available
+	if !in.CreatedOn.IsZero() {
+		createdOn := metav1.NewTime(in.CreatedOn)
+		observation.CreatedOn = &createdOn
+	}
+	if !in.ModifiedOn.IsZero() {
+		modifiedOn := metav1.NewTime(in.ModifiedOn)
+		observation.ModifiedOn = &modifiedOn
+	}
+
+	return observation
 }
 
 // LateInitialize initializes ZoneParameters based on the remote resource
-func LateInitialize(spec *v1alpha1.ZoneParameters, z cloudflare.Zone,
-	ozs *v1alpha1.ZoneSettings) bool {
+func LateInitialize(spec *v1beta1.ZoneParameters, z cloudflare.Zone,
+	ozs *v1beta1.ZoneSettings) bool {
 
 	if spec == nil {
 		return false
@@ -272,24 +273,11 @@ func LateInitialize(spec *v1alpha1.ZoneParameters, z cloudflare.Zone,
 		spec.PlanID = &z.Plan.ID
 		li = true
 	}
-	if len(spec.VanityNameServers) == 0 && len(z.VanityNS) > 0 {
-		spec.VanityNameServers = z.VanityNS
-		li = true
-	}
-
-	// Create a settings map from our Desired and Observed
-	// Settings, so we can work out which fields need initialising.
-	desired := zoneToSettingsMap(&spec.Settings)
-	observed := zoneToSettingsMap(ozs)
-
-	if LateInitializeSettings(observed, desired, &spec.Settings) {
-		li = true
-	}
 
 	return li
 }
 
-func lateInitializeMinifySettings(observed, desired *v1alpha1.MinifySettings) bool {
+func lateInitializeMinifySettings(observed, desired *v1beta1.MinifySettings) bool {
 	li := false
 
 	if desired.CSS == nil {
@@ -308,7 +296,7 @@ func lateInitializeMinifySettings(observed, desired *v1alpha1.MinifySettings) bo
 	return li
 }
 
-func lateInitializeMobileRedirectSettings(observed, desired *v1alpha1.MobileRedirectSettings) bool {
+func lateInitializeMobileRedirectSettings(observed, desired *v1beta1.MobileRedirectSettings) bool {
 	li := false
 
 	if desired.Status == nil {
@@ -327,7 +315,7 @@ func lateInitializeMobileRedirectSettings(observed, desired *v1alpha1.MobileRedi
 	return li
 }
 
-func lateInitializeSecurityHeaderSettings(observed, desired *v1alpha1.SecurityHeaderSettings) bool {
+func lateInitializeSecurityHeaderSettings(observed, desired *v1beta1.SecurityHeaderSettings) bool {
 	li := false
 
 	if desired.StrictTransportSecurity == nil {
@@ -359,7 +347,7 @@ func lateInitializeSecurityHeaderSettings(observed, desired *v1alpha1.SecurityHe
 }
 
 // LateInitializeSettings initializes Settings based on the remote resource
-func LateInitializeSettings(observed, desired ZoneSettingsMap, initOn *v1alpha1.ZoneSettings) bool { //nolint:gocyclo
+func LateInitializeSettings(observed, desired ZoneSettingsMap, initOn *v1beta1.ZoneSettings) bool { //nolint:gocyclo
 	// Gocyclo disabled - perhaps the "complex" setting `else` branch should be extracted out?
 	li := false
 	nestedLateInit := false
@@ -412,7 +400,7 @@ func LateInitializeSettings(observed, desired ZoneSettingsMap, initOn *v1alpha1.
 // LoadSettingsForZone loads Zone settings from the cloudflare API
 // and returns a ZoneSettingsMap.
 func LoadSettingsForZone(ctx context.Context,
-	client Client, zoneID string, zs *v1alpha1.ZoneSettings) error {
+	client Client, zoneID string, zs *v1beta1.ZoneSettings) error {
 
 	// Get settings
 	sr, err := client.ZoneSettings(ctx, zoneID)
@@ -436,7 +424,7 @@ func LoadSettingsForZone(ctx context.Context,
 
 // settingsMapToZone uses static definitions to map each setting
 // to its' value on a ZoneSettings instance.
-func settingsMapToZone(sm ZoneSettingsMap, zs *v1alpha1.ZoneSettings) {
+func settingsMapToZone(sm ZoneSettingsMap, zs *v1beta1.ZoneSettings) {
 	zs.ZeroRTT = clients.ToString(sm[cfsZeroRTT])
 	zs.AdvancedDDOS = clients.ToString(sm[cfsAdvancedDDOS])
 	zs.AlwaysOnline = clients.ToString(sm[cfsAlwaysOnline])
@@ -489,7 +477,7 @@ func settingsMapToZone(sm ZoneSettingsMap, zs *v1alpha1.ZoneSettings) {
 
 // minifySettingsToMap converts a MinifySettings struct to the shape expected by the
 // Cloudflare API. This may not necessarily exactly match our local JSON format
-func minifySettingsToMap(settings *v1alpha1.MinifySettings) map[string]interface{} {
+func minifySettingsToMap(settings *v1beta1.MinifySettings) map[string]interface{} {
 	m := make(map[string]interface{})
 
 	if settings.CSS != nil {
@@ -507,7 +495,7 @@ func minifySettingsToMap(settings *v1alpha1.MinifySettings) map[string]interface
 
 // mobileRedirectSettingsToMap converts a MobileRedirectSettings struct to the shape expected by the
 // Cloudflare API. This may not necessarily exactly match our local JSON format
-func mobileRedirectSettingsToMap(settings *v1alpha1.MobileRedirectSettings) map[string]interface{} {
+func mobileRedirectSettingsToMap(settings *v1beta1.MobileRedirectSettings) map[string]interface{} {
 	m := make(map[string]interface{})
 
 	if settings.Status != nil {
@@ -525,7 +513,7 @@ func mobileRedirectSettingsToMap(settings *v1alpha1.MobileRedirectSettings) map[
 
 // securityHeaderSettingsToMap converts a MobileRedirectSettings struct to the shape expected by the
 // Cloudflare API. This may not necessarily exactly match our local JSON format
-func securityHeaderSettingsToMap(settings *v1alpha1.SecurityHeaderSettings) map[string]interface{} {
+func securityHeaderSettingsToMap(settings *v1beta1.SecurityHeaderSettings) map[string]interface{} {
 	m := make(map[string]interface{})
 
 	if settings.StrictTransportSecurity != nil {
@@ -569,15 +557,15 @@ func mapSet(sm ZoneSettingsMap, key string, value interface{}) { //nolint:gocycl
 		if vt != nil {
 			sm[key] = vt
 		}
-	case *v1alpha1.MinifySettings:
+	case *v1beta1.MinifySettings:
 		if vt != nil {
 			sm[key] = minifySettingsToMap(vt)
 		}
-	case *v1alpha1.MobileRedirectSettings:
+	case *v1beta1.MobileRedirectSettings:
 		if vt != nil {
 			sm[key] = mobileRedirectSettingsToMap(vt)
 		}
-	case *v1alpha1.SecurityHeaderSettings:
+	case *v1beta1.SecurityHeaderSettings:
 		if vt != nil {
 			sm[key] = securityHeaderSettingsToMap(vt)
 		}
@@ -589,7 +577,7 @@ func mapSet(sm ZoneSettingsMap, key string, value interface{}) { //nolint:gocycl
 
 // ZoneToSettingsMap uses static definitions to map each setting
 // from its' value on a ZoneSettings instance.
-func zoneToSettingsMap(zs *v1alpha1.ZoneSettings) ZoneSettingsMap {
+func zoneToSettingsMap(zs *v1beta1.ZoneSettings) ZoneSettingsMap {
 	sm := ZoneSettingsMap{}
 	mapSet(sm, cfsZeroRTT, zs.ZeroRTT)
 	mapSet(sm, cfsAdvancedDDOS, zs.AdvancedDDOS)
@@ -644,7 +632,7 @@ func zoneToSettingsMap(zs *v1alpha1.ZoneSettings) ZoneSettingsMap {
 
 // GetChangedSettings builds a map of only the settings whose
 // values need to be updated.
-func GetChangedSettings(czs, dzs *v1alpha1.ZoneSettings) []cloudflare.ZoneSetting {
+func GetChangedSettings(czs, dzs *v1beta1.ZoneSettings) []cloudflare.ZoneSetting {
 	out := []cloudflare.ZoneSetting{}
 
 	current := zoneToSettingsMap(czs)
@@ -668,7 +656,7 @@ func GetChangedSettings(czs, dzs *v1alpha1.ZoneSettings) []cloudflare.ZoneSettin
 
 // UpToDate checks if the remote resource is up to date with the
 // requested resource parameters.
-func UpToDate(spec *v1alpha1.ZoneParameters, z cloudflare.Zone, ozs *v1alpha1.ZoneSettings) bool { //nolint:gocyclo
+func UpToDate(spec *v1beta1.ZoneParameters, z cloudflare.Zone, ozs *v1beta1.ZoneSettings) bool { //nolint:gocyclo
 	// NOTE: Gocyclo ignored here because this method has to check each field
 	// properly. Avoid putting any more complex logic here, if possible.
 
@@ -690,29 +678,11 @@ func UpToDate(spec *v1alpha1.ZoneParameters, z cloudflare.Zone, ozs *v1alpha1.Zo
 		return false
 	}
 
-	sortSlicesOpt := cmpopts.SortSlices(func(x, y string) bool {
-		return x < y
-	})
-
-	if !cmp.Equal(spec.VanityNameServers, z.VanityNS, cmpopts.EquateEmpty(), sortSlicesOpt) {
-		return false
-	}
-
-	// Compare settings
-	// NOTE: If any settings contain lists or complex structures
-	// it may be necessary to modify this to sort those structures or
-	// compare them in a different manner.
-	// Have a look at https://pkg.go.dev/github.com/google/go-cmp@v0.5.4/cmp/cmpopts
-	// to see if what you're looking for is supported by the cmp library
-	// before implementing here.
-	if !cmp.Equal(*ozs, spec.Settings) {
-		return false
-	}
 	return true
 }
 
 // UpdateZone updates mutable values on a Zone
-func UpdateZone(ctx context.Context, client Client, zoneID string, spec v1alpha1.ZoneParameters) error { //nolint:gocyclo
+func UpdateZone(ctx context.Context, client Client, zoneID string, spec v1beta1.ZoneParameters) error { //nolint:gocyclo
 	// Get current zone status
 	z, err := client.ZoneDetails(ctx, zoneID)
 	if err != nil {
@@ -724,11 +694,6 @@ func UpdateZone(ctx context.Context, client Client, zoneID string, spec v1alpha1
 
 	if spec.Paused != nil && *spec.Paused != z.Paused {
 		zo.Paused = spec.Paused
-		u = true
-	}
-
-	if !cmp.Equal(spec.VanityNameServers, z.VanityNS) {
-		zo.VanityNS = spec.VanityNameServers
 		u = true
 	}
 
@@ -753,21 +718,5 @@ func UpdateZone(ctx context.Context, client Client, zoneID string, spec v1alpha1
 		}
 	}
 
-	// We don't store observed settings so look them up before changing.
-	curSettings := v1alpha1.ZoneSettings{}
-	err = LoadSettingsForZone(ctx, client, zoneID, &curSettings)
-	if err != nil {
-		return errors.Wrap(err, errUpdateSettings)
-	}
-
-	// See if any settings were updated, otherwise return
-	// update is complete.
-	cs := GetChangedSettings(&curSettings, &spec.Settings)
-	if len(cs) < 1 {
-		return nil
-	}
-
-	// One or more settings were changed, so update them and return.
-	_, err = client.UpdateZoneSettings(ctx, zoneID, cs)
-	return errors.Wrap(err, errUpdateSettings)
+	return nil
 }

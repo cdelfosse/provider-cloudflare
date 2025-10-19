@@ -22,7 +22,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1beta1"
 )
 
 // A MockClient acts as a testable representation of the Cloudflare Spectrum API.
@@ -39,7 +39,7 @@ func (m MockClient) SpectrumApplication(ctx context.Context, zoneID, application
 }
 
 // CreateSpectrumApplication mocks the CreateSpectrumApplication method of the Cloudflare API.
-func (m MockClient) CreateSpectrumApplication(ctx context.Context, zoneID string, params *v1alpha1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
+func (m MockClient) CreateSpectrumApplication(ctx context.Context, zoneID string, params *v1beta1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
 	// Validate IPs like the real client does
 	if params.EdgeIPs != nil && params.EdgeIPs.IPs != nil {
 		for _, ipStr := range params.EdgeIPs.IPs {
@@ -55,7 +55,7 @@ func (m MockClient) CreateSpectrumApplication(ctx context.Context, zoneID string
 }
 
 // UpdateSpectrumApplication mocks the UpdateSpectrumApplication method of the Cloudflare API.
-func (m MockClient) UpdateSpectrumApplication(ctx context.Context, zoneID, applicationID string, params *v1alpha1.ApplicationParameters) error {
+func (m MockClient) UpdateSpectrumApplication(ctx context.Context, zoneID, applicationID string, params *v1beta1.ApplicationParameters) error {
 	// Validate IPs like the real client does
 	if params.EdgeIPs != nil && params.EdgeIPs.IPs != nil {
 		for _, ipStr := range params.EdgeIPs.IPs {

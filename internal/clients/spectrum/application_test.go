@@ -26,8 +26,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1alpha1"
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1beta1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/spectrum/fake"
 
@@ -61,7 +61,7 @@ type connector struct {
 }
 
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Application)
+	_, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return nil, errors.New(errNotApplication)
 	}
@@ -84,7 +84,7 @@ type external struct {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Application)
+	cr, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotApplication)
 	}
@@ -124,7 +124,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Application)
+	cr, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotApplication)
 	}
@@ -143,7 +143,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Application)
+	cr, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotApplication)
 	}
@@ -166,7 +166,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Application)
+	cr, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotApplication)
 	}
@@ -195,62 +195,62 @@ func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-type ApplicationModifier func(*v1alpha1.Application)
+type ApplicationModifier func(*v1beta1.Application)
 
-func withEdgeIPs(edgeIPs v1alpha1.SpectrumApplicationEdgeIPs) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.EdgeIPs = &edgeIPs }
+func withEdgeIPs(edgeIPs v1beta1.SpectrumApplicationEdgeIPs) ApplicationModifier {
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.EdgeIPs = &edgeIPs }
 }
 
 func withOriginDirect(originDirect []string) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.OriginDirect = originDirect }
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.OriginDirect = originDirect }
 }
 
-func withOriginDNS(originDNS v1alpha1.SpectrumApplicationOriginDNS) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.OriginDNS = &originDNS }
+func withOriginDNS(originDNS v1beta1.SpectrumApplicationOriginDNS) ApplicationModifier {
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.OriginDNS = &originDNS }
 }
 
-func withOriginPort(originPort v1alpha1.SpectrumApplicationOriginPort) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.OriginPort = &originPort }
+func withOriginPort(originPort v1beta1.SpectrumApplicationOriginPort) ApplicationModifier {
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.OriginPort = &originPort }
 }
 
 func withTrafficType(trafficType string) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.TrafficType = &trafficType }
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.TrafficType = &trafficType }
 }
 
 func withIPFirewall(ipf bool) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.IPFirewall = &ipf }
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.IPFirewall = &ipf }
 }
 
 func withArgoSmartRouting(asr bool) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.ArgoSmartRouting = &asr }
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.ArgoSmartRouting = &asr }
 }
 
 func withProxyProtocol(proxy string) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.ProxyProtocol = &proxy }
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.ProxyProtocol = &proxy }
 }
 
 func withProtocol(proto string) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.Protocol = proto }
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.Protocol = proto }
 }
 
-func withDNS(dns v1alpha1.SpectrumApplicationDNS) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.DNS = dns }
+func withDNS(dns v1beta1.SpectrumApplicationDNS) ApplicationModifier {
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.DNS = dns }
 }
 
 func withTLS(tls string) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.TLS = &tls }
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.TLS = &tls }
 }
 
 func withExternalName(applicationID string) ApplicationModifier {
-	return func(r *v1alpha1.Application) { meta.SetExternalName(r, applicationID) }
+	return func(r *v1beta1.Application) { meta.SetExternalName(r, applicationID) }
 }
 
 func withZone(zoneID string) ApplicationModifier {
-	return func(r *v1alpha1.Application) { r.Spec.ForProvider.Zone = &zoneID }
+	return func(r *v1beta1.Application) { r.Spec.ForProvider.Zone = &zoneID }
 }
 
-func Application(m ...ApplicationModifier) *v1alpha1.Application {
-	cr := &v1alpha1.Application{}
+func Application(m ...ApplicationModifier) *v1beta1.Application {
+	cr := &v1beta1.Application{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -293,8 +293,8 @@ func TestConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.Application{
-					Spec: v1alpha1.ApplicationSpec{
+				mg: &v1beta1.Application{
+					Spec: v1beta1.ApplicationSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -307,7 +307,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj k8sclient.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -323,8 +323,8 @@ func TestConnect(t *testing.T) {
 				newClient: NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.Application{
-					Spec: v1alpha1.ApplicationSpec{
+				mg: &v1beta1.Application{
+					Spec: v1beta1.ApplicationSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -390,7 +390,7 @@ func TestObserve(t *testing.T) {
 				client: fake.MockClient{},
 			},
 			args: args{
-				mg: &v1alpha1.Application{},
+				mg: &v1beta1.Application{},
 			},
 			want: want{
 				o: managed.ExternalObservation{ResourceExists: false},
@@ -572,7 +572,7 @@ func TestCreate(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -596,7 +596,7 @@ func TestCreate(t *testing.T) {
 					withExternalName("1234beef"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -621,7 +621,7 @@ func TestCreate(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"ImNotAnIP", "2001:db8::1"},
 					}),
 				),
@@ -645,14 +645,14 @@ func TestCreate(t *testing.T) {
 					withExternalName("1234beef"),
 					withZone("foo.com"),
 					withProtocol("tcp/22"),
-					withDNS(v1alpha1.SpectrumApplicationDNS{
+					withDNS(v1beta1.SpectrumApplicationDNS{
 						Type: "CNAME",
 						Name: "spectrum.foo.com",
 					}),
-					withOriginDNS(v1alpha1.SpectrumApplicationOriginDNS{
+					withOriginDNS(v1beta1.SpectrumApplicationOriginDNS{
 						Name: "spectrum.origin.foo.com",
 					}),
-					withOriginPort(v1alpha1.SpectrumApplicationOriginPort{
+					withOriginPort(v1beta1.SpectrumApplicationOriginPort{
 						Port: &port,
 					}),
 					withIPFirewall(true),
@@ -679,14 +679,14 @@ func TestCreate(t *testing.T) {
 					withExternalName("1234beef"),
 					withZone("foo.com"),
 					withProtocol("tcp/22"),
-					withDNS(v1alpha1.SpectrumApplicationDNS{
+					withDNS(v1beta1.SpectrumApplicationDNS{
 						Type: "CNAME",
 						Name: "spectrum.foo.com",
 					}),
-					withOriginDNS(v1alpha1.SpectrumApplicationOriginDNS{
+					withOriginDNS(v1beta1.SpectrumApplicationOriginDNS{
 						Name: "spectrum.origin.foo.com",
 					}),
-					withOriginPort(v1alpha1.SpectrumApplicationOriginPort{
+					withOriginPort(v1beta1.SpectrumApplicationOriginPort{
 						Start: &start,
 						End:   &end,
 					}),
@@ -714,7 +714,7 @@ func TestCreate(t *testing.T) {
 					withExternalName("1234beef"),
 					withZone("foo.com"),
 					withProtocol("tcp/22"),
-					withDNS(v1alpha1.SpectrumApplicationDNS{
+					withDNS(v1beta1.SpectrumApplicationDNS{
 						Type: "CNAME",
 						Name: "spectrum.foo.com",
 					}),
@@ -722,7 +722,7 @@ func TestCreate(t *testing.T) {
 					withProxyProtocol("off"),
 					withTLS("full"),
 					withOriginDirect([]string{"tcp://192.0.2.1:22"}),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						Type: "static",
 						IPs:  []string{"192.0.2.2", "2001:db8::1"},
 					}),
@@ -747,7 +747,7 @@ func TestCreate(t *testing.T) {
 					withExternalName("1234beef"),
 					withZone("foo.com"),
 					withProtocol("tcp/22"),
-					withDNS(v1alpha1.SpectrumApplicationDNS{
+					withDNS(v1beta1.SpectrumApplicationDNS{
 						Type: "CNAME",
 						Name: "spectrum.foo.com",
 					}),
@@ -755,7 +755,7 @@ func TestCreate(t *testing.T) {
 					withProxyProtocol("off"),
 					withTLS("full"),
 					withOriginDirect([]string{"tcp://192.0.2.1:22"}),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						Type:         "dynamic",
 						Connectivity: ptr.To("all"),
 					}),
@@ -782,7 +782,7 @@ func TestCreate(t *testing.T) {
 					withTLS("full"),
 					withTrafficType("https"),
 					withArgoSmartRouting(true),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						Type: "static",
 						IPs:  []string{"192.0.2.2", "2001:db8::1"},
 					}),
@@ -855,7 +855,7 @@ func TestUpdate(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -879,7 +879,7 @@ func TestUpdate(t *testing.T) {
 					withExternalName("1234beef"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -904,7 +904,7 @@ func TestUpdate(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"ImNotAnIP", "2001:db8::1"},
 					}),
 				),
@@ -929,7 +929,7 @@ func TestUpdate(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -959,7 +959,7 @@ func TestUpdate(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -1030,7 +1030,7 @@ func TestDelete(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -1054,7 +1054,7 @@ func TestDelete(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -1077,7 +1077,7 @@ func TestDelete(t *testing.T) {
 					withExternalName("1234beef"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),
@@ -1101,7 +1101,7 @@ func TestDelete(t *testing.T) {
 					withZone("foo.com"),
 					withTLS("full"),
 					withTrafficType("https"),
-					withEdgeIPs(v1alpha1.SpectrumApplicationEdgeIPs{
+					withEdgeIPs(v1beta1.SpectrumApplicationEdgeIPs{
 						IPs: []string{"192.0.2.2", "2001:db8::1"},
 					}),
 				),

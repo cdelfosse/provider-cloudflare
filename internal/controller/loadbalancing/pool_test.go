@@ -25,8 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing/fake"
@@ -40,23 +40,18 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 )
 
-type poolModifier func(*v1alpha1.LoadBalancerPool)
-
-
-func withPoolAccount(account string) poolModifier {
-	return func(pool *v1alpha1.LoadBalancerPool) { pool.Spec.ForProvider.Account = &account }
-}
+type poolModifier func(*v1beta1.LoadBalancerPool)
 
 func withPoolName(name string) poolModifier {
-	return func(pool *v1alpha1.LoadBalancerPool) { pool.Spec.ForProvider.Name = name }
+	return func(pool *v1beta1.LoadBalancerPool) { pool.Spec.ForProvider.Name = &name }
 }
 
 func withPoolID(id string) poolModifier {
-	return func(pool *v1alpha1.LoadBalancerPool) { pool.Status.AtProvider.ID = id }
+	return func(pool *v1beta1.LoadBalancerPool) { pool.Status.AtProvider.ID = id }
 }
 
-func pool(m ...poolModifier) *v1alpha1.LoadBalancerPool {
-	cr := &v1alpha1.LoadBalancerPool{}
+func pool(m ...poolModifier) *v1beta1.LoadBalancerPool {
+	cr := &v1beta1.LoadBalancerPool{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -70,7 +65,6 @@ func TestPoolConnect(t *testing.T) {
 
 	type fields struct {
 		kube      client.Client
-		usage     resource.Tracker
 		newClient func(cfg clients.Config, hc *http.Client) (loadbalancing.PoolClient, error)
 	}
 
@@ -95,12 +89,11 @@ func TestPoolConnect(t *testing.T) {
 		"ErrGetConfig": {
 			reason: "Any errors from GetConfig should be wrapped",
 			fields: fields{
-				kube:  mc,
-				usage: &mockTracker{},
+				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancerPool{
-					Spec: v1alpha1.LoadBalancerPoolSpec{
+				mg: &v1beta1.LoadBalancerPool{
+					Spec: v1beta1.LoadBalancerPoolSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "test-config",
@@ -117,7 +110,7 @@ func TestPoolConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -130,14 +123,13 @@ func TestPoolConnect(t *testing.T) {
 						return nil
 					}),
 				},
-				usage: &mockTracker{},
 				newClient: func(cfg clients.Config, hc *http.Client) (loadbalancing.PoolClient, error) {
 					return &fake.MockPoolClient{}, nil
 				},
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancerPool{
-					Spec: v1alpha1.LoadBalancerPoolSpec{
+				mg: &v1beta1.LoadBalancerPool{
+					Spec: v1beta1.LoadBalancerPoolSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -152,7 +144,7 @@ func TestPoolConnect(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			c := &poolConnector{kube: tc.fields.kube, usage: tc.fields.usage, newServiceFn: tc.fields.newClient}
+			c := &poolConnector{kube: tc.fields.kube, newServiceFn: tc.fields.newClient}
 			_, err := c.Connect(tc.args.ctx, tc.args.mg)
 			if diff := cmp.Diff(tc.want, err, test.EquateErrors()); diff != "" {
 				t.Errorf("\n%s\nc.Connect(...): -want error, +got error:\n%s\n", tc.reason, diff)
@@ -199,7 +191,7 @@ func TestPoolObserve(t *testing.T) {
 				service: &fake.MockPoolClient{},
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancerPool{},
+				mg: &v1beta1.LoadBalancerPool{},
 			},
 			want: want{
 				o: managed.ExternalObservation{ResourceExists: false},
@@ -209,7 +201,7 @@ func TestPoolObserve(t *testing.T) {
 			reason: "We should return an empty observation and an error if the API returned an error",
 			fields: fields{
 				service: &fake.MockPoolClient{
-					MockGetPool: func(ctx context.Context, poolID string, params v1alpha1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+					MockGetPool: func(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
 						return nil, errBoom
 					},
 				},
@@ -217,7 +209,6 @@ func TestPoolObserve(t *testing.T) {
 			args: args{
 				mg: pool(
 					withPoolID("1234beef"),
-					withPoolAccount("example-account"),
 				),
 			},
 			want: want{
@@ -229,7 +220,7 @@ func TestPoolObserve(t *testing.T) {
 			reason: "We should return ResourceExists: true and no error when a load balancer pool is found",
 			fields: fields{
 				service: &fake.MockPoolClient{
-					MockGetPool: func(ctx context.Context, poolID string, params v1alpha1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+					MockGetPool: func(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
 						return &cloudflare.LoadBalancerPool{
 							ID: poolID,
 						}, nil
@@ -237,7 +228,7 @@ func TestPoolObserve(t *testing.T) {
 				},
 			},
 			args: args{
-				mg: pool(withPoolID("1234beef"), withPoolAccount("example-account")),
+				mg: pool(withPoolID("1234beef")),
 			},
 			want: want{
 				o: managed.ExternalObservation{
@@ -300,14 +291,13 @@ func TestPoolCreate(t *testing.T) {
 			reason: "We should return any errors during the create process",
 			fields: fields{
 				service: &fake.MockPoolClient{
-					MockCreatePool: func(ctx context.Context, params v1alpha1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+					MockCreatePool: func(ctx context.Context, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
 						return nil, errBoom
 					},
 				},
 			},
 			args: args{
 				mg: pool(
-					withPoolAccount("example-account"),
 					withPoolName("test-pool"),
 				),
 			},
@@ -320,17 +310,16 @@ func TestPoolCreate(t *testing.T) {
 			reason: "We should return ExternalNameAssigned: true and no error when a load balancer pool is created",
 			fields: fields{
 				service: &fake.MockPoolClient{
-					MockCreatePool: func(ctx context.Context, params v1alpha1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+					MockCreatePool: func(ctx context.Context, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
 						return &cloudflare.LoadBalancerPool{
 							ID:   "1234beef",
-							Name: params.Name,
+							Name: *params.Name,
 						}, nil
 					},
 				},
 			},
 			args: args{
 				mg: pool(
-					withPoolAccount("example-account"),
 					withPoolName("test-pool"),
 				),
 			},
@@ -392,7 +381,7 @@ func TestPoolUpdate(t *testing.T) {
 			reason: "We should return any errors during the update process",
 			fields: fields{
 				service: &fake.MockPoolClient{
-					MockUpdatePool: func(ctx context.Context, poolID string, params v1alpha1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+					MockUpdatePool: func(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
 						return nil, errBoom
 					},
 				},
@@ -400,7 +389,6 @@ func TestPoolUpdate(t *testing.T) {
 			args: args{
 				mg: pool(
 					withPoolID("1234beef"),
-					withPoolAccount("example-account"),
 					withPoolName("test-pool"),
 				),
 			},
@@ -413,7 +401,7 @@ func TestPoolUpdate(t *testing.T) {
 			reason: "We should return no error when a load balancer pool is updated",
 			fields: fields{
 				service: &fake.MockPoolClient{
-					MockUpdatePool: func(ctx context.Context, poolID string, params v1alpha1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
+					MockUpdatePool: func(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) (*cloudflare.LoadBalancerPool, error) {
 						return &cloudflare.LoadBalancerPool{}, nil
 					},
 				},
@@ -421,7 +409,6 @@ func TestPoolUpdate(t *testing.T) {
 			args: args{
 				mg: pool(
 					withPoolID("1234beef"),
-					withPoolAccount("example-account"),
 					withPoolName("test-pool"),
 				),
 			},
@@ -482,7 +469,7 @@ func TestPoolDelete(t *testing.T) {
 			reason: "We should return any errors during the delete process",
 			fields: fields{
 				service: &fake.MockPoolClient{
-					MockDeletePool: func(ctx context.Context, poolID string, params v1alpha1.LoadBalancerPoolParameters) error {
+					MockDeletePool: func(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) error {
 						return errBoom
 					},
 				},
@@ -490,7 +477,6 @@ func TestPoolDelete(t *testing.T) {
 			args: args{
 				mg: pool(
 					withPoolID("1234beef"),
-					withPoolAccount("example-account"),
 				),
 			},
 			want: want{
@@ -501,7 +487,7 @@ func TestPoolDelete(t *testing.T) {
 			reason: "We should return no error when a load balancer pool is deleted",
 			fields: fields{
 				service: &fake.MockPoolClient{
-					MockDeletePool: func(ctx context.Context, poolID string, params v1alpha1.LoadBalancerPoolParameters) error {
+					MockDeletePool: func(ctx context.Context, poolID string, params v1beta1.LoadBalancerPoolParameters) error {
 						return nil
 					},
 				},
@@ -509,7 +495,6 @@ func TestPoolDelete(t *testing.T) {
 			args: args{
 				mg: pool(
 					withPoolID("1234beef"),
-					withPoolAccount("example-account"),
 				),
 			},
 			want: want{

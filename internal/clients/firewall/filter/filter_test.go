@@ -24,7 +24,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/rossigee/provider-cloudflare/apis/firewall/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/firewall/v1beta1"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
@@ -41,7 +41,7 @@ import (
 	rtfake "github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	corev1 "k8s.io/api/core/v1"
 
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -53,30 +53,30 @@ import (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-type filterModifier func(*v1alpha1.Filter)
+type filterModifier func(*v1beta1.Filter)
 
 func withExpression(expression string) filterModifier {
-	return func(r *v1alpha1.Filter) { r.Spec.ForProvider.Expression = expression }
+	return func(r *v1beta1.Filter) { r.Spec.ForProvider.Expression = expression }
 }
 
 func withDescription(description string) filterModifier {
-	return func(r *v1alpha1.Filter) { r.Spec.ForProvider.Description = &description }
+	return func(r *v1beta1.Filter) { r.Spec.ForProvider.Description = &description }
 }
 
 func withPaused(paused bool) filterModifier {
-	return func(r *v1alpha1.Filter) { r.Spec.ForProvider.Paused = &paused }
+	return func(r *v1beta1.Filter) { r.Spec.ForProvider.Paused = &paused }
 }
 
 func withZone(zone string) filterModifier {
-	return func(r *v1alpha1.Filter) { r.Spec.ForProvider.Zone = &zone }
+	return func(r *v1beta1.Filter) { r.Spec.ForProvider.Zone = &zone }
 }
 
 func withExternalName(filterID string) filterModifier {
-	return func(r *v1alpha1.Filter) { meta.SetExternalName(r, filterID) }
+	return func(r *v1beta1.Filter) { meta.SetExternalName(r, filterID) }
 }
 
-func filterBuild(m ...filterModifier) *v1alpha1.Filter {
-	cr := &v1alpha1.Filter{}
+func filterBuild(m ...filterModifier) *v1beta1.Filter {
+	cr := &v1beta1.Filter{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -123,7 +123,7 @@ func TestObserve(t *testing.T) {
 				client: &fake.MockClient{},
 			},
 			args: args{
-				mg: &v1alpha1.Filter{},
+				mg: &v1beta1.Filter{},
 			},
 			want: want{
 				o: managed.ExternalObservation{ResourceExists: false},
@@ -355,8 +355,8 @@ func TestConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.Filter{
-					Spec: v1alpha1.FilterSpec{
+				mg: &v1beta1.Filter{
+					Spec: v1beta1.FilterSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -369,7 +369,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -385,8 +385,8 @@ func TestConnect(t *testing.T) {
 				newClient: NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.Filter{
-					Spec: v1alpha1.FilterSpec{
+				mg: &v1beta1.Filter{
+					Spec: v1beta1.FilterSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",

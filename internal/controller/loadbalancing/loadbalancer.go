@@ -35,8 +35,8 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
-	apisv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
+	apisv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing"
 )
@@ -51,14 +51,14 @@ const (
 
 // SetupLoadBalancer adds a controller that reconciles LoadBalancer managed resources.
 func SetupLoadBalancer(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.LoadBalancerGroupKind)
+	name := managed.ControllerName(v1beta1.LoadBalancerGroupKind)
 
 	o := controller.Options{
 		MaxConcurrentReconciles: 5,
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.LoadBalancerGroupVersionKind),
+		resource.ManagedKind(v1beta1.LoadBalancerGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube: mgr.GetClient(),
 			newServiceFn: func(cfg clients.Config, httpClient *http.Client) (loadbalancing.LoadBalancerClient, error) {
@@ -74,7 +74,7 @@ func SetupLoadBalancer(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRat
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.LoadBalancer{}).
+		For(&v1beta1.LoadBalancer{}).
 		Complete(r)
 }
 
@@ -91,13 +91,13 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancer)
+	cr, ok := mg.(*v1beta1.LoadBalancer)
 	if !ok {
 		return nil, errors.New(errNotLoadBalancer)
 	}
 
 
-	pc := &apisv1alpha1.ProviderConfig{}
+	pc := &apisv1beta1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -124,7 +124,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancer)
+	cr, ok := mg.(*v1beta1.LoadBalancer)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotLoadBalancer)
 	}
@@ -161,7 +161,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancer)
+	cr, ok := mg.(*v1beta1.LoadBalancer)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotLoadBalancer)
 	}
@@ -184,7 +184,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancer)
+	cr, ok := mg.(*v1beta1.LoadBalancer)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotLoadBalancer)
 	}
@@ -205,7 +205,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancer)
+	cr, ok := mg.(*v1beta1.LoadBalancer)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotLoadBalancer)
 	}
@@ -218,7 +218,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	return managed.ExternalDelete{}, nil
 }
 
-func (c *external) lateInitialize(spec *v1alpha1.LoadBalancerParameters, lb *cloudflare.LoadBalancer) bool {
+func (c *external) lateInitialize(spec *v1beta1.LoadBalancerParameters, lb *cloudflare.LoadBalancer) bool {
 	li := false
 
 	if spec.Name == nil && lb.Name != "" {
@@ -264,11 +264,11 @@ func (c *external) lateInitialize(spec *v1alpha1.LoadBalancerParameters, lb *clo
 	return li
 }
 
-func (c *external) resolveReferences(ctx context.Context, cr *v1alpha1.LoadBalancer) error {
+func (c *external) resolveReferences(ctx context.Context, cr *v1beta1.LoadBalancer) error {
 	// Resolve FallbackPoolRef
 	if cr.Spec.ForProvider.FallbackPoolRef != nil {
 		r := cr.Spec.ForProvider.FallbackPoolRef
-		pool := &v1alpha1.LoadBalancerPool{}
+		pool := &v1beta1.LoadBalancerPool{}
 		if err := c.kube.Get(ctx, types.NamespacedName{Name: r.Name}, pool); err != nil {
 			return errors.Wrap(err, "cannot get referenced fallback pool")
 		}
@@ -282,7 +282,7 @@ func (c *external) resolveReferences(ctx context.Context, cr *v1alpha1.LoadBalan
 	if len(cr.Spec.ForProvider.DefaultPoolRefs) > 0 {
 		poolIDs := make([]string, 0, len(cr.Spec.ForProvider.DefaultPoolRefs))
 		for _, ref := range cr.Spec.ForProvider.DefaultPoolRefs {
-			pool := &v1alpha1.LoadBalancerPool{}
+			pool := &v1beta1.LoadBalancerPool{}
 			if err := c.kube.Get(ctx, types.NamespacedName{Name: ref.Name}, pool); err != nil {
 				return errors.Wrap(err, fmt.Sprintf("cannot get referenced default pool %s", ref.Name))
 			}
@@ -296,7 +296,7 @@ func (c *external) resolveReferences(ctx context.Context, cr *v1alpha1.LoadBalan
 
 	// Resolve DefaultPoolSelector
 	if cr.Spec.ForProvider.DefaultPoolSelector != nil {
-		pools := &v1alpha1.LoadBalancerPoolList{}
+		pools := &v1beta1.LoadBalancerPoolList{}
 		if err := c.kube.List(ctx, pools, client.MatchingLabels(cr.Spec.ForProvider.DefaultPoolSelector.MatchLabels)); err != nil {
 			return errors.Wrap(err, "cannot list pools for default pool selector")
 		}
@@ -312,7 +312,7 @@ func (c *external) resolveReferences(ctx context.Context, cr *v1alpha1.LoadBalan
 
 	// Resolve FallbackPoolSelector
 	if cr.Spec.ForProvider.FallbackPoolSelector != nil {
-		pools := &v1alpha1.LoadBalancerPoolList{}
+		pools := &v1beta1.LoadBalancerPoolList{}
 		if err := c.kube.List(ctx, pools, client.MatchingLabels(cr.Spec.ForProvider.FallbackPoolSelector.MatchLabels)); err != nil {
 			return errors.Wrap(err, "cannot list pools for fallback pool selector")
 		}

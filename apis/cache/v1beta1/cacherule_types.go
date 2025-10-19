@@ -254,6 +254,9 @@ type CacheRuleObservation struct {
 	// ID of the created cache rule.
 	ID string `json:"id,omitempty"`
 
+	// RulesetID of the ruleset containing the cache rule.
+	RulesetID string `json:"rulesetId,omitempty"`
+
 	// Phase indicates the phase where the cache rule is executed.
 	Phase string `json:"phase,omitempty"`
 

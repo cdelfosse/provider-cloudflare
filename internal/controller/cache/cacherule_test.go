@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/cache/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/cache/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/cache"
 
@@ -44,43 +44,43 @@ import (
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
 type mockCacheRuleClient struct {
-	MockCreateCacheRule func(ctx context.Context, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
-	MockGetCacheRule    func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
-	MockUpdateCacheRule func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
-	MockDeleteCacheRule func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) error
+	MockCreateCacheRule func(ctx context.Context, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
+	MockGetCacheRule    func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
+	MockUpdateCacheRule func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
+	MockDeleteCacheRule func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) error
 }
 
-func (m *mockCacheRuleClient) CreateCacheRule(ctx context.Context, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+func (m *mockCacheRuleClient) CreateCacheRule(ctx context.Context, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 	return m.MockCreateCacheRule(ctx, params)
 }
 
-func (m *mockCacheRuleClient) GetCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+func (m *mockCacheRuleClient) GetCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 	return m.MockGetCacheRule(ctx, rulesetID, ruleID, params)
 }
 
-func (m *mockCacheRuleClient) UpdateCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+func (m *mockCacheRuleClient) UpdateCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 	return m.MockUpdateCacheRule(ctx, rulesetID, ruleID, params)
 }
 
-func (m *mockCacheRuleClient) DeleteCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) error {
+func (m *mockCacheRuleClient) DeleteCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) error {
 	return m.MockDeleteCacheRule(ctx, rulesetID, ruleID, params)
 }
 
-type cacheRuleModifier func(*v1alpha1.CacheRule)
+type cacheRuleModifier func(*v1beta1.CacheRule)
 
 
 func withRuleID(id string) cacheRuleModifier {
-	return func(cr *v1alpha1.CacheRule) { cr.Status.AtProvider.ID = id }
+	return func(cr *v1beta1.CacheRule) { cr.Status.AtProvider.ID = id }
 }
 
 func withRulesetID(id string) cacheRuleModifier {
-	return func(cr *v1alpha1.CacheRule) { cr.Status.AtProvider.RulesetID = id }
+	return func(cr *v1beta1.CacheRule) { cr.Status.AtProvider.RulesetID = id }
 }
 
-func cacheRule(m ...cacheRuleModifier) *v1alpha1.CacheRule {
-	cr := &v1alpha1.CacheRule{
-		Spec: v1alpha1.CacheRuleSpec{
-			ForProvider: v1alpha1.CacheRuleParameters{
+func cacheRule(m ...cacheRuleModifier) *v1beta1.CacheRule {
+	cr := &v1beta1.CacheRule{
+		Spec: v1beta1.CacheRuleSpec{
+			ForProvider: v1beta1.CacheRuleParameters{
 				Zone:       "test-zone-id",
 				Name:       "test-cache-rule",
 				Expression: "(http.request.uri.path contains \"/images/\")",
@@ -191,7 +191,7 @@ func TestObserve(t *testing.T) {
 			reason: "Should return any error encountered getting the cache rule",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockGetCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+					MockGetCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 						return nil, nil, errors.New("boom")
 					},
 				},
@@ -210,7 +210,7 @@ func TestObserve(t *testing.T) {
 			reason: "Should report that the cache rule does not exist",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockGetCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+					MockGetCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 						return nil, nil, &cloudflare.Error{StatusCode: 404}
 					},
 				},
@@ -231,7 +231,7 @@ func TestObserve(t *testing.T) {
 			reason: "Should report that the cache rule exists and is up to date",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockGetCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+					MockGetCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 						return &cloudflare.RulesetRule{
 							ID:         "test-rule-id",
 							Expression: "(http.request.uri.path contains \"/images/\")",
@@ -246,7 +246,7 @@ func TestObserve(t *testing.T) {
 				mg: cacheRule(
 					withRuleID("test-rule-id"),
 					withRulesetID("test-ruleset-id"),
-					func(cr *v1alpha1.CacheRule) {
+					func(cr *v1beta1.CacheRule) {
 						cr.Spec.ForProvider.Enabled = boolPtr(true)
 					},
 				),
@@ -264,7 +264,7 @@ func TestObserve(t *testing.T) {
 			reason: "Should report that the cache rule exists but is not up to date",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockGetCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+					MockGetCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 						return &cloudflare.RulesetRule{
 							ID:         "test-rule-id",
 							Expression: "(http.request.uri.path contains \"/css/\")",
@@ -340,7 +340,7 @@ func TestCreate(t *testing.T) {
 			reason: "Should return any error encountered creating the cache rule",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockCreateCacheRule: func(ctx context.Context, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+					MockCreateCacheRule: func(ctx context.Context, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 						return nil, nil, errors.New("boom")
 					},
 				},
@@ -356,7 +356,7 @@ func TestCreate(t *testing.T) {
 			reason: "Should return no error when cache rule is created successfully",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockCreateCacheRule: func(ctx context.Context, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+					MockCreateCacheRule: func(ctx context.Context, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 						return &cloudflare.RulesetRule{
 							ID: "test-rule-id",
 						}, &cloudflare.Ruleset{
@@ -424,7 +424,7 @@ func TestUpdate(t *testing.T) {
 			reason: "Should return any error encountered updating the cache rule",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockUpdateCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+					MockUpdateCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 						return nil, nil, errors.New("boom")
 					},
 				},
@@ -443,7 +443,7 @@ func TestUpdate(t *testing.T) {
 			reason: "Should return no error when cache rule is updated successfully",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockUpdateCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+					MockUpdateCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 						return &cloudflare.RulesetRule{
 							ID: "test-rule-id",
 						}, &cloudflare.Ruleset{
@@ -513,7 +513,7 @@ func TestDelete(t *testing.T) {
 			reason: "Should return any error encountered deleting the cache rule",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockDeleteCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) error {
+					MockDeleteCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) error {
 						return errors.New("boom")
 					},
 				},
@@ -532,7 +532,7 @@ func TestDelete(t *testing.T) {
 			reason: "Should return no error when cache rule is deleted successfully",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockDeleteCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) error {
+					MockDeleteCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) error {
 						return nil
 					},
 				},
@@ -551,7 +551,7 @@ func TestDelete(t *testing.T) {
 			reason: "Should return no error when cache rule is already deleted",
 			fields: fields{
 				service: &mockCacheRuleClient{
-					MockDeleteCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) error {
+					MockDeleteCacheRule: func(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) error {
 						return &cloudflare.Error{StatusCode: 404}
 					},
 				},

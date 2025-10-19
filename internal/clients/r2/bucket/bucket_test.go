@@ -29,7 +29,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/r2/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/r2/v1beta1"
 )
 
 // MockR2BucketAPI implements the R2BucketAPI interface for testing
@@ -198,11 +198,11 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.BucketParameters
+		params v1beta1.BucketParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.BucketObservation
+		obs *v1beta1.BucketObservation
 		err error
 	}
 
@@ -245,13 +245,13 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name:         "test-bucket",
 					LocationHint: ptr.To("ENAM"),
 				},
 			},
 			want: want{
-				obs: &v1alpha1.BucketObservation{
+				obs: &v1beta1.BucketObservation{
 					Name:         "test-bucket",
 					Location:     "ENAM",
 					CreationDate: &metav1.Time{Time: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
@@ -278,12 +278,12 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name: "minimal-bucket",
 				},
 			},
 			want: want{
-				obs: &v1alpha1.BucketObservation{
+				obs: &v1beta1.BucketObservation{
 					Name:     "minimal-bucket",
 					Location: "auto",
 				},
@@ -301,7 +301,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name: "test-bucket",
 				},
 			},
@@ -326,7 +326,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name: "test-bucket",
 				},
 			},
@@ -366,7 +366,7 @@ func TestGet(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.BucketObservation
+		obs *v1beta1.BucketObservation
 		err error
 	}
 
@@ -409,7 +409,7 @@ func TestGet(t *testing.T) {
 				bucketName: bucketName,
 			},
 			want: want{
-				obs: &v1alpha1.BucketObservation{
+				obs: &v1beta1.BucketObservation{
 					Name:         "test-bucket",
 					Location:     "ENAM",
 					CreationDate: &metav1.Time{Time: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)},
@@ -439,7 +439,7 @@ func TestGet(t *testing.T) {
 				bucketName: "minimal-bucket",
 			},
 			want: want{
-				obs: &v1alpha1.BucketObservation{
+				obs: &v1beta1.BucketObservation{
 					Name:     "minimal-bucket",
 					Location: "auto",
 				},
@@ -645,7 +645,7 @@ func TestList(t *testing.T) {
 	}
 
 	type want struct {
-		obs []v1alpha1.BucketObservation
+		obs []v1beta1.BucketObservation
 		err error
 	}
 
@@ -692,7 +692,7 @@ func TestList(t *testing.T) {
 				ctx: context.Background(),
 			},
 			want: want{
-				obs: []v1alpha1.BucketObservation{
+				obs: []v1beta1.BucketObservation{
 					{
 						Name:         "bucket-1",
 						Location:     "ENAM",
@@ -725,7 +725,7 @@ func TestList(t *testing.T) {
 				ctx: context.Background(),
 			},
 			want: want{
-				obs: []v1alpha1.BucketObservation{},
+				obs: []v1beta1.BucketObservation{},
 				err: nil,
 			},
 		},
@@ -792,8 +792,8 @@ func TestIsUpToDate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.BucketParameters
-		obs    v1alpha1.BucketObservation
+		params v1beta1.BucketParameters
+		obs    v1beta1.BucketObservation
 	}
 
 	type want struct {
@@ -814,10 +814,10 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name: "test-bucket",
 				},
-				obs: v1alpha1.BucketObservation{
+				obs: v1beta1.BucketObservation{
 					Name:     "test-bucket",
 					Location: "ENAM",
 				},
@@ -834,10 +834,10 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name: "different-bucket",
 				},
-				obs: v1alpha1.BucketObservation{
+				obs: v1beta1.BucketObservation{
 					Name:     "test-bucket",
 					Location: "ENAM",
 				},
@@ -870,7 +870,7 @@ func TestConvertToObservation(t *testing.T) {
 	}
 
 	type want struct {
-		obs v1alpha1.BucketObservation
+		obs v1beta1.BucketObservation
 	}
 
 	cases := map[string]struct {
@@ -888,7 +888,7 @@ func TestConvertToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: v1alpha1.BucketObservation{
+				obs: v1beta1.BucketObservation{
 					Name:         "full-bucket",
 					Location:     "ENAM",
 					CreationDate: &metav1.Time{Time: time.Time{}},
@@ -904,7 +904,7 @@ func TestConvertToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: v1alpha1.BucketObservation{
+				obs: v1beta1.BucketObservation{
 					Name:     "minimal-bucket",
 					Location: "auto",
 				},
@@ -920,7 +920,7 @@ func TestConvertToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: v1alpha1.BucketObservation{
+				obs: v1beta1.BucketObservation{
 					Name:         "date-bucket",
 					Location:     "WNAM",
 					CreationDate: &metav1.Time{Time: time.Time{}},
@@ -941,7 +941,7 @@ func TestConvertToObservation(t *testing.T) {
 
 func TestConvertToCloudflareParams(t *testing.T) {
 	type args struct {
-		params v1alpha1.BucketParameters
+		params v1beta1.BucketParameters
 	}
 
 	type want struct {
@@ -956,7 +956,7 @@ func TestConvertToCloudflareParams(t *testing.T) {
 		"ConvertAllParameters": {
 			reason: "convertToCloudflareParams should convert all parameters correctly",
 			args: args{
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name:         "test-bucket",
 					LocationHint: ptr.To("ENAM"),
 				},
@@ -971,7 +971,7 @@ func TestConvertToCloudflareParams(t *testing.T) {
 		"ConvertMinimalParameters": {
 			reason: "convertToCloudflareParams should handle minimal parameters",
 			args: args{
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name: "minimal-bucket",
 				},
 			},
@@ -984,7 +984,7 @@ func TestConvertToCloudflareParams(t *testing.T) {
 		"ConvertWNAMParameters": {
 			reason: "convertToCloudflareParams should handle WNAM location hint",
 			args: args{
-				params: v1alpha1.BucketParameters{
+				params: v1beta1.BucketParameters{
 					Name:         "wnam-bucket",
 					LocationHint: ptr.To("WNAM"),
 				},

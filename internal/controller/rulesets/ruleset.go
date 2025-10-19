@@ -33,7 +33,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/rulesets/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/rulesets/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	ruleset "github.com/rossigee/provider-cloudflare/internal/clients/rulesets"
 	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
@@ -62,7 +62,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 
 // SetupRuleset adds a controller that reconciles Ruleset managed resources.
 func SetupRuleset(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.RulesetGroupKind)
+	name := managed.ControllerName(v1beta1.RulesetGroupKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -71,7 +71,7 @@ func SetupRuleset(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimi
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.RulesetGroupVersionKind),
+		resource.ManagedKind(v1beta1.RulesetGroupVersionKind),
 		managed.WithExternalConnecter(&rulesetConnector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (ruleset.Client, error) {
@@ -88,7 +88,7 @@ func SetupRuleset(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimi
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.Ruleset{}).
+		For(&v1beta1.Ruleset{}).
 		Complete(r)
 }
 
@@ -102,7 +102,7 @@ type rulesetConnector struct {
 // Connect produces a valid configuration for a Cloudflare API
 // instance, and returns it as an external client.
 func (c *rulesetConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Ruleset)
+	_, ok := mg.(*v1beta1.Ruleset)
 	if !ok {
 		return nil, errors.New(errNotRuleset)
 	}
@@ -128,7 +128,7 @@ type rulesetExternal struct {
 }
 
 func (e *rulesetExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Ruleset)
+	cr, ok := mg.(*v1beta1.Ruleset)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotRuleset)
 	}
@@ -165,7 +165,7 @@ func (e *rulesetExternal) Observe(ctx context.Context, mg resource.Managed) (man
 }
 
 func (e *rulesetExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Ruleset)
+	cr, ok := mg.(*v1beta1.Ruleset)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotRuleset)
 	}
@@ -189,7 +189,7 @@ func (e *rulesetExternal) Create(ctx context.Context, mg resource.Managed) (mana
 }
 
 func (e *rulesetExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Ruleset)
+	cr, ok := mg.(*v1beta1.Ruleset)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotRuleset)
 	}
@@ -217,7 +217,7 @@ func (e *rulesetExternal) Update(ctx context.Context, mg resource.Managed) (mana
 }
 
 func (e *rulesetExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Ruleset)
+	cr, ok := mg.(*v1beta1.Ruleset)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotRuleset)
 	}

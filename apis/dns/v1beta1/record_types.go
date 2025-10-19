@@ -27,7 +27,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/pkg/errors"
 
-	zonev1alpha1 "github.com/rossigee/provider-cloudflare/apis/zone/v1alpha1"
+	zonev1beta1 "github.com/rossigee/provider-cloudflare/apis/zone/v1beta1"
 )
 
 // RecordParameters are the configurable fields of a DNS Record.
@@ -177,7 +177,7 @@ func (dr *Record) ResolveReferences(ctx context.Context, c client.Reader) error 
 		CurrentValue: reference.FromPtrValue(dr.Spec.ForProvider.Zone),
 		Reference:    dr.Spec.ForProvider.ZoneRef,
 		Selector:     dr.Spec.ForProvider.ZoneSelector,
-		To:           reference.To{Managed: &zonev1alpha1.Zone{}, List: &zonev1alpha1.ZoneList{}},
+		To:           reference.To{Managed: &zonev1beta1.Zone{}, List: &zonev1beta1.ZoneList{}},
 		Extract:      reference.ExternalName(),
 	})
 	if err != nil {

@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/transform/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/transform/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -39,8 +39,8 @@ const (
 // Client is a Cloudflare API client that implements methods for working
 // with Transform Rules via the Ruleset Engine.
 type Client interface {
-	CreateTransformRule(ctx context.Context, zoneID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error)
-	UpdateTransformRule(ctx context.Context, zoneID string, ruleID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error)
+	CreateTransformRule(ctx context.Context, zoneID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error)
+	UpdateTransformRule(ctx context.Context, zoneID string, ruleID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error)
 	GetTransformRule(ctx context.Context, zoneID string, ruleID string, phase string) (cloudflare.RulesetRule, error)
 	DeleteTransformRule(ctx context.Context, zoneID string, ruleID string, phase string) error
 	ListTransformRules(ctx context.Context, zoneID string, phase string) ([]cloudflare.RulesetRule, error)
@@ -61,7 +61,7 @@ func NewClient(cfg clients.Config, hc *http.Client) (Client, error) {
 }
 
 // CreateTransformRule creates a new transform rule in the appropriate ruleset
-func (c *clientImpl) CreateTransformRule(ctx context.Context, zoneID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error) {
+func (c *clientImpl) CreateTransformRule(ctx context.Context, zoneID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error) {
 	// Get or create the phase ruleset
 	ruleset, err := c.getOrCreatePhaseRuleset(ctx, zoneID, spec.Phase)
 	if err != nil {
@@ -98,7 +98,7 @@ func (c *clientImpl) CreateTransformRule(ctx context.Context, zoneID string, spe
 }
 
 // UpdateTransformRule updates an existing transform rule
-func (c *clientImpl) UpdateTransformRule(ctx context.Context, zoneID string, ruleID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error) {
+func (c *clientImpl) UpdateTransformRule(ctx context.Context, zoneID string, ruleID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error) {
 	// Get the phase ruleset
 	ruleset, err := c.getPhaseRuleset(ctx, zoneID, spec.Phase)
 	if err != nil {
@@ -257,8 +257,8 @@ func (c *clientImpl) getOrCreatePhaseRuleset(ctx context.Context, zoneID string,
 	return cloudflare.Ruleset{}, err
 }
 
-// specToRulesetRule converts a v1alpha1.RuleParameters to cloudflare.RulesetRule
-func (c *clientImpl) specToRulesetRule(spec *v1alpha1.RuleParameters) cloudflare.RulesetRule {
+// specToRulesetRule converts a v1beta1.RuleParameters to cloudflare.RulesetRule
+func (c *clientImpl) specToRulesetRule(spec *v1beta1.RuleParameters) cloudflare.RulesetRule {
 	rule := cloudflare.RulesetRule{
 		Expression: spec.Expression,
 		Action:     spec.Action,
@@ -349,8 +349,8 @@ func IsRuleNotFound(err error) bool {
 }
 
 // GenerateObservation creates an observation from a Cloudflare RulesetRule
-func GenerateObservation(rule cloudflare.RulesetRule, rulesetID string) v1alpha1.RuleObservation {
-	obs := v1alpha1.RuleObservation{
+func GenerateObservation(rule cloudflare.RulesetRule, rulesetID string) v1beta1.RuleObservation {
+	obs := v1beta1.RuleObservation{
 		ID:        rule.ID,
 		RulesetID: rulesetID,
 	}
@@ -367,7 +367,7 @@ func GenerateObservation(rule cloudflare.RulesetRule, rulesetID string) v1alpha1
 }
 
 // UpToDate checks if the remote rule is up to date with the requested resource parameters
-func UpToDate(spec *v1alpha1.RuleParameters, rule cloudflare.RulesetRule) bool {
+func UpToDate(spec *v1beta1.RuleParameters, rule cloudflare.RulesetRule) bool {
 	if spec == nil {
 		return true
 	}

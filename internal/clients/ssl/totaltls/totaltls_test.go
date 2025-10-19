@@ -27,7 +27,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -65,7 +65,7 @@ func TestGet(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.TotalTLSObservation
+		obs *v1beta1.TotalTLSObservation
 		err error
 	}
 
@@ -96,7 +96,7 @@ func TestGet(t *testing.T) {
 				zoneID: zoneID,
 			},
 			want: want{
-				obs: &v1alpha1.TotalTLSObservation{
+				obs: &v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("digicert"),
 					ValidityDays:         ptr.To(90),
@@ -122,7 +122,7 @@ func TestGet(t *testing.T) {
 				zoneID: zoneID,
 			},
 			want: want{
-				obs: &v1alpha1.TotalTLSObservation{
+				obs: &v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(false),
 					CertificateAuthority: ptr.To("letsencrypt"),
 					ValidityDays:         ptr.To(30),
@@ -193,11 +193,11 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.TotalTLSParameters
+		params v1beta1.TotalTLSParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.TotalTLSObservation
+		obs *v1beta1.TotalTLSObservation
 		err error
 	}
 
@@ -234,7 +234,7 @@ func TestUpdate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:                 zoneID,
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("digicert"),
@@ -242,7 +242,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.TotalTLSObservation{
+				obs: &v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("digicert"),
 					ValidityDays:         ptr.To(90),
@@ -271,13 +271,13 @@ func TestUpdate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:    zoneID,
 					Enabled: ptr.To(false),
 				},
 			},
 			want: want{
-				obs: &v1alpha1.TotalTLSObservation{
+				obs: &v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(false),
 					CertificateAuthority: ptr.To("letsencrypt"),
 					ValidityDays:         ptr.To(30),
@@ -304,14 +304,14 @@ func TestUpdate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:    zoneID,
 					Enabled: ptr.To(true),
 					// CertificateAuthority and ValidityDays are nil
 				},
 			},
 			want: want{
-				obs: &v1alpha1.TotalTLSObservation{
+				obs: &v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("google"),
 					ValidityDays:         ptr.To(60),
@@ -330,7 +330,7 @@ func TestUpdate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:    zoneID,
 					Enabled: ptr.To(true),
 				},
@@ -366,8 +366,8 @@ func TestIsUpToDate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.TotalTLSParameters
-		obs    v1alpha1.TotalTLSObservation
+		params v1beta1.TotalTLSParameters
+		obs    v1beta1.TotalTLSObservation
 	}
 
 	type want struct {
@@ -388,13 +388,13 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:                 zoneID,
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("digicert"),
 					ValidityDays:         ptr.To(90),
 				},
-				obs: v1alpha1.TotalTLSObservation{
+				obs: v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("digicert"),
 					ValidityDays:         ptr.To(90),
@@ -412,11 +412,11 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:    zoneID,
 					Enabled: ptr.To(true),
 				},
-				obs: v1alpha1.TotalTLSObservation{
+				obs: v1beta1.TotalTLSObservation{
 					Enabled: ptr.To(false),
 				},
 			},
@@ -432,11 +432,11 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:                 zoneID,
 					CertificateAuthority: ptr.To("digicert"),
 				},
-				obs: v1alpha1.TotalTLSObservation{
+				obs: v1beta1.TotalTLSObservation{
 					CertificateAuthority: ptr.To("letsencrypt"),
 				},
 			},
@@ -452,11 +452,11 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:         zoneID,
 					ValidityDays: ptr.To(90),
 				},
-				obs: v1alpha1.TotalTLSObservation{
+				obs: v1beta1.TotalTLSObservation{
 					ValidityDays: ptr.To(30),
 				},
 			},
@@ -472,11 +472,11 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone: zoneID,
 					// All other params are nil
 				},
-				obs: v1alpha1.TotalTLSObservation{
+				obs: v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("digicert"),
 					ValidityDays:         ptr.To(90),
@@ -494,11 +494,11 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:    zoneID,
 					Enabled: ptr.To(true),
 				},
-				obs: v1alpha1.TotalTLSObservation{
+				obs: v1beta1.TotalTLSObservation{
 					Enabled: nil,
 				},
 			},
@@ -526,7 +526,7 @@ func TestIsUpToDate(t *testing.T) {
 
 func TestConvertParametersToTotalTLS(t *testing.T) {
 	type args struct {
-		params v1alpha1.TotalTLSParameters
+		params v1beta1.TotalTLSParameters
 	}
 
 	type want struct {
@@ -541,7 +541,7 @@ func TestConvertParametersToTotalTLS(t *testing.T) {
 		"ConvertAllParameters": {
 			reason: "convertParametersToTotalTLS should convert all parameters correctly",
 			args: args{
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:                 "test-zone-id",
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("digicert"),
@@ -559,7 +559,7 @@ func TestConvertParametersToTotalTLS(t *testing.T) {
 		"ConvertPartialParameters": {
 			reason: "convertParametersToTotalTLS should handle nil parameters correctly",
 			args: args{
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone:    "test-zone-id",
 					Enabled: ptr.To(false),
 					// CertificateAuthority and ValidityDays are nil
@@ -575,7 +575,7 @@ func TestConvertParametersToTotalTLS(t *testing.T) {
 		"ConvertEmptyParameters": {
 			reason: "convertParametersToTotalTLS should handle all nil parameters",
 			args: args{
-				params: v1alpha1.TotalTLSParameters{
+				params: v1beta1.TotalTLSParameters{
 					Zone: "test-zone-id",
 					// All other parameters are nil
 				},
@@ -602,7 +602,7 @@ func TestConvertTotalTLSToObservation(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.TotalTLSObservation
+		obs *v1beta1.TotalTLSObservation
 	}
 
 	cases := map[string]struct {
@@ -620,7 +620,7 @@ func TestConvertTotalTLSToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.TotalTLSObservation{
+				obs: &v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(true),
 					CertificateAuthority: ptr.To("digicert"),
 					ValidityDays:         ptr.To(90),
@@ -637,7 +637,7 @@ func TestConvertTotalTLSToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.TotalTLSObservation{
+				obs: &v1beta1.TotalTLSObservation{
 					Enabled:              ptr.To(false),
 					CertificateAuthority: ptr.To("letsencrypt"),
 					ValidityDays:         ptr.To(30),
@@ -650,7 +650,7 @@ func TestConvertTotalTLSToObservation(t *testing.T) {
 				settings: cloudflare.TotalTLS{},
 			},
 			want: want{
-				obs: &v1alpha1.TotalTLSObservation{
+				obs: &v1beta1.TotalTLSObservation{
 					Enabled:              nil,
 					CertificateAuthority: ptr.To(""),
 					ValidityDays:         ptr.To(0),

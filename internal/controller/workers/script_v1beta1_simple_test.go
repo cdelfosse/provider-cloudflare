@@ -25,35 +25,27 @@ import (
 	"github.com/rossigee/provider-cloudflare/internal/controller/testutils"
 )
 
-// TestV1Beta1ScriptCreation tests basic Script v1beta1 creation
+// TestV1Beta1ScriptCreation tests basic Worker Script v1beta1 creation
 func TestV1Beta1ScriptCreation(t *testing.T) {
-	placementMode := v1beta1.PlacementModeSmart
-
 	script := &v1beta1.Script{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-worker-script",
-			Namespace: "edge-services",
+			Namespace: "worker-scripts",
 		},
 		Spec: v1beta1.ScriptSpec{
 			ForProvider: v1beta1.ScriptParameters{
-				ScriptName: "test-worker-script",
-				Script:     "export default { fetch() { return new Response('Hello from v1beta1!'); } }",
-				Module:     testutils.BoolPtr(true),
-				CompatibilityDate:  testutils.StringPtr("2023-05-15"),
-				CompatibilityFlags: []string{"nodejs_compat"},
+				ScriptName: "my-worker",
+				Script:     "addEventListener('fetch', event => { event.respondWith(new Response('Hello World!')) })",
+				Module:     testutils.BoolPtr(false),
+				CompatibilityDate: testutils.StringPtr("2023-01-01"),
 				Bindings: []v1beta1.WorkerBinding{
 					{
-						Name: "MY_VAR",
-						Type: "plain_text",
-						Text: testutils.StringPtr("test-value"),
-					},
-					{
-						Name:        "MY_KV",
 						Type:        "kv_namespace",
-						NamespaceID: testutils.StringPtr("test-kv-namespace-id"),
+						Name:        "MY_KV",
+						NamespaceID: testutils.StringPtr("namespace-123"),
 					},
 				},
-				Placement: &placementMode,
+				Tags: []string{"production", "api"},
 			},
 		},
 	}
@@ -65,91 +57,163 @@ func TestV1Beta1ScriptCreation(t *testing.T) {
 	}
 
 	// Test basic field access
-	if script.Spec.ForProvider.ScriptName != "test-worker-script" {
-		t.Errorf("Expected ScriptName 'test-worker-script', got %s", script.Spec.ForProvider.ScriptName)
+	if script.Spec.ForProvider.ScriptName != "my-worker" {
+		t.Errorf("Expected script name 'my-worker', got %s", script.Spec.ForProvider.ScriptName)
 	}
 
-	if !*script.Spec.ForProvider.Module {
-		t.Error("Expected Module to be true")
+	if script.Spec.ForProvider.Script == "" {
+		t.Error("Expected script content to be set")
 	}
 
-	if *script.Spec.ForProvider.CompatibilityDate != "2023-05-15" {
-		t.Errorf("Expected CompatibilityDate '2023-05-15', got %s", *script.Spec.ForProvider.CompatibilityDate)
+	if script.Spec.ForProvider.Module == nil || *script.Spec.ForProvider.Module != false {
+		t.Errorf("Expected module to be false, got %v", script.Spec.ForProvider.Module)
+	}
+
+	if script.Spec.ForProvider.CompatibilityDate == nil || *script.Spec.ForProvider.CompatibilityDate != "2023-01-01" {
+		t.Errorf("Expected compatibility date '2023-01-01', got %v", script.Spec.ForProvider.CompatibilityDate)
 	}
 
 	// Test bindings
-	if len(script.Spec.ForProvider.Bindings) != 2 {
-		t.Errorf("Expected 2 bindings, got %d", len(script.Spec.ForProvider.Bindings))
+	if len(script.Spec.ForProvider.Bindings) != 1 {
+		t.Errorf("Expected 1 binding, got %d", len(script.Spec.ForProvider.Bindings))
 	}
 
-	if script.Spec.ForProvider.Bindings[0].Type != "plain_text" {
-		t.Errorf("Expected first binding type 'plain_text', got %s", script.Spec.ForProvider.Bindings[0].Type)
+	binding := script.Spec.ForProvider.Bindings[0]
+	if binding.Type != "kv_namespace" {
+		t.Errorf("Expected binding type 'kv_namespace', got %s", binding.Type)
 	}
 
-	if script.Spec.ForProvider.Bindings[1].Type != "kv_namespace" {
-		t.Errorf("Expected second binding type 'kv_namespace', got %s", script.Spec.ForProvider.Bindings[1].Type)
+	if binding.Name != "MY_KV" {
+		t.Errorf("Expected binding name 'MY_KV', got %s", binding.Name)
 	}
 
-	// Test placement
-	if *script.Spec.ForProvider.Placement != v1beta1.PlacementModeSmart {
-		t.Errorf("Expected placement mode '%s', got %s", v1beta1.PlacementModeSmart, *script.Spec.ForProvider.Placement)
+	if binding.NamespaceID == nil || *binding.NamespaceID != "namespace-123" {
+		t.Errorf("Expected namespace ID 'namespace-123', got %v", binding.NamespaceID)
+	}
+
+	// Test tags
+	if len(script.Spec.ForProvider.Tags) != 2 {
+		t.Errorf("Expected 2 tags, got %d", len(script.Spec.ForProvider.Tags))
 	}
 
 	// Test namespace scope
-	if script.Namespace != "edge-services" {
-		t.Errorf("Expected namespace 'edge-services', got %s", script.Namespace)
+	if script.Namespace != "worker-scripts" {
+		t.Errorf("Expected namespace 'worker-scripts', got %s", script.Namespace)
 	}
 
-	t.Log("v1beta1 Script creation and field access tests passed")
+	t.Log("v1beta1 Worker Script creation and field access tests passed")
 }
 
-// TestV1Beta1ScriptAdvancedBindings tests advanced v1beta1 binding features
-func TestV1Beta1ScriptAdvancedBindings(t *testing.T) {
+// TestV1Beta1ScriptAdvancedFeatures tests advanced v1beta1 Worker Script features
+func TestV1Beta1ScriptAdvancedFeatures(t *testing.T) {
 	placementMode := v1beta1.PlacementModeSmart
-
 	script := &v1beta1.Script{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "advanced-worker-script",
-			Namespace: "production",
+			Namespace: "production-workers",
 		},
 		Spec: v1beta1.ScriptSpec{
 			ForProvider: v1beta1.ScriptParameters{
-				ScriptName: "advanced-worker-script",
-				Script:     "// Advanced ES Module worker\nexport default { fetch() { return handleRequest(); } }",
-				Module:     testutils.BoolPtr(true),
+				ScriptName: "advanced-worker",
+				Script: `export default {
+					async fetch(request, env, ctx) {
+						return new Response('Advanced Worker Response');
+					}
+				}`,
+				Module:             testutils.BoolPtr(true),
+				CompatibilityDate:  testutils.StringPtr("2024-01-01"),
+				CompatibilityFlags: []string{"nodejs_compat", "durable_objects"},
+				UsageModel:         testutils.StringPtr("bundled"),
 				Bindings: []v1beta1.WorkerBinding{
 					{
-						Name: "SECRET_KEY",
-						Type: "secret_text",
-						Text: testutils.StringPtr("secret-value"),
+						Type:  "text_blob",
+						Name:  "CONFIG",
+						Text:  testutils.StringPtr("production-config"),
 					},
 					{
-						Name:        "MY_KV",
-						Type:        "kv_namespace",
-						NamespaceID: testutils.StringPtr("production-kv-namespace"),
+						Type: "json_data",
+						Name: "SETTINGS",
+						JSON: testutils.StringPtr("{\"debug\": false, \"version\": \"1.2.3\"}"),
 					},
 				},
 				Placement: &placementMode,
+				TailConsumers: []v1beta1.TailConsumer{
+					{
+						Service:     "log-consumer",
+						Environment: testutils.StringPtr("production"),
+					},
+				},
+				LogPush: testutils.BoolPtr(true),
+				Tags:    []string{"production", "advanced", "es-module"},
 			},
 		},
 	}
 
-	// Test advanced binding types
-	bindings := script.Spec.ForProvider.Bindings
-
-	// Secret text binding
-	if bindings[0].Type != "secret_text" {
-		t.Errorf("Expected binding type 'secret_text', got %s", bindings[0].Type)
+	// Test ES module
+	if script.Spec.ForProvider.Module == nil || *script.Spec.ForProvider.Module != true {
+		t.Errorf("Expected module to be true, got %v", script.Spec.ForProvider.Module)
 	}
 
-	// KV namespace binding
-	if bindings[1].Type != "kv_namespace" {
-		t.Errorf("Expected binding type 'kv_namespace', got %s", bindings[1].Type)
+	// Test usage model
+	if script.Spec.ForProvider.UsageModel == nil || *script.Spec.ForProvider.UsageModel != "bundled" {
+		t.Errorf("Expected usage model 'bundled', got %v", script.Spec.ForProvider.UsageModel)
 	}
 
-	if *bindings[1].NamespaceID != "production-kv-namespace" {
-		t.Errorf("Expected namespace ID 'production-kv-namespace', got %s", *bindings[1].NamespaceID)
+	// Test compatibility flags
+	if len(script.Spec.ForProvider.CompatibilityFlags) != 2 {
+		t.Errorf("Expected 2 compatibility flags, got %d", len(script.Spec.ForProvider.CompatibilityFlags))
 	}
 
-	t.Log("v1beta1 Script advanced binding tests passed")
+	// Test multiple bindings
+	if len(script.Spec.ForProvider.Bindings) != 2 {
+		t.Errorf("Expected 2 bindings, got %d", len(script.Spec.ForProvider.Bindings))
+	}
+
+	// Test text blob binding
+	textBinding := script.Spec.ForProvider.Bindings[0]
+	if textBinding.Type != "text_blob" {
+		t.Errorf("Expected binding type 'text_blob', got %s", textBinding.Type)
+	}
+	if textBinding.Text == nil || *textBinding.Text != "production-config" {
+		t.Errorf("Expected text 'production-config', got %v", textBinding.Text)
+	}
+
+	// Test JSON binding
+	jsonBinding := script.Spec.ForProvider.Bindings[1]
+	if jsonBinding.Type != "json_data" {
+		t.Errorf("Expected binding type 'json_data', got %s", jsonBinding.Type)
+	}
+	if jsonBinding.JSON == nil || *jsonBinding.JSON != "{\"debug\": false, \"version\": \"1.2.3\"}" {
+		t.Errorf("Expected JSON data, got %v", jsonBinding.JSON)
+	}
+
+	// Test placement
+	if script.Spec.ForProvider.Placement == nil || *script.Spec.ForProvider.Placement != v1beta1.PlacementModeSmart {
+		t.Errorf("Expected placement 'smart', got %v", script.Spec.ForProvider.Placement)
+	}
+
+	// Test tail consumers
+	if len(script.Spec.ForProvider.TailConsumers) != 1 {
+		t.Errorf("Expected 1 tail consumer, got %d", len(script.Spec.ForProvider.TailConsumers))
+	}
+
+	consumer := script.Spec.ForProvider.TailConsumers[0]
+	if consumer.Service != "log-consumer" {
+		t.Errorf("Expected consumer service 'log-consumer', got %s", consumer.Service)
+	}
+	if consumer.Environment == nil || *consumer.Environment != "production" {
+		t.Errorf("Expected consumer environment 'production', got %v", consumer.Environment)
+	}
+
+	// Test log push
+	if script.Spec.ForProvider.LogPush == nil || *script.Spec.ForProvider.LogPush != true {
+		t.Errorf("Expected log push true, got %v", script.Spec.ForProvider.LogPush)
+	}
+
+	// Test tags
+	if len(script.Spec.ForProvider.Tags) != 3 {
+		t.Errorf("Expected 3 tags, got %d", len(script.Spec.ForProvider.Tags))
+	}
+
+	t.Log("v1beta1 Worker Script advanced features tests passed")
 }

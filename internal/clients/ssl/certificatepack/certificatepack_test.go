@@ -29,7 +29,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -85,7 +85,7 @@ func TestGet(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.CertificatePackObservation
+		obs *v1beta1.CertificatePackObservation
 		err error
 	}
 
@@ -125,7 +125,7 @@ func TestGet(t *testing.T) {
 				certificatePackID: certPackID,
 			},
 			want: want{
-				obs: &v1alpha1.CertificatePackObservation{
+				obs: &v1beta1.CertificatePackObservation{
 					ID:                   ptr.To("test-cert-pack-id"),
 					Type:                 ptr.To("advanced"),
 					Hosts:                []string{"example.com", "*.example.com"},
@@ -175,7 +175,7 @@ func TestGet(t *testing.T) {
 				certificatePackID: certPackID,
 			},
 			want: want{
-				obs: &v1alpha1.CertificatePackObservation{
+				obs: &v1beta1.CertificatePackObservation{
 					ID:               ptr.To("test-cert-pack-id"),
 					Type:             ptr.To("advanced"),
 					Hosts:            []string{"example.com"},
@@ -183,7 +183,7 @@ func TestGet(t *testing.T) {
 					ValidityDays:     ptr.To(365),
 					Status:           ptr.To("pending_validation"),
 					CloudflareBranding: ptr.To(false),
-					Certificates: []v1alpha1.CertificateInfo{
+					Certificates: []v1beta1.CertificateInfo{
 						{
 							ID:         ptr.To("cert-1"),
 							Hosts:      []string{"example.com"},
@@ -263,11 +263,11 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.CertificatePackParameters
+		params v1beta1.CertificatePackParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.CertificatePackObservation
+		obs *v1beta1.CertificatePackObservation
 		err error
 	}
 
@@ -309,7 +309,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificatePackParameters{
+				params: v1beta1.CertificatePackParameters{
 					Zone:                 zoneID,
 					Type:                 "advanced",
 					Hosts:                []string{"example.com", "*.example.com"},
@@ -320,7 +320,7 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.CertificatePackObservation{
+				obs: &v1beta1.CertificatePackObservation{
 					ID:                   ptr.To("new-cert-pack-id"),
 					Type:                 ptr.To("advanced"),
 					Hosts:                []string{"example.com", "*.example.com"},
@@ -350,7 +350,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificatePackParameters{
+				params: v1beta1.CertificatePackParameters{
 					Zone:             zoneID,
 					Type:             "universal",
 					Hosts:            []string{"example.com"},
@@ -358,7 +358,7 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.CertificatePackObservation{
+				obs: &v1beta1.CertificatePackObservation{
 					ID:               ptr.To("basic-cert-pack-id"),
 					Type:             ptr.To("universal"),
 					Hosts:            []string{"example.com"},
@@ -381,7 +381,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificatePackParameters{
+				params: v1beta1.CertificatePackParameters{
 					Zone:             zoneID,
 					Type:             "advanced",
 					Hosts:            []string{"example.com"},
@@ -525,7 +525,7 @@ func TestRestartValidation(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.CertificatePackObservation
+		obs *v1beta1.CertificatePackObservation
 		err error
 	}
 
@@ -562,7 +562,7 @@ func TestRestartValidation(t *testing.T) {
 				certificatePackID: certPackID,
 			},
 			want: want{
-				obs: &v1alpha1.CertificatePackObservation{
+				obs: &v1beta1.CertificatePackObservation{
 					ID:                 ptr.To("test-cert-pack-id"),
 					Type:               ptr.To("advanced"),
 					Hosts:              []string{"example.com"},
@@ -612,7 +612,7 @@ func TestRestartValidation(t *testing.T) {
 
 func TestConvertParametersToCertificatePackRequest(t *testing.T) {
 	type args struct {
-		params v1alpha1.CertificatePackParameters
+		params v1beta1.CertificatePackParameters
 	}
 
 	type want struct {
@@ -627,7 +627,7 @@ func TestConvertParametersToCertificatePackRequest(t *testing.T) {
 		"ConvertAllParameters": {
 			reason: "convertParametersToCertificatePackRequest should convert all parameters correctly",
 			args: args{
-				params: v1alpha1.CertificatePackParameters{
+				params: v1beta1.CertificatePackParameters{
 					Zone:                 "test-zone-id",
 					Type:                 "advanced",
 					Hosts:                []string{"example.com", "*.example.com"},
@@ -651,7 +651,7 @@ func TestConvertParametersToCertificatePackRequest(t *testing.T) {
 		"ConvertMinimalParameters": {
 			reason: "convertParametersToCertificatePackRequest should handle minimal parameters",
 			args: args{
-				params: v1alpha1.CertificatePackParameters{
+				params: v1beta1.CertificatePackParameters{
 					Zone:             "test-zone-id",
 					Type:             "universal",
 					Hosts:            []string{"example.com"},

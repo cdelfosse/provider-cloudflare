@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 
-	"github.com/rossigee/provider-cloudflare/apis/emailrouting/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/emailrouting/v1beta1"
 )
 
 // MockEmailRoutingRuleAPI implements the EmailRoutingRuleAPI interface for testing
@@ -82,11 +82,11 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.RuleParameters
+		params v1beta1.RuleParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.RuleObservation
+		obs *v1beta1.RuleObservation
 		err error
 	}
 
@@ -137,19 +137,19 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Test Email Rule",
 					Priority: 100,
 					Enabled:  ptr.To(true),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "literal",
 							Field: "to",
 							Value: "test@example.com",
 						},
 					},
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "forward",
 							Value: []string{"user@domain.com"},
@@ -158,19 +158,19 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.RuleObservation{
+				obs: &v1beta1.RuleObservation{
 					Tag:      "test-rule-tag",
 					Name:     "Test Email Rule",
 					Priority: ptr.To(100),
 					Enabled:  ptr.To(true),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "literal",
 							Field: "to",
 							Value: "test@example.com",
 						},
 					},
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "forward",
 							Value: []string{"user@domain.com"},
@@ -196,7 +196,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Minimal Rule",
 					Priority: 1,
@@ -204,7 +204,7 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.RuleObservation{
+				obs: &v1beta1.RuleObservation{
 					Tag:      "minimal-rule-tag",
 					Name:     "Minimal Rule",
 					Priority: ptr.To(1),
@@ -224,7 +224,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Test Rule",
 					Priority: 10,
@@ -277,7 +277,7 @@ func TestGet(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.RuleObservation
+		obs *v1beta1.RuleObservation
 		err error
 	}
 
@@ -333,19 +333,19 @@ func TestGet(t *testing.T) {
 				ruleTag: ruleTag,
 			},
 			want: want{
-				obs: &v1alpha1.RuleObservation{
+				obs: &v1beta1.RuleObservation{
 					Tag:      "test-rule-tag",
 					Name:     "Retrieved Rule",
 					Priority: ptr.To(50),
 					Enabled:  ptr.To(true),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "contains",
 							Field: "subject",
 							Value: "urgent",
 						},
 					},
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "forward",
 							Value: []string{"admin@example.com"},
@@ -415,11 +415,11 @@ func TestUpdate(t *testing.T) {
 	type args struct {
 		ctx     context.Context
 		ruleTag string
-		params  v1alpha1.RuleParameters
+		params  v1beta1.RuleParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.RuleObservation
+		obs *v1beta1.RuleObservation
 		err error
 	}
 
@@ -457,19 +457,19 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				ctx:     context.Background(),
 				ruleTag: ruleTag,
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Updated Rule",
 					Priority: 75,
 					Enabled:  ptr.To(false),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "regex",
 							Field: "from",
 							Value: ".*@partner\\.com",
 						},
 					},
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "drop",
 							Value: []string{},
@@ -478,19 +478,19 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.RuleObservation{
+				obs: &v1beta1.RuleObservation{
 					Tag:      "test-rule-tag",
 					Name:     "Updated Rule",
 					Priority: ptr.To(75),
 					Enabled:  ptr.To(false),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "regex",
 							Field: "from",
 							Value: ".*@partner\\.com",
 						},
 					},
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "drop",
 							Value: []string{},
@@ -512,7 +512,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				ctx:     context.Background(),
 				ruleTag: ruleTag,
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Test Rule",
 					Priority: 10,
@@ -673,7 +673,7 @@ func TestList(t *testing.T) {
 	}
 
 	type want struct {
-		obs []v1alpha1.RuleObservation
+		obs []v1beta1.RuleObservation
 		err error
 	}
 
@@ -716,7 +716,7 @@ func TestList(t *testing.T) {
 				zoneID: zoneID,
 			},
 			want: want{
-				obs: []v1alpha1.RuleObservation{
+				obs: []v1beta1.RuleObservation{
 					{
 						Tag:      "rule1",
 						Name:     "First Rule",
@@ -747,7 +747,7 @@ func TestList(t *testing.T) {
 				zoneID: zoneID,
 			},
 			want: want{
-				obs: []v1alpha1.RuleObservation{},
+				obs: []v1beta1.RuleObservation{},
 				err: nil,
 			},
 		},
@@ -803,8 +803,8 @@ func TestIsUpToDate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.RuleParameters
-		obs    v1alpha1.RuleObservation
+		params v1beta1.RuleParameters
+		obs    v1beta1.RuleObservation
 	}
 
 	type want struct {
@@ -825,38 +825,38 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Test Rule",
 					Priority: 100,
 					Enabled:  ptr.To(true),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "literal",
 							Field: "to",
 							Value: "test@example.com",
 						},
 					},
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "forward",
 							Value: []string{"user@domain.com"},
 						},
 					},
 				},
-				obs: v1alpha1.RuleObservation{
+				obs: v1beta1.RuleObservation{
 					Tag:      "rule-tag",
 					Name:     "Test Rule",
 					Priority: ptr.To(100),
 					Enabled:  ptr.To(true),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "literal",
 							Field: "to",
 							Value: "test@example.com",
 						},
 					},
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "forward",
 							Value: []string{"user@domain.com"},
@@ -876,13 +876,13 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Updated Rule",
 					Priority: 100,
 					Enabled:  ptr.To(true),
 				},
-				obs: v1alpha1.RuleObservation{
+				obs: v1beta1.RuleObservation{
 					Name:     "Original Rule",
 					Priority: ptr.To(100),
 					Enabled:  ptr.To(true),
@@ -900,13 +900,13 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Test Rule",
 					Priority: 200,
 					Enabled:  ptr.To(true),
 				},
-				obs: v1alpha1.RuleObservation{
+				obs: v1beta1.RuleObservation{
 					Name:     "Test Rule",
 					Priority: ptr.To(100),
 					Enabled:  ptr.To(true),
@@ -924,13 +924,13 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Test Rule",
 					Priority: 100,
 					Enabled:  ptr.To(false),
 				},
-				obs: v1alpha1.RuleObservation{
+				obs: v1beta1.RuleObservation{
 					Name:     "Test Rule",
 					Priority: ptr.To(100),
 					Enabled:  ptr.To(true),
@@ -948,12 +948,12 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Test Rule",
 					Priority: 100,
 					Enabled:  ptr.To(true),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "literal",
 							Field: "to",
@@ -961,11 +961,11 @@ func TestIsUpToDate(t *testing.T) {
 						},
 					},
 				},
-				obs: v1alpha1.RuleObservation{
+				obs: v1beta1.RuleObservation{
 					Name:     "Test Rule",
 					Priority: ptr.To(100),
 					Enabled:  ptr.To(true),
-					Matchers: []v1alpha1.RuleMatcher{
+					Matchers: []v1beta1.RuleMatcher{
 						{
 							Type:  "literal",
 							Field: "to",
@@ -986,23 +986,23 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.RuleParameters{
+				params: v1beta1.RuleParameters{
 					ZoneID:   zoneID,
 					Name:     "Test Rule",
 					Priority: 100,
 					Enabled:  ptr.To(true),
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "forward",
 							Value: []string{"new@domain.com"},
 						},
 					},
 				},
-				obs: v1alpha1.RuleObservation{
+				obs: v1beta1.RuleObservation{
 					Name:     "Test Rule",
 					Priority: ptr.To(100),
 					Enabled:  ptr.To(true),
-					Actions: []v1alpha1.RuleAction{
+					Actions: []v1beta1.RuleAction{
 						{
 							Type:  "forward",
 							Value: []string{"old@domain.com"},

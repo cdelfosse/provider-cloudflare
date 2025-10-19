@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/logpush/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/logpush/v1beta1"
 )
 
 // LogpushJobAPI defines the interface for Logpush Job operations
@@ -83,8 +83,8 @@ func (c *JobClient) getAccountID(ctx context.Context) (string, error) {
 }
 
 // convertToObservation converts cloudflare-go logpush job to Crossplane observation.
-func convertToObservation(job cloudflare.LogpushJob) v1alpha1.JobObservation {
-	obs := v1alpha1.JobObservation{
+func convertToObservation(job cloudflare.LogpushJob) v1beta1.JobObservation {
+	obs := v1beta1.JobObservation{
 		ID:              &job.ID,
 		Dataset:         job.Dataset,
 		Name:            job.Name,
@@ -147,12 +147,12 @@ func convertToObservation(job cloudflare.LogpushJob) v1alpha1.JobObservation {
 }
 
 // convertOutputOptions converts cloudflare-go output options to Crossplane output options.
-func convertOutputOptions(opts *cloudflare.LogpushOutputOptions) *v1alpha1.OutputOptions {
+func convertOutputOptions(opts *cloudflare.LogpushOutputOptions) *v1beta1.OutputOptions {
 	if opts == nil {
 		return nil
 	}
 
-	result := &v1alpha1.OutputOptions{}
+	result := &v1beta1.OutputOptions{}
 
 	if len(opts.FieldNames) > 0 {
 		result.FieldNames = opts.FieldNames
@@ -203,23 +203,23 @@ func convertOutputOptions(opts *cloudflare.LogpushOutputOptions) *v1alpha1.Outpu
 }
 
 // convertJobFilters converts cloudflare-go job filters to Crossplane job filters.
-func convertJobFilters(filters *cloudflare.LogpushJobFilters) *v1alpha1.JobFilters {
+func convertJobFilters(filters *cloudflare.LogpushJobFilters) *v1beta1.JobFilters {
 	if filters == nil {
 		return nil
 	}
 
-	return &v1alpha1.JobFilters{
+	return &v1beta1.JobFilters{
 		Where: convertJobFilter(&filters.Where),
 	}
 }
 
 // convertJobFilter converts cloudflare-go job filter to Crossplane job filter.
-func convertJobFilter(filter *cloudflare.LogpushJobFilter) *v1alpha1.JobFilter {
+func convertJobFilter(filter *cloudflare.LogpushJobFilter) *v1beta1.JobFilter {
 	if filter == nil {
 		return nil
 	}
 
-	result := &v1alpha1.JobFilter{}
+	result := &v1beta1.JobFilter{}
 
 	if filter.Key != "" {
 		result.Key = &filter.Key
@@ -239,7 +239,7 @@ func convertJobFilter(filter *cloudflare.LogpushJobFilter) *v1alpha1.JobFilter {
 }
 
 // convertToCloudflareParams converts Crossplane parameters to cloudflare-go parameters.
-func convertToCloudflareParams(params v1alpha1.JobParameters) cloudflare.CreateLogpushJobParams {
+func convertToCloudflareParams(params v1beta1.JobParameters) cloudflare.CreateLogpushJobParams {
 	cfParams := cloudflare.CreateLogpushJobParams{
 		Dataset:         params.Dataset,
 		Name:            params.Name,
@@ -286,7 +286,7 @@ func convertToCloudflareParams(params v1alpha1.JobParameters) cloudflare.CreateL
 }
 
 // convertToCloudflareOutputOptions converts Crossplane output options to cloudflare-go output options.
-func convertToCloudflareOutputOptions(opts *v1alpha1.OutputOptions) *cloudflare.LogpushOutputOptions {
+func convertToCloudflareOutputOptions(opts *v1beta1.OutputOptions) *cloudflare.LogpushOutputOptions {
 	if opts == nil {
 		return nil
 	}
@@ -343,7 +343,7 @@ func convertToCloudflareOutputOptions(opts *v1alpha1.OutputOptions) *cloudflare.
 }
 
 // convertToCloudflareJobFilters converts Crossplane job filters to cloudflare-go job filters.
-func convertToCloudflareJobFilters(filters *v1alpha1.JobFilters) *cloudflare.LogpushJobFilters {
+func convertToCloudflareJobFilters(filters *v1beta1.JobFilters) *cloudflare.LogpushJobFilters {
 	if filters == nil {
 		return nil
 	}
@@ -358,7 +358,7 @@ func convertToCloudflareJobFilters(filters *v1alpha1.JobFilters) *cloudflare.Log
 }
 
 // convertToCloudflareJobFilter converts Crossplane job filter to cloudflare-go job filter.
-func convertToCloudflareJobFilter(filter *v1alpha1.JobFilter) *cloudflare.LogpushJobFilter {
+func convertToCloudflareJobFilter(filter *v1beta1.JobFilter) *cloudflare.LogpushJobFilter {
 	if filter == nil {
 		return nil
 	}
@@ -381,7 +381,7 @@ func convertToCloudflareJobFilter(filter *v1alpha1.JobFilter) *cloudflare.Logpus
 }
 
 // Create creates a new Logpush Job.
-func (c *JobClient) Create(ctx context.Context, params v1alpha1.JobParameters) (*v1alpha1.JobObservation, error) {
+func (c *JobClient) Create(ctx context.Context, params v1beta1.JobParameters) (*v1beta1.JobObservation, error) {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account ID")
@@ -400,7 +400,7 @@ func (c *JobClient) Create(ctx context.Context, params v1alpha1.JobParameters) (
 }
 
 // Get retrieves a Logpush Job.
-func (c *JobClient) Get(ctx context.Context, jobID int) (*v1alpha1.JobObservation, error) {
+func (c *JobClient) Get(ctx context.Context, jobID int) (*v1beta1.JobObservation, error) {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account ID")
@@ -417,7 +417,7 @@ func (c *JobClient) Get(ctx context.Context, jobID int) (*v1alpha1.JobObservatio
 }
 
 // Update updates an existing Logpush Job.
-func (c *JobClient) Update(ctx context.Context, jobID int, params v1alpha1.JobParameters) (*v1alpha1.JobObservation, error) {
+func (c *JobClient) Update(ctx context.Context, jobID int, params v1beta1.JobParameters) (*v1beta1.JobObservation, error) {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account ID")
@@ -493,7 +493,7 @@ func (c *JobClient) Delete(ctx context.Context, jobID int) error {
 }
 
 // List retrieves all Logpush Jobs.
-func (c *JobClient) List(ctx context.Context) ([]v1alpha1.JobObservation, error) {
+func (c *JobClient) List(ctx context.Context) ([]v1beta1.JobObservation, error) {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account ID")
@@ -505,7 +505,7 @@ func (c *JobClient) List(ctx context.Context) ([]v1alpha1.JobObservation, error)
 		return nil, errors.Wrap(err, errListJobs)
 	}
 
-	observations := make([]v1alpha1.JobObservation, len(jobs))
+	observations := make([]v1beta1.JobObservation, len(jobs))
 	for i, job := range jobs {
 		observations[i] = convertToObservation(job)
 	}
@@ -514,7 +514,7 @@ func (c *JobClient) List(ctx context.Context) ([]v1alpha1.JobObservation, error)
 }
 
 // IsUpToDate checks if the Logpush Job is up to date.
-func (c *JobClient) IsUpToDate(ctx context.Context, params v1alpha1.JobParameters, obs v1alpha1.JobObservation) (bool, error) {
+func (c *JobClient) IsUpToDate(ctx context.Context, params v1beta1.JobParameters, obs v1beta1.JobObservation) (bool, error) {
 	// Compare key fields to determine if update is needed
 	if obs.Name != params.Name ||
 		obs.Dataset != params.Dataset ||

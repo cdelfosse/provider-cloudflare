@@ -34,30 +34,29 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
-	apisv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
+	apisv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing"
 )
 
 const (
-	errNotPool          = "managed resource is not a LoadBalancerPool custom resource"
-	errTrackPoolPCUsage = "cannot track ProviderConfig usage"
-	errGetPoolPC        = "cannot get ProviderConfig"
-	errGetPoolCreds     = "cannot get credentials"
-	errNewPoolClient    = "cannot create new Service"
+	errNotPool       = "managed resource is not a LoadBalancerPool custom resource"
+	errGetPoolPC     = "cannot get ProviderConfig"
+	errGetPoolCreds  = "cannot get credentials"
+	errNewPoolClient = "cannot create new Service"
 )
 
 // SetupPool adds a controller that reconciles LoadBalancerPool managed resources.
 func SetupPool(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.LoadBalancerPoolGroupKind)
+	name := managed.ControllerName(v1beta1.LoadBalancerPoolKind)
 
 	o := controller.Options{
 		MaxConcurrentReconciles: 5,
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.LoadBalancerPoolGroupVersionKind),
+		resource.ManagedKind(v1beta1.LoadBalancerPoolGroupVersionKind),
 		managed.WithExternalConnecter(&poolConnector{
 			kube: mgr.GetClient(),
 			newServiceFn: func(cfg clients.Config, httpClient *http.Client) (loadbalancing.PoolClient, error) {
@@ -73,7 +72,7 @@ func SetupPool(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.LoadBalancerPool{}).
+		For(&v1beta1.LoadBalancerPool{}).
 		Complete(r)
 }
 
@@ -81,26 +80,20 @@ func SetupPool(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter
 // is called.
 type poolConnector struct {
 	kube         client.Client
-	usage        resource.Tracker
 	newServiceFn func(cfg clients.Config, httpClient *http.Client) (loadbalancing.PoolClient, error)
 }
 
 // Connect typically produces an ExternalClient by:
-// 1. Tracking that the managed resource is using a ProviderConfig.
-// 2. Getting the managed resource's ProviderConfig.
-// 3. Getting the credentials specified by the ProviderConfig.
-// 4. Using the credentials to form a client.
+// 1. Getting the managed resource's ProviderConfig.
+// 2. Getting the credentials specified by the ProviderConfig.
+// 3. Using the credentials to form a client.
 func (c *poolConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerPool)
+	cr, ok := mg.(*v1beta1.LoadBalancerPool)
 	if !ok {
 		return nil, errors.New(errNotPool)
 	}
 
-	if err := c.usage.Track(ctx, mg); err != nil {
-		return nil, errors.Wrap(err, errTrackPoolPCUsage)
-	}
-
-	pc := &apisv1alpha1.ProviderConfig{}
+	pc := &apisv1beta1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPoolPC)
 	}
@@ -127,7 +120,7 @@ type poolExternal struct {
 }
 
 func (c *poolExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerPool)
+	cr, ok := mg.(*v1beta1.LoadBalancerPool)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotPool)
 	}
@@ -164,7 +157,7 @@ func (c *poolExternal) Observe(ctx context.Context, mg resource.Managed) (manage
 }
 
 func (c *poolExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerPool)
+	cr, ok := mg.(*v1beta1.LoadBalancerPool)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotPool)
 	}
@@ -187,7 +180,7 @@ func (c *poolExternal) Create(ctx context.Context, mg resource.Managed) (managed
 }
 
 func (c *poolExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerPool)
+	cr, ok := mg.(*v1beta1.LoadBalancerPool)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotPool)
 	}
@@ -208,7 +201,7 @@ func (c *poolExternal) Update(ctx context.Context, mg resource.Managed) (managed
 }
 
 func (c *poolExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerPool)
+	cr, ok := mg.(*v1beta1.LoadBalancerPool)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotPool)
 	}
@@ -226,7 +219,7 @@ func (c *poolExternal) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-func (c *poolExternal) lateInitialize(spec *v1alpha1.LoadBalancerPoolParameters, pool *cloudflare.LoadBalancerPool) bool {
+func (c *poolExternal) lateInitialize(spec *v1beta1.LoadBalancerPoolParameters, pool *cloudflare.LoadBalancerPool) bool {
 	li := false
 
 	if spec.Description == nil && pool.Description != "" {
@@ -252,11 +245,11 @@ func (c *poolExternal) lateInitialize(spec *v1alpha1.LoadBalancerPoolParameters,
 	return li
 }
 
-func (c *poolExternal) resolveReferences(ctx context.Context, cr *v1alpha1.LoadBalancerPool) error {
+func (c *poolExternal) resolveReferences(ctx context.Context, cr *v1beta1.LoadBalancerPool) error {
 	// Resolve MonitorRef
 	if cr.Spec.ForProvider.MonitorRef != nil {
 		r := cr.Spec.ForProvider.MonitorRef
-		monitor := &v1alpha1.LoadBalancerMonitor{}
+		monitor := &v1beta1.LoadBalancerMonitor{}
 		if err := c.kube.Get(ctx, types.NamespacedName{Name: r.Name}, monitor); err != nil {
 			return errors.Wrap(err, "cannot get referenced monitor")
 		}
@@ -268,7 +261,7 @@ func (c *poolExternal) resolveReferences(ctx context.Context, cr *v1alpha1.LoadB
 
 	// Resolve MonitorSelector
 	if cr.Spec.ForProvider.MonitorSelector != nil {
-		monitors := &v1alpha1.LoadBalancerMonitorList{}
+		monitors := &v1beta1.LoadBalancerMonitorList{}
 		if err := c.kube.List(ctx, monitors, client.MatchingLabels(cr.Spec.ForProvider.MonitorSelector.MatchLabels)); err != nil {
 			return errors.Wrap(err, "cannot list monitors for monitor selector")
 		}

@@ -1,0 +1,281 @@
+/*
+Copyright 2025 The Crossplane Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package v1beta1
+
+import (
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/cloudflare/cloudflare-go"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reference"
+	"github.com/pkg/errors"
+
+	dnsv1beta1 "github.com/rossigee/provider-cloudflare/apis/dns/v1beta1"
+	zonev1beta1 "github.com/rossigee/provider-cloudflare/apis/zone/v1beta1"
+)
+
+// CustomHostnameSSLValidationErrors represents errors that occurred during SSL validation.
+type CustomHostnameSSLValidationErrors struct {
+	Message string `json:"message,omitempty"`
+}
+
+// CustomHostnameSSLSettings represents the SSL settings for a custom hostname.
+type CustomHostnameSSLSettings struct {
+
+	// Whether or not HTTP2 is enabled for the Custom Hostname
+	// +kubebuilder:validation:Enum=on;off
+	// +kubebuilder:default="on"
+	HTTP2 *string `json:"http2,omitempty"`
+
+	// Whether or not TLS 1.3 is enabled for the Custom Hostname
+	// +kubebuilder:validation:Enum=on;off
+	// +kubebuilder:default="on"
+	TLS13 *string `json:"tls13,omitempty"`
+
+	// The minimum TLS version supported for the Custom Hostname
+	// +kubebuilder:validation:Enum="1.0";"1.1";"1.2";"1.3"
+	// +kubebuilder:default="1.2"
+	MinTLSVersion *string `json:"minTLSVersion,omitempty"`
+
+	// An allowlist of ciphers for TLS termination. These ciphers must be in the BoringSSL format.
+	Ciphers []string `json:"ciphers,omitempty"`
+
+	// Fields not supported in the go library yet
+	// HTTP3         *string  `json:"http3,omitempty"`
+}
+
+// CustomHostnameOwnershipVerificationDNS represents the verification
+// information using DNS for this Custom hostname.
+type CustomHostnameOwnershipVerificationDNS struct {
+	// Name is the name of the DNS record that must be created to verify
+	// this Hostname.
+	Name *string `json:"name,omitempty"`
+	// Type is the type of the DNS record that must be created to verify
+	// ownership of this hostname.
+	Type *string `json:"type,omitempty"`
+	// Value is the value of the DNS record that must be created to verify
+	// ownership of this hostname.
+	Value *string `json:"value,omitempty"`
+}
+
+// CustomHostnameOwnershipVerificationHTTP represents the verification
+// information using HTTP for this Custom hostname.
+type CustomHostnameOwnershipVerificationHTTP struct {
+	// URL is the location where a file must be made available to verify
+	// ownership of this hostname.
+	URL *string `json:"url,omitempty"`
+	// Body is the contents of the above file that must be readable to verify
+	// ownership of this hostname.
+	Body *string `json:"body,omitempty"`
+}
+
+// CustomHostnameOwnershipVerification represents ownership verification status
+// of a given custom hostname.
+type CustomHostnameOwnershipVerification struct {
+	// DNSRecord represents ownership verification status using a DNS record on
+	// the domain in question.
+	DNSRecord *CustomHostnameOwnershipVerificationDNS `json:"dnsRecord,omitempty"`
+
+	// HTTPFile represents ownership verification status using a file accessed
+	// over HTTP.
+	HTTPFile *CustomHostnameOwnershipVerificationHTTP `json:"httpFile,omitempty"`
+}
+
+// CustomHostnameSSL represents the SSL section in a given custom hostname.
+type CustomHostnameSSL struct {
+	// Domain control validation (DCV) method used for this custom hostname.
+	// +kubebuilder:validation:Enum=http;txt;email
+	// +kubebuilder:default="http"
+	// +optional
+	Method *string `json:"method,omitempty"`
+
+	// Level of validation to be used for this custom hostname. Domain validation (dv) must be used.
+	// +kubebuilder:validation:Enum=dv
+	// +kubebuilder:default="dv"
+	// +optional
+	Type *string `json:"type,omitempty"`
+
+	// CustomHostnameSSLSettings represents the SSL settings for a custom hostname.
+	Settings CustomHostnameSSLSettings `json:"settings,omitempty"`
+
+	// Indicates whether the certificate for the custom hostname covers a wildcard.
+	// +optional
+	Wildcard *bool `json:"wildcard,omitempty"`
+
+	// Custom Certificate used for this Custom Hostname
+	// If provided then Cloudflare will not attempt to generate an ACME certificate
+	// +optional
+	CustomCertificate *string `json:"customCertificate,omitempty"`
+
+	// Custom Certificate Key used for this Custom Hostname
+	// If provided then Cloudflare will not attempt to generate an ACME certificate
+	// +optional
+	CustomKey *string `json:"customKey,omitempty"`
+
+	// Following fields are in the API but not supported in go library yet
+	// BundleMethod      *string                   `json:"bundle_method,omitempty"`
+
+}
+
+// CustomHostnameSSLObserved represents the Observed SSL section in a given custom hostname.
+type CustomHostnameSSLObserved struct {
+	Status               string                                         `json:"status"`
+	HTTPUrl              string                                         `json:"httpURL"`
+	HTTPBody             string                                         `json:"httpBody"`
+	ValidationErrors     []CustomHostnameSSLValidationErrors `json:"validationErrors,omitempty"`
+	CertificateAuthority string                                         `json:"certificateAuthority"`
+	CnameName            string                                         `json:"cname"`
+	CnameTarget          string                                         `json:"cnameTarget"`
+
+	// Following fields are in the API but not supported in go library yet
+	// TxtName          string                              `json:"txt_name,omitempty"`
+	// TxtValue         string                              `json:"txt_value,omitempty"`
+	// UploadedOn metav1.Time `json:"uploaded_on,omitempty"`
+	// ExpiresOn  metav1.Time `json:"expires_on,omitempty"`
+
+	// Waiting on 0.15 to release
+	// Issuer           string                              `json:"issuer,omitempty"`
+	// SerialNumber     string                              `json:"serial_number,omitempty"`
+	// Signature        string                              `json:"signature,omitempty"`
+
+}
+
+// CustomHostnameParameters represents the settings of a CustomHostname
+type CustomHostnameParameters struct {
+
+	// Hostname for the custom hostname.
+	// +kubebuilder:validation:Format=hostname
+	// +kubebuilder:validation:MaxLength=255
+	// +immutable
+	Hostname string `json:"hostname"`
+
+	// SSL Settings for a Custom Hostname
+	// +optional
+	SSL CustomHostnameSSL `json:"ssl,omitempty"`
+
+	// CustomOriginServer for a Custom Hostname
+	// A valid hostname that’s been added to your DNS zone as an A, AAAA, or CNAME record.
+	// +optional
+	CustomOriginServer *string `json:"customOriginServer,omitempty"`
+
+	// CustomOriginServerRef references the Record object that this Custom Hostname should point to.
+	// +immutable
+	// +optional
+	CustomOriginServerRef *xpv1.Reference `json:"customOriginServerRef,omitempty"`
+
+	// CustomOriginServerSelector selects the Record object that this Custom Hostname should point to.
+	// +optional
+	CustomOriginServerSelector *xpv1.Selector `json:"customOriginServerSelector,omitempty"`
+
+	// ZoneID this custom hostname is for.
+	// +immutable
+	// +optional
+	Zone *string `json:"zone,omitempty"`
+
+	// ZoneRef references the zone object this custom hostname is for.
+	// +immutable
+	// +optional
+	ZoneRef *xpv1.Reference `json:"zoneRef,omitempty"`
+
+	// ZoneSelector selects the zone object this custom hostname is for.
+	// +optional
+	ZoneSelector *xpv1.Selector `json:"zoneSelector,omitempty"`
+}
+
+// CustomHostnameObservation are the observable fields of a custom hostname.
+type CustomHostnameObservation struct {
+	Status                cloudflare.CustomHostnameStatus     `json:"status"`
+	OwnershipVerification CustomHostnameOwnershipVerification `json:"ownershipVerification,omitempty"`
+	VerificationErrors    []string                            `json:"verificationErrors,omitempty"`
+	SSL                   CustomHostnameSSLObserved           `json:"ssl,omitempty"`
+}
+
+// A CustomHostnameSpec defines the desired state of a custom hostname.
+type CustomHostnameSpec struct {
+	xpv1.ResourceSpec `json:",inline"`
+	ForProvider       CustomHostnameParameters `json:"forProvider"`
+}
+
+// A CustomHostnameStatus represents the observed state of a custom hostname.
+type CustomHostnameStatus struct {
+	xpv1.ResourceStatus `json:",inline"`
+	AtProvider          CustomHostnameObservation `json:"atProvider,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// A CustomHostname is a custom hostname required to use SSL for SaaS.
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
+// +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
+// +kubebuilder:printcolumn:name="HOSTNAME",type="string",JSONPath=".spec.forProvider.hostname"
+// +kubebuilder:printcolumn:name="CUSTOM ORIGIN",type="string",JSONPath=".spec.forProvider.customOriginServer"
+// +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,cloudflare}
+type CustomHostname struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   CustomHostnameSpec   `json:"spec"`
+	Status CustomHostnameStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// CustomHostnameList contains a list of CustomHostname
+type CustomHostnameList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []CustomHostname `json:"items"`
+}
+
+// ResolveReferences of this Custom Hostname
+func (dr *CustomHostname) ResolveReferences(ctx context.Context, c client.Reader) error {
+	r := reference.NewAPIResolver(c, dr)
+
+	// Resolve spec.forProvider.customOriginServer to FQDN from DNS Record
+	rsp, err := r.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(dr.Spec.ForProvider.CustomOriginServer),
+		Reference:    dr.Spec.ForProvider.CustomOriginServerRef,
+		Selector:     dr.Spec.ForProvider.CustomOriginServerSelector,
+		To:           reference.To{Managed: &dnsv1beta1.Record{}, List: &dnsv1beta1.RecordList{}},
+		Extract:      dnsv1beta1.RecordFQDN(),
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.customOriginServer")
+	}
+	dr.Spec.ForProvider.CustomOriginServer = reference.ToPtrValue(rsp.ResolvedValue)
+	dr.Spec.ForProvider.CustomOriginServerRef = rsp.ResolvedReference
+
+	// Resolve spec.forProvider.zone
+	rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(dr.Spec.ForProvider.Zone),
+		Reference:    dr.Spec.ForProvider.ZoneRef,
+		Selector:     dr.Spec.ForProvider.ZoneSelector,
+		To:           reference.To{Managed: &zonev1beta1.Zone{}, List: &zonev1beta1.ZoneList{}},
+		Extract:      reference.ExternalName(),
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.zone")
+	}
+	dr.Spec.ForProvider.Zone = reference.ToPtrValue(rsp.ResolvedValue)
+	dr.Spec.ForProvider.ZoneRef = rsp.ResolvedReference
+
+	return nil
+}

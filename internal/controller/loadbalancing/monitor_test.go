@@ -25,8 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing/fake"
@@ -40,23 +40,23 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 )
 
-type monitorModifier func(*v1alpha1.LoadBalancerMonitor)
+type monitorModifier func(*v1beta1.LoadBalancerMonitor)
 
 
 func withMonitorAccount(account string) monitorModifier {
-	return func(monitor *v1alpha1.LoadBalancerMonitor) { monitor.Spec.ForProvider.Account = &account }
+	return func(monitor *v1beta1.LoadBalancerMonitor) { monitor.Spec.ForProvider.Account = &account }
 }
 
 func withMonitorType(monitorType string) monitorModifier {
-	return func(monitor *v1alpha1.LoadBalancerMonitor) { monitor.Spec.ForProvider.Type = monitorType }
+	return func(monitor *v1beta1.LoadBalancerMonitor) { monitor.Spec.ForProvider.Type = monitorType }
 }
 
 func withMonitorID(id string) monitorModifier {
-	return func(monitor *v1alpha1.LoadBalancerMonitor) { monitor.Status.AtProvider.ID = id }
+	return func(monitor *v1beta1.LoadBalancerMonitor) { monitor.Status.AtProvider.ID = id }
 }
 
-func monitor(m ...monitorModifier) *v1alpha1.LoadBalancerMonitor {
-	cr := &v1alpha1.LoadBalancerMonitor{}
+func monitor(m ...monitorModifier) *v1beta1.LoadBalancerMonitor {
+	cr := &v1beta1.LoadBalancerMonitor{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -70,7 +70,6 @@ func TestMonitorConnect(t *testing.T) {
 
 	type fields struct {
 		kube      client.Client
-		usage     resource.Tracker
 		newClient func(cfg clients.Config, hc *http.Client) (loadbalancing.MonitorClient, error)
 	}
 
@@ -95,12 +94,11 @@ func TestMonitorConnect(t *testing.T) {
 		"ErrGetConfig": {
 			reason: "Any errors from GetConfig should be wrapped",
 			fields: fields{
-				kube:  mc,
-				usage: &mockTracker{},
+				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancerMonitor{
-					Spec: v1alpha1.LoadBalancerMonitorSpec{
+				mg: &v1beta1.LoadBalancerMonitor{
+					Spec: v1beta1.LoadBalancerMonitorSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "test-config",
@@ -117,7 +115,7 @@ func TestMonitorConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -130,14 +128,13 @@ func TestMonitorConnect(t *testing.T) {
 						return nil
 					}),
 				},
-				usage: &mockTracker{},
 				newClient: func(cfg clients.Config, hc *http.Client) (loadbalancing.MonitorClient, error) {
 					return &fake.MockMonitorClient{}, nil
 				},
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancerMonitor{
-					Spec: v1alpha1.LoadBalancerMonitorSpec{
+				mg: &v1beta1.LoadBalancerMonitor{
+					Spec: v1beta1.LoadBalancerMonitorSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -152,7 +149,7 @@ func TestMonitorConnect(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			c := &monitorConnector{kube: tc.fields.kube, usage: tc.fields.usage, newServiceFn: tc.fields.newClient}
+			c := &monitorConnector{kube: tc.fields.kube, newServiceFn: tc.fields.newClient}
 			_, err := c.Connect(tc.args.ctx, tc.args.mg)
 			if diff := cmp.Diff(tc.want, err, test.EquateErrors()); diff != "" {
 				t.Errorf("\n%s\nc.Connect(...): -want error, +got error:\n%s\n", tc.reason, diff)
@@ -199,7 +196,7 @@ func TestMonitorObserve(t *testing.T) {
 				service: &fake.MockMonitorClient{},
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancerMonitor{},
+				mg: &v1beta1.LoadBalancerMonitor{},
 			},
 			want: want{
 				o: managed.ExternalObservation{ResourceExists: false},
@@ -209,7 +206,7 @@ func TestMonitorObserve(t *testing.T) {
 			reason: "We should return an empty observation and an error if the API returned an error",
 			fields: fields{
 				service: &fake.MockMonitorClient{
-					MockGetMonitor: func(ctx context.Context, monitorID string, params v1alpha1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+					MockGetMonitor: func(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
 						return nil, errBoom
 					},
 				},
@@ -229,7 +226,7 @@ func TestMonitorObserve(t *testing.T) {
 			reason: "We should return ResourceExists: true and no error when a load balancer monitor is found",
 			fields: fields{
 				service: &fake.MockMonitorClient{
-					MockGetMonitor: func(ctx context.Context, monitorID string, params v1alpha1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+					MockGetMonitor: func(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
 						return &cloudflare.LoadBalancerMonitor{
 							ID: monitorID,
 						}, nil
@@ -300,7 +297,7 @@ func TestMonitorCreate(t *testing.T) {
 			reason: "We should return any errors during the create process",
 			fields: fields{
 				service: &fake.MockMonitorClient{
-					MockCreateMonitor: func(ctx context.Context, params v1alpha1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+					MockCreateMonitor: func(ctx context.Context, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
 						return nil, errBoom
 					},
 				},
@@ -320,7 +317,7 @@ func TestMonitorCreate(t *testing.T) {
 			reason: "We should return ExternalNameAssigned: true and no error when a load balancer monitor is created",
 			fields: fields{
 				service: &fake.MockMonitorClient{
-					MockCreateMonitor: func(ctx context.Context, params v1alpha1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+					MockCreateMonitor: func(ctx context.Context, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
 						return &cloudflare.LoadBalancerMonitor{
 							ID:   "1234beef",
 							Type: params.Type,
@@ -392,7 +389,7 @@ func TestMonitorUpdate(t *testing.T) {
 			reason: "We should return any errors during the update process",
 			fields: fields{
 				service: &fake.MockMonitorClient{
-					MockUpdateMonitor: func(ctx context.Context, monitorID string, params v1alpha1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+					MockUpdateMonitor: func(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
 						return nil, errBoom
 					},
 				},
@@ -413,7 +410,7 @@ func TestMonitorUpdate(t *testing.T) {
 			reason: "We should return no error when a load balancer monitor is updated",
 			fields: fields{
 				service: &fake.MockMonitorClient{
-					MockUpdateMonitor: func(ctx context.Context, monitorID string, params v1alpha1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
+					MockUpdateMonitor: func(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) (*cloudflare.LoadBalancerMonitor, error) {
 						return &cloudflare.LoadBalancerMonitor{}, nil
 					},
 				},
@@ -482,7 +479,7 @@ func TestMonitorDelete(t *testing.T) {
 			reason: "We should return any errors during the delete process",
 			fields: fields{
 				service: &fake.MockMonitorClient{
-					MockDeleteMonitor: func(ctx context.Context, monitorID string, params v1alpha1.LoadBalancerMonitorParameters) error {
+					MockDeleteMonitor: func(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) error {
 						return errBoom
 					},
 				},
@@ -501,7 +498,7 @@ func TestMonitorDelete(t *testing.T) {
 			reason: "We should return no error when a load balancer monitor is deleted",
 			fields: fields{
 				service: &fake.MockMonitorClient{
-					MockDeleteMonitor: func(ctx context.Context, monitorID string, params v1alpha1.LoadBalancerMonitorParameters) error {
+					MockDeleteMonitor: func(ctx context.Context, monitorID string, params v1beta1.LoadBalancerMonitorParameters) error {
 						return nil
 					},
 				},

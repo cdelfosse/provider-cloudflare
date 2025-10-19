@@ -33,7 +33,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	applications "github.com/rossigee/provider-cloudflare/internal/clients/spectrum"
 	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
@@ -55,7 +55,7 @@ const (
 
 // Setup adds a controller that reconciles Spectrum managed resources.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.ApplicationGroupKind)
+	name := managed.ControllerName(v1beta1.ApplicationGroupKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -64,7 +64,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.ApplicationGroupVersionKind),
+		resource.ManagedKind(v1beta1.ApplicationGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (applications.Client, error) {
@@ -81,7 +81,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.Application{}).
+		For(&v1beta1.Application{}).
 		Complete(r)
 }
 
@@ -95,7 +95,7 @@ type connector struct {
 // Connect produces a valid configuration for a Cloudflare API
 // instance, and returns it as an external client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Application)
+	_, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return nil, errors.New(errNotApplication)
 	}
@@ -121,7 +121,7 @@ type external struct {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Application)
+	cr, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotApplication)
 	}
@@ -157,7 +157,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Application)
+	cr, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotApplication)
 	}
@@ -184,7 +184,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Application)
+	cr, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotApplication)
 	}
@@ -209,7 +209,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Application)
+	cr, ok := mg.(*v1beta1.Application)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotApplication)
 	}

@@ -396,6 +396,9 @@ spec:
                     description: Phase indicates the phase where the cache rule is
                       executed.
                     type: string
+                  rulesetId:
+                    description: RulesetID of the ruleset containing the cache rule.
+                    type: string
                   version:
                     description: Version indicates the version of the cache rule.
                     type: string

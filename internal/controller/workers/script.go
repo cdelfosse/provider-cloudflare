@@ -18,10 +18,11 @@ package workers
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/types"
+
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,119 +35,121 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	providerv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
-	workersv1alpha1 "github.com/rossigee/provider-cloudflare/apis/workers/v1alpha1"
-	"github.com/rossigee/provider-cloudflare/internal/clients"
-	scriptclient "github.com/rossigee/provider-cloudflare/internal/clients/workers/script"
+	"github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
+	clients "github.com/rossigee/provider-cloudflare/internal/clients"
+	workerscript "github.com/rossigee/provider-cloudflare/internal/clients/workers/script"
 )
 
 const (
-	errNotScript        = "managed resource is not a Script custom resource"
-	errTrackPCUsage     = "cannot track ProviderConfig usage"
-	errGetPC            = "cannot get ProviderConfig"
-	errGetCreds         = "cannot get credentials"
-	errNewScriptClient  = "cannot create new Script client"
+	errNotScript = "managed resource is not a Worker Script custom resource"
+
+	errClientConfig = "error getting client config"
+
+	errScriptLookup      = "cannot lookup script"
+	errScriptObservation = "cannot observe script"
+	errScriptCreation    = "cannot create script"
+	errScriptUpdate      = "cannot update script"
+	errScriptDeletion    = "cannot delete script"
+
+	maxConcurrency = 5
 )
 
-// SetupScript adds a controller that reconciles Script managed resources.
+// SetupScript adds a controller that reconciles Worker Script managed resources.
 func SetupScript(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(workersv1alpha1.ScriptGroupKind)
+	name := managed.ControllerName(v1beta1.ScriptKind)
 
 	o := controller.Options{
-		MaxConcurrentReconciles: 5,
+		RateLimiter: nil, // Use default rate limiter
+		MaxConcurrentReconciles: maxConcurrency,
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(workersv1alpha1.ScriptGroupVersionKind),
+		resource.ManagedKind(v1beta1.ScriptGroupVersionKind),
 		managed.WithExternalConnecter(&scriptConnector{
 			kube: mgr.GetClient(),
-			newServiceFn: func(clientInterface clients.ClientInterface) *scriptclient.ScriptClient {
-				return scriptclient.NewClient(clientInterface)
+			newCloudflareClientFn: func(client clients.ClientInterface) *workerscript.ScriptClient {
+				return workerscript.NewClient(client)
 			},
 		}),
 		managed.WithLogger(l.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 		managed.WithPollInterval(5*time.Minute),
+		// Do not initialize external-name field.
 		managed.WithInitializers(),
 	)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&workersv1alpha1.Script{}).
+		For(&v1beta1.Script{}).
 		Complete(r)
 }
 
 // A scriptConnector is expected to produce an ExternalClient when its Connect method
 // is called.
 type scriptConnector struct {
-	kube         client.Client
-	newServiceFn func(clients.ClientInterface) *scriptclient.ScriptClient
+	kube                  client.Client
+	newCloudflareClientFn func(client clients.ClientInterface) *workerscript.ScriptClient
 }
 
-// Connect typically produces an ExternalClient by:
-// 1. Tracking that the managed resource is using a ProviderConfig.
-// 2. Getting the managed resource's ProviderConfig.
-// 3. Getting the credentials specified by the ProviderConfig.
-// 4. Using the credentials to form a client.
+// Connect produces a valid configuration for a Cloudflare API
+// instance, and returns it as an external client.
 func (c *scriptConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*workersv1alpha1.Script)
+	_, ok := mg.(*v1beta1.Script)
 	if !ok {
 		return nil, errors.New(errNotScript)
-	}
-
-	pc := &providerv1alpha1.ProviderConfig{}
-	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
-		return nil, errors.Wrap(err, errGetPC)
 	}
 
 	// Get client configuration
 	config, err := clients.GetConfig(ctx, c.kube, mg)
 	if err != nil {
-		return nil, errors.Wrap(err, errGetCreds)
+		return nil, errors.Wrap(err, errClientConfig)
 	}
 
-	client, err := clients.NewClient(*config, nil)
+	// Create cloudflare API client
+	api, err := clients.NewClient(*config, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, errNewScriptClient)
+		return nil, errors.Wrap(err, "failed to create cloudflare client")
 	}
 
-	// Create the script client wrapper
-	adapter := clients.NewCloudflareAPIAdapter(client)
-	return &scriptExternal{service: c.newServiceFn(adapter)}, nil
+	// Wrap with adapter to implement ClientInterface
+	adapter := clients.NewCloudflareAPIAdapter(api)
+	client := c.newCloudflareClientFn(adapter)
+	return &scriptExternal{client: client}, nil
 }
 
-// An ExternalClient observes, then either creates, updates, or deletes an
+// An scriptExternal observes, then either creates, updates, or deletes an
 // external resource to ensure it reflects the managed resource's desired state.
 type scriptExternal struct {
-	service *scriptclient.ScriptClient
+	client *workerscript.ScriptClient
 }
 
-func (c *scriptExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*workersv1alpha1.Script)
+func (e *scriptExternal) Observe(ctx context.Context,
+	mg resource.Managed) (managed.ExternalObservation, error) {
+
+	cr, ok := mg.(*v1beta1.Script)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotScript)
 	}
 
-	if meta.GetExternalName(cr) == "" {
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, nil
+	// Script does not exist if we dont have a name stored in external-name
+	scriptName := meta.GetExternalName(cr)
+	if scriptName == "" {
+		return managed.ExternalObservation{ResourceExists: false}, nil
 	}
 
-	obs, err := c.service.Get(ctx, meta.GetExternalName(cr))
+	scriptObs, err := e.client.Get(ctx, scriptName)
 	if err != nil {
 		return managed.ExternalObservation{},
-			errors.Wrap(resource.Ignore(clients.IsNotFound, err), "cannot get external resource")
+			errors.Wrap(resource.Ignore(isScriptNotFound, err), errScriptLookup)
 	}
 
-	cr.Status.AtProvider = *obs
-
+	cr.Status.AtProvider = *scriptObs
 	cr.Status.SetConditions(rtv1.Available())
 
-	upToDate, err := c.service.IsUpToDate(ctx, cr.Spec.ForProvider, *obs)
+	upToDate, err := e.client.IsUpToDate(ctx, cr.Spec.ForProvider, *scriptObs)
 	if err != nil {
-		return managed.ExternalObservation{}, errors.Wrap(err, "cannot determine if resource is up to date")
+		return managed.ExternalObservation{ResourceExists: true}, err
 	}
 
 	return managed.ExternalObservation{
@@ -155,54 +158,69 @@ func (c *scriptExternal) Observe(ctx context.Context, mg resource.Managed) (mana
 	}, nil
 }
 
-func (c *scriptExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*workersv1alpha1.Script)
+func (e *scriptExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
+	cr, ok := mg.(*v1beta1.Script)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotScript)
 	}
 
-	cr.Status.SetConditions(rtv1.Creating())
-
-	obs, err := c.service.Create(ctx, cr.Spec.ForProvider)
+	scriptObs, err := e.client.Create(ctx, cr.Spec.ForProvider)
 	if err != nil {
-		return managed.ExternalCreation{}, errors.Wrap(err, "cannot create external resource")
+		return managed.ExternalCreation{}, errors.Wrap(err, errScriptCreation)
 	}
 
-	cr.Status.AtProvider = *obs
+	cr.Status.AtProvider = *scriptObs
 	meta.SetExternalName(cr, cr.Spec.ForProvider.ScriptName)
 
 	return managed.ExternalCreation{}, nil
 }
 
-func (c *scriptExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*workersv1alpha1.Script)
+func (e *scriptExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
+	cr, ok := mg.(*v1beta1.Script)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotScript)
 	}
 
-	obs, err := c.service.Update(ctx, cr.Spec.ForProvider)
-	if err != nil {
-		return managed.ExternalUpdate{}, errors.Wrap(err, "cannot update external resource")
+	scriptName := meta.GetExternalName(cr)
+	// Update should never be called on a nonexistent resource
+	if scriptName == "" {
+		return managed.ExternalUpdate{}, errors.New(errScriptUpdate)
 	}
 
-	cr.Status.AtProvider = *obs
-
-	return managed.ExternalUpdate{}, nil
+	_, err := e.client.Update(ctx, cr.Spec.ForProvider)
+	return managed.ExternalUpdate{}, errors.Wrap(err, errScriptUpdate)
 }
 
-func (c *scriptExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*workersv1alpha1.Script)
+func (e *scriptExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
+	cr, ok := mg.(*v1beta1.Script)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotScript)
 	}
 
-	cr.Status.SetConditions(rtv1.Deleting())
+	scriptName := meta.GetExternalName(cr)
 
-	err := c.service.Delete(ctx, meta.GetExternalName(cr), cr.Spec.ForProvider.DispatchNamespace)
-	return managed.ExternalDelete{}, err
+	// Delete should never be called on a nonexistent resource
+	if scriptName == "" {
+		return managed.ExternalDelete{}, errors.New(errScriptDeletion)
+	}
+
+	return managed.ExternalDelete{}, errors.Wrap(
+		e.client.Delete(ctx, scriptName),
+		errScriptDeletion)
 }
 
-func (c *scriptExternal) Disconnect(ctx context.Context) error {
+func (e *scriptExternal) Disconnect(ctx context.Context) error {
 	// No persistent connections to clean up
 	return nil
+}
+
+// isScriptNotFound checks if an error indicates that a script was not found.
+func isScriptNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "not found") ||
+		   strings.Contains(errStr, "404") ||
+		   strings.Contains(errStr, "does not exist")
 }

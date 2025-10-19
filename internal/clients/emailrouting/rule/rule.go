@@ -22,7 +22,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/emailrouting/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/emailrouting/v1beta1"
 )
 
 // EmailRoutingRuleAPI defines the interface for Email Routing Rule operations
@@ -61,8 +61,8 @@ func NewClientFromAPI(api *cloudflare.API) *RuleClient {
 }
 
 // convertToObservation converts cloudflare-go email routing rule to Crossplane observation.
-func convertToObservation(rule cloudflare.EmailRoutingRule) v1alpha1.RuleObservation {
-	obs := v1alpha1.RuleObservation{
+func convertToObservation(rule cloudflare.EmailRoutingRule) v1beta1.RuleObservation {
+	obs := v1beta1.RuleObservation{
 		Tag:      rule.Tag,
 		Name:     rule.Name,
 		Priority: &rule.Priority,
@@ -71,9 +71,9 @@ func convertToObservation(rule cloudflare.EmailRoutingRule) v1alpha1.RuleObserva
 
 	// Convert matchers
 	if len(rule.Matchers) > 0 {
-		obs.Matchers = make([]v1alpha1.RuleMatcher, len(rule.Matchers))
+		obs.Matchers = make([]v1beta1.RuleMatcher, len(rule.Matchers))
 		for i, matcher := range rule.Matchers {
-			obs.Matchers[i] = v1alpha1.RuleMatcher{
+			obs.Matchers[i] = v1beta1.RuleMatcher{
 				Type:  matcher.Type,
 				Field: matcher.Field,
 				Value: matcher.Value,
@@ -83,9 +83,9 @@ func convertToObservation(rule cloudflare.EmailRoutingRule) v1alpha1.RuleObserva
 
 	// Convert actions
 	if len(rule.Actions) > 0 {
-		obs.Actions = make([]v1alpha1.RuleAction, len(rule.Actions))
+		obs.Actions = make([]v1beta1.RuleAction, len(rule.Actions))
 		for i, action := range rule.Actions {
-			obs.Actions[i] = v1alpha1.RuleAction{
+			obs.Actions[i] = v1beta1.RuleAction{
 				Type:  action.Type,
 				Value: action.Value,
 			}
@@ -96,7 +96,7 @@ func convertToObservation(rule cloudflare.EmailRoutingRule) v1alpha1.RuleObserva
 }
 
 // convertToCloudflareParams converts Crossplane parameters to cloudflare-go parameters.
-func convertToCloudflareParams(params v1alpha1.RuleParameters) cloudflare.CreateEmailRoutingRuleParameters {
+func convertToCloudflareParams(params v1beta1.RuleParameters) cloudflare.CreateEmailRoutingRuleParameters {
 	cfParams := cloudflare.CreateEmailRoutingRuleParameters{
 		Name:     params.Name,
 		Priority: params.Priority,
@@ -130,7 +130,7 @@ func convertToCloudflareParams(params v1alpha1.RuleParameters) cloudflare.Create
 }
 
 // convertToUpdateParams converts Crossplane parameters to cloudflare-go update parameters.
-func convertToUpdateParams(ruleTag string, params v1alpha1.RuleParameters) cloudflare.UpdateEmailRoutingRuleParameters {
+func convertToUpdateParams(ruleTag string, params v1beta1.RuleParameters) cloudflare.UpdateEmailRoutingRuleParameters {
 	cfParams := cloudflare.UpdateEmailRoutingRuleParameters{
 		Name:     params.Name,
 		Priority: params.Priority,
@@ -164,7 +164,7 @@ func convertToUpdateParams(ruleTag string, params v1alpha1.RuleParameters) cloud
 }
 
 // Create creates a new Email Routing Rule.
-func (c *RuleClient) Create(ctx context.Context, params v1alpha1.RuleParameters) (*v1alpha1.RuleObservation, error) {
+func (c *RuleClient) Create(ctx context.Context, params v1beta1.RuleParameters) (*v1beta1.RuleObservation, error) {
 	rc := cloudflare.ZoneIdentifier(params.ZoneID)
 	
 	createParams := convertToCloudflareParams(params)
@@ -179,7 +179,7 @@ func (c *RuleClient) Create(ctx context.Context, params v1alpha1.RuleParameters)
 }
 
 // Get retrieves an Email Routing Rule.
-func (c *RuleClient) Get(ctx context.Context, zoneID, ruleTag string) (*v1alpha1.RuleObservation, error) {
+func (c *RuleClient) Get(ctx context.Context, zoneID, ruleTag string) (*v1beta1.RuleObservation, error) {
 	rc := cloudflare.ZoneIdentifier(zoneID)
 
 	rule, err := c.client.GetEmailRoutingRule(ctx, rc, ruleTag)
@@ -192,7 +192,7 @@ func (c *RuleClient) Get(ctx context.Context, zoneID, ruleTag string) (*v1alpha1
 }
 
 // Update updates an existing Email Routing Rule.
-func (c *RuleClient) Update(ctx context.Context, ruleTag string, params v1alpha1.RuleParameters) (*v1alpha1.RuleObservation, error) {
+func (c *RuleClient) Update(ctx context.Context, ruleTag string, params v1beta1.RuleParameters) (*v1beta1.RuleObservation, error) {
 	rc := cloudflare.ZoneIdentifier(params.ZoneID)
 	
 	updateParams := convertToUpdateParams(ruleTag, params)
@@ -219,7 +219,7 @@ func (c *RuleClient) Delete(ctx context.Context, zoneID, ruleTag string) error {
 }
 
 // List retrieves all Email Routing Rules for a zone.
-func (c *RuleClient) List(ctx context.Context, zoneID string) ([]v1alpha1.RuleObservation, error) {
+func (c *RuleClient) List(ctx context.Context, zoneID string) ([]v1beta1.RuleObservation, error) {
 	rc := cloudflare.ZoneIdentifier(zoneID)
 
 	rules, _, err := c.client.ListEmailRoutingRules(ctx, rc, cloudflare.ListEmailRoutingRulesParameters{})
@@ -227,7 +227,7 @@ func (c *RuleClient) List(ctx context.Context, zoneID string) ([]v1alpha1.RuleOb
 		return nil, errors.Wrap(err, errListRules)
 	}
 
-	observations := make([]v1alpha1.RuleObservation, len(rules))
+	observations := make([]v1beta1.RuleObservation, len(rules))
 	for i, rule := range rules {
 		observations[i] = convertToObservation(rule)
 	}
@@ -236,7 +236,7 @@ func (c *RuleClient) List(ctx context.Context, zoneID string) ([]v1alpha1.RuleOb
 }
 
 // IsUpToDate checks if the Email Routing Rule is up to date.
-func (c *RuleClient) IsUpToDate(ctx context.Context, params v1alpha1.RuleParameters, obs v1alpha1.RuleObservation) (bool, error) {
+func (c *RuleClient) IsUpToDate(ctx context.Context, params v1beta1.RuleParameters, obs v1beta1.RuleObservation) (bool, error) {
 	// Compare key fields to determine if update is needed
 	if obs.Name != params.Name ||
 		(obs.Priority != nil && *obs.Priority != params.Priority) {

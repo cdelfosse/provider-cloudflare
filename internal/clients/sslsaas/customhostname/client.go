@@ -23,7 +23,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -105,14 +105,14 @@ func IsCustomHostnameNotFound(err error) bool {
 }
 
 // GenerateObservation creates observation data from a Custom Hostname
-func GenerateObservation(hostname cloudflare.CustomHostname) v1alpha1.CustomHostnameObservation {
-	obs := v1alpha1.CustomHostnameObservation{
+func GenerateObservation(hostname cloudflare.CustomHostname) v1beta1.CustomHostnameObservation {
+	obs := v1beta1.CustomHostnameObservation{
 		Status: hostname.Status,
 	}
 
 	// Map SSL status if available
 	if hostname.SSL != nil {
-		obs.SSL = v1alpha1.CustomHostnameSSLObserved{
+		obs.SSL = v1beta1.CustomHostnameSSLObserved{
 			Status:               hostname.SSL.Status,
 			HTTPUrl:              hostname.SSL.HTTPUrl,
 			HTTPBody:             hostname.SSL.HTTPBody,
@@ -123,7 +123,7 @@ func GenerateObservation(hostname cloudflare.CustomHostname) v1alpha1.CustomHost
 
 		// Map validation errors if present
 		for _, verr := range hostname.SSL.ValidationErrors {
-			obs.SSL.ValidationErrors = append(obs.SSL.ValidationErrors, v1alpha1.CustomHostnameSSLValidationErrors{
+			obs.SSL.ValidationErrors = append(obs.SSL.ValidationErrors, v1beta1.CustomHostnameSSLValidationErrors{
 				Message: verr.Message,
 			})
 		}
@@ -131,14 +131,14 @@ func GenerateObservation(hostname cloudflare.CustomHostname) v1alpha1.CustomHost
 
 	// Map ownership verification if available
 	if hostname.OwnershipVerification.Name != "" {
-		obs.OwnershipVerification.DNSRecord = &v1alpha1.CustomHostnameOwnershipVerificationDNS{
+		obs.OwnershipVerification.DNSRecord = &v1beta1.CustomHostnameOwnershipVerificationDNS{
 			Name:  &hostname.OwnershipVerification.Name,
 			Type:  &hostname.OwnershipVerification.Type,
 			Value: &hostname.OwnershipVerification.Value,
 		}
 	}
 	if hostname.OwnershipVerificationHTTP.HTTPUrl != "" {
-		obs.OwnershipVerification.HTTPFile = &v1alpha1.CustomHostnameOwnershipVerificationHTTP{
+		obs.OwnershipVerification.HTTPFile = &v1beta1.CustomHostnameOwnershipVerificationHTTP{
 			URL:  &hostname.OwnershipVerificationHTTP.HTTPUrl,
 			Body: &hostname.OwnershipVerificationHTTP.HTTPBody,
 		}
@@ -148,7 +148,7 @@ func GenerateObservation(hostname cloudflare.CustomHostname) v1alpha1.CustomHost
 }
 
 // ParametersToCustomHostname converts CustomHostnameParameters to cloudflare.CustomHostname
-func ParametersToCustomHostname(params v1alpha1.CustomHostnameParameters) cloudflare.CustomHostname {
+func ParametersToCustomHostname(params v1beta1.CustomHostnameParameters) cloudflare.CustomHostname {
 	hostname := cloudflare.CustomHostname{
 		Hostname: params.Hostname,
 	}
@@ -196,7 +196,7 @@ func ParametersToCustomHostname(params v1alpha1.CustomHostnameParameters) cloudf
 }
 
 // UpToDate checks if the spec is up to date with the observed hostname
-func UpToDate(spec *v1alpha1.CustomHostnameParameters, hostname cloudflare.CustomHostname) bool {
+func UpToDate(spec *v1beta1.CustomHostnameParameters, hostname cloudflare.CustomHostname) bool {
 	// Check hostname
 	if spec.Hostname != hostname.Hostname {
 		return false

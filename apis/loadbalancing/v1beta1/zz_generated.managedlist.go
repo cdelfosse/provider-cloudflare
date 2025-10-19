@@ -27,3 +27,21 @@ func (l *LoadBalancerList) GetItems() []resource.Managed {
 	}
 	return items
 }
+
+// GetItems of this LoadBalancerMonitorList.
+func (l *LoadBalancerMonitorList) GetItems() []resource.Managed {
+	items := make([]resource.Managed, len(l.Items))
+	for i := range l.Items {
+		items[i] = &l.Items[i]
+	}
+	return items
+}
+
+// GetItems of this LoadBalancerPoolList.
+func (l *LoadBalancerPoolList) GetItems() []resource.Managed {
+	items := make([]resource.Managed, len(l.Items))
+	for i := range l.Items {
+		items[i] = &l.Items[i]
+	}
+	return items
+}

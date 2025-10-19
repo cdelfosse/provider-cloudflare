@@ -30,7 +30,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/v1beta1"
 )
 
 const (
@@ -114,7 +114,7 @@ func UseProviderConfig(ctx context.Context, c client.Client, mg resource.Managed
 		return nil, errors.New(errPCRef)
 	}
 
-	pc := &v1alpha1.ProviderConfig{}
+	pc := &v1beta1.ProviderConfig{}
 	if err := c.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}

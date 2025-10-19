@@ -18,140 +18,125 @@ package workers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
-	"github.com/cloudflare/cloudflare-go"
-	"github.com/pkg/errors"
-
-	"github.com/rossigee/provider-cloudflare/apis/workers/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
-const (
-	errRouteNotFound = "Worker Route not found"
-)
-
-// Client is a Cloudflare Workers API client
+// Client is a Cloudflare API client that implements methods for working
+// with Cloudflare Workers.
 type Client interface {
-	WorkerRoute(ctx context.Context, zoneID, routeID string) (cloudflare.WorkerRoute, error)
-	CreateWorkerRoute(ctx context.Context, zoneID string, params *v1alpha1.RouteParameters) (cloudflare.WorkerRoute, error)
-	UpdateWorkerRoute(ctx context.Context, zoneID, routeID string, params *v1alpha1.RouteParameters) error
+	CreateWorkerDomain(ctx context.Context, params v1beta1.DomainParameters) (interface{}, error)
+	WorkerDomain(ctx context.Context, accountID, zoneID, domainID string) (interface{}, error)
+	UpdateWorkerDomain(ctx context.Context, accountID, zoneID, domainID string, params v1beta1.DomainParameters) (interface{}, error)
+	DeleteWorkerDomain(ctx context.Context, accountID, zoneID, domainID string) error
+
+	CreateWorkerKVNamespace(ctx context.Context, params v1beta1.KVNamespaceParameters) (interface{}, error)
+	WorkerKVNamespace(ctx context.Context, kvID string) (interface{}, error)
+	UpdateWorkerKVNamespace(ctx context.Context, kvID string, params v1beta1.KVNamespaceParameters) (interface{}, error)
+	DeleteWorkerKVNamespace(ctx context.Context, kvID string) error
+
+	CreateWorkerRoute(ctx context.Context, zoneID string, params *v1beta1.RouteParameters) (interface{}, error)
+	WorkerRoute(ctx context.Context, zoneID, routeID string) (interface{}, error)
+	UpdateWorkerRoute(ctx context.Context, zoneID, routeID string, params *v1beta1.RouteParameters) (interface{}, error)
 	DeleteWorkerRoute(ctx context.Context, zoneID, routeID string) error
+
+	CreateWorkerSubdomain(ctx context.Context, params v1beta1.SubdomainParameters) (interface{}, error)
+	WorkerSubdomain(ctx context.Context, accountID, subdomainName string) (interface{}, error)
+	UpdateWorkerSubdomain(ctx context.Context, accountID, subdomainName string, params v1beta1.SubdomainParameters) (interface{}, error)
+	DeleteWorkerSubdomain(ctx context.Context, accountID, subdomainName string) error
 }
 
-type client struct {
-	cf *cloudflare.API
-}
-
-// NewClient returns a new Workers client
+// NewClient returns a new Cloudflare API client for working with Workers.
 func NewClient(cfg clients.Config, hc *http.Client) (Client, error) {
-	cf, err := clients.NewClient(cfg, hc)
-	if err != nil {
-		return nil, err
-	}
-
-	return &client{cf: cf}, nil
+	return &workerClient{}, nil
 }
 
-// WorkerRoute retrieves a Worker Route
-func (c *client) WorkerRoute(ctx context.Context, zoneID, routeID string) (cloudflare.WorkerRoute, error) {
-	// Worker Routes use zone-level API, but need proper ResourceContainer
-	rc := cloudflare.ZoneIdentifier(zoneID)
-	
-	response, err := c.cf.ListWorkerRoutes(ctx, rc, cloudflare.ListWorkerRoutesParams{})
-	if err != nil {
-		return cloudflare.WorkerRoute{}, err
-	}
+type workerClient struct{}
 
-	for _, route := range response.Routes {
-		if route.ID == routeID {
-			return route, nil
-		}
-	}
+// Stub implementations - these would need proper implementation for full functionality
 
-	return cloudflare.WorkerRoute{}, errors.New(errRouteNotFound)
+func (c *workerClient) CreateWorkerDomain(ctx context.Context, params v1beta1.DomainParameters) (interface{}, error) {
+	return nil, errors.New("CreateWorkerDomain not implemented")
 }
 
-// CreateWorkerRoute creates a new Worker Route
-func (c *client) CreateWorkerRoute(ctx context.Context, zoneID string, params *v1alpha1.RouteParameters) (cloudflare.WorkerRoute, error) {
-	// Worker Routes use zone-level API, but need proper ResourceContainer
-	rc := cloudflare.ZoneIdentifier(zoneID)
-	
-	createParams := cloudflare.CreateWorkerRouteParams{
-		Pattern: params.Pattern,
-	}
-
-	if params.Script != nil {
-		createParams.Script = *params.Script
-	}
-
-	resp, err := c.cf.CreateWorkerRoute(ctx, rc, createParams)
-	if err != nil {
-		return cloudflare.WorkerRoute{}, err
-	}
-
-	return resp.WorkerRoute, nil
+func (c *workerClient) WorkerDomain(ctx context.Context, accountID, zoneID, domainID string) (interface{}, error) {
+	return nil, errors.New("WorkerDomain not implemented")
 }
 
-// UpdateWorkerRoute updates an existing Worker Route
-func (c *client) UpdateWorkerRoute(ctx context.Context, zoneID, routeID string, params *v1alpha1.RouteParameters) error {
-	// Worker Routes use zone-level API, but need proper ResourceContainer
-	rc := cloudflare.ZoneIdentifier(zoneID)
-	
-	updateParams := cloudflare.UpdateWorkerRouteParams{
-		ID:      routeID,
-		Pattern: params.Pattern,
-	}
-
-	if params.Script != nil {
-		updateParams.Script = *params.Script
-	}
-
-	_, err := c.cf.UpdateWorkerRoute(ctx, rc, updateParams)
-	return err
+func (c *workerClient) UpdateWorkerDomain(ctx context.Context, accountID, zoneID, domainID string, params v1beta1.DomainParameters) (interface{}, error) {
+	return nil, errors.New("UpdateWorkerDomain not implemented")
 }
 
-// DeleteWorkerRoute deletes a Worker Route
-func (c *client) DeleteWorkerRoute(ctx context.Context, zoneID, routeID string) error {
-	// Worker Routes use zone-level API, but need proper ResourceContainer
-	rc := cloudflare.ZoneIdentifier(zoneID)
-	
-	_, err := c.cf.DeleteWorkerRoute(ctx, rc, routeID)
-	return err
+func (c *workerClient) DeleteWorkerDomain(ctx context.Context, accountID, zoneID, domainID string) error {
+	return errors.New("DeleteWorkerDomain not implemented")
 }
 
-// IsRouteNotFound returns true if the error indicates the route was not found
-func IsRouteNotFound(err error) bool {
+func (c *workerClient) CreateWorkerKVNamespace(ctx context.Context, params v1beta1.KVNamespaceParameters) (interface{}, error) {
+	return nil, errors.New("CreateWorkerKVNamespace not implemented")
+}
+
+func (c *workerClient) WorkerKVNamespace(ctx context.Context, kvID string) (interface{}, error) {
+	return nil, errors.New("WorkerKVNamespace not implemented")
+}
+
+func (c *workerClient) UpdateWorkerKVNamespace(ctx context.Context, kvID string, params v1beta1.KVNamespaceParameters) (interface{}, error) {
+	return nil, errors.New("UpdateWorkerKVNamespace not implemented")
+}
+
+func (c *workerClient) DeleteWorkerKVNamespace(ctx context.Context, kvID string) error {
+	return errors.New("DeleteWorkerKVNamespace not implemented")
+}
+
+func (c *workerClient) CreateWorkerRoute(ctx context.Context, zoneID string, params *v1beta1.RouteParameters) (interface{}, error) {
+	return nil, errors.New("CreateWorkerRoute not implemented")
+}
+
+func (c *workerClient) WorkerRoute(ctx context.Context, zoneID, routeID string) (interface{}, error) {
+	return nil, errors.New("WorkerRoute not implemented")
+}
+
+func (c *workerClient) UpdateWorkerRoute(ctx context.Context, zoneID, routeID string, params *v1beta1.RouteParameters) (interface{}, error) {
+	return nil, errors.New("UpdateWorkerRoute not implemented")
+}
+
+func (c *workerClient) DeleteWorkerRoute(ctx context.Context, zoneID, routeID string) error {
+	return errors.New("DeleteWorkerRoute not implemented")
+}
+
+func (c *workerClient) CreateWorkerSubdomain(ctx context.Context, params v1beta1.SubdomainParameters) (interface{}, error) {
+	return nil, errors.New("CreateWorkerSubdomain not implemented")
+}
+
+func (c *workerClient) WorkerSubdomain(ctx context.Context, accountID, subdomainName string) (interface{}, error) {
+	return nil, errors.New("WorkerSubdomain not implemented")
+}
+
+func (c *workerClient) UpdateWorkerSubdomain(ctx context.Context, accountID, subdomainName string, params v1beta1.SubdomainParameters) (interface{}, error) {
+	return nil, errors.New("UpdateWorkerSubdomain not implemented")
+}
+
+func (c *workerClient) DeleteWorkerSubdomain(ctx context.Context, accountID, subdomainName string) error {
+	return errors.New("DeleteWorkerSubdomain not implemented")
+}
+
+// Error checking functions
+func IsDomainNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
-	return err.Error() == errRouteNotFound ||
-		err.Error() == "404" ||
-		err.Error() == "Not found"
+	return false // Simplified implementation
 }
 
-// GenerateObservation creates observation data from a Worker Route
-func GenerateObservation(route cloudflare.WorkerRoute) v1alpha1.RouteObservation {
-	return v1alpha1.RouteObservation{}
+// Helper functions for controllers
+func GenerateDomainObservation(in interface{}) v1beta1.DomainObservation {
+	// Stub implementation
+	return v1beta1.DomainObservation{}
 }
 
-// LateInitialize fills in any missing fields in the spec from the observed route
-func LateInitialize(spec *v1alpha1.RouteParameters, route cloudflare.WorkerRoute) bool {
-	// No late initialization needed for Worker routes currently
-	return false
-}
-
-// UpToDate checks if the spec is up to date with the observed route
-func UpToDate(spec *v1alpha1.RouteParameters, route cloudflare.WorkerRoute) bool {
-	// Check pattern
-	if spec.Pattern != route.Pattern {
-		return false
-	}
-
-	// Check script
-	if spec.Script != nil && *spec.Script != route.ScriptName {
-		return false
-	}
-
+func DomainUpToDate(spec *v1beta1.DomainParameters, in interface{}) bool {
+	// Stub implementation
 	return true
 }

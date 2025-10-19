@@ -36,8 +36,8 @@ import (
 	rtfake "github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1alpha1"
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	providerv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
+	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/sslsaas/customhostname/fake"
 )
@@ -61,26 +61,26 @@ const (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-type customHostnameModifier func(*v1alpha1.CustomHostname)
+type customHostnameModifier func(*v1beta1.CustomHostname)
 
 func withExternalName(customHostnameModifier string) customHostnameModifier {
-	return func(r *v1alpha1.CustomHostname) { meta.SetExternalName(r, customHostnameModifier) }
+	return func(r *v1beta1.CustomHostname) { meta.SetExternalName(r, customHostnameModifier) }
 }
 
 func withZone(zoneID string) customHostnameModifier {
-	return func(r *v1alpha1.CustomHostname) { r.Spec.ForProvider.Zone = &zoneID }
+	return func(r *v1beta1.CustomHostname) { r.Spec.ForProvider.Zone = &zoneID }
 }
 
 func withHostname(hostname string) customHostnameModifier {
-	return func(r *v1alpha1.CustomHostname) { r.Spec.ForProvider.Hostname = hostname }
+	return func(r *v1beta1.CustomHostname) { r.Spec.ForProvider.Hostname = hostname }
 }
 
-func withSSLSettings(settings *v1alpha1.CustomHostnameSSL) customHostnameModifier {
-	return func(r *v1alpha1.CustomHostname) { r.Spec.ForProvider.SSL = *settings }
+func withSSLSettings(settings *v1beta1.CustomHostnameSSL) customHostnameModifier {
+	return func(r *v1beta1.CustomHostname) { r.Spec.ForProvider.SSL = *settings }
 }
 
-func customHostname(m ...customHostnameModifier) *v1alpha1.CustomHostname {
-	cr := &v1alpha1.CustomHostname{}
+func customHostname(m ...customHostnameModifier) *v1beta1.CustomHostname {
+	cr := &v1beta1.CustomHostname{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -93,13 +93,13 @@ const (
 	hostname     = "host.zone.com"
 )
 
-var sslSettings = &v1alpha1.CustomHostnameSSL{
+var sslSettings = &v1beta1.CustomHostnameSSL{
 	Method:            ptr.To("txt"),
 	Type:              ptr.To("dv"),
 	Wildcard:          ptr.To(true),
 	CustomCertificate: ptr.To("invalid cert"),
 	CustomKey:         ptr.To("invalid key"),
-	Settings: v1alpha1.CustomHostnameSSLSettings{
+	Settings: v1beta1.CustomHostnameSSLSettings{
 		HTTP2:         ptr.To("on"),
 		TLS13:         ptr.To("on"),
 		MinTLSVersion: ptr.To("1.2"),
@@ -117,7 +117,7 @@ type connector struct {
 }
 
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.CustomHostname)
+	_, ok := mg.(*v1beta1.CustomHostname)
 	if !ok {
 		return nil, errors.New(errNotCustomHostname)
 	}
@@ -140,7 +140,7 @@ type external struct {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.CustomHostname)
+	cr, ok := mg.(*v1beta1.CustomHostname)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotCustomHostname)
 	}
@@ -167,7 +167,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.CustomHostname)
+	cr, ok := mg.(*v1beta1.CustomHostname)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotCustomHostname)
 	}
@@ -182,7 +182,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.CustomHostname)
+	cr, ok := mg.(*v1beta1.CustomHostname)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotCustomHostname)
 	}
@@ -206,7 +206,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.CustomHostname)
+	cr, ok := mg.(*v1beta1.CustomHostname)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotCustomHostname)
 	}
@@ -263,8 +263,8 @@ func TestConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.CustomHostname{
-					Spec: v1alpha1.CustomHostnameSpec{
+				mg: &v1beta1.CustomHostname{
+					Spec: v1beta1.CustomHostnameSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -277,7 +277,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj k8sclient.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *providerv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -293,8 +293,8 @@ func TestConnect(t *testing.T) {
 				newClient: NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.CustomHostname{
-					Spec: v1alpha1.CustomHostnameSpec{
+				mg: &v1beta1.CustomHostname{
+					Spec: v1beta1.CustomHostnameSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -395,7 +395,7 @@ func TestObserve(t *testing.T) {
 				},
 			},
 			args: args{
-				mg: &v1alpha1.CustomHostname{},
+				mg: &v1beta1.CustomHostname{},
 			},
 			want: want{
 				o:   managed.ExternalObservation{},

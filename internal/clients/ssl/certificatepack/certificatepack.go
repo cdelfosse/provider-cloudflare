@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -47,7 +47,7 @@ func NewClient(client CertificatePackAPI) *CloudflareCertificatePackClient {
 }
 
 // Get retrieves a Certificate Pack by ID.
-func (c *CloudflareCertificatePackClient) Get(ctx context.Context, zoneID, certificatePackID string) (*v1alpha1.CertificatePackObservation, error) {
+func (c *CloudflareCertificatePackClient) Get(ctx context.Context, zoneID, certificatePackID string) (*v1beta1.CertificatePackObservation, error) {
 	pack, err := c.client.CertificatePack(ctx, zoneID, certificatePackID)
 	if err != nil {
 		if isNotFound(err) {
@@ -60,7 +60,7 @@ func (c *CloudflareCertificatePackClient) Get(ctx context.Context, zoneID, certi
 }
 
 // Create creates a new Certificate Pack.
-func (c *CloudflareCertificatePackClient) Create(ctx context.Context, params v1alpha1.CertificatePackParameters) (*v1alpha1.CertificatePackObservation, error) {
+func (c *CloudflareCertificatePackClient) Create(ctx context.Context, params v1beta1.CertificatePackParameters) (*v1beta1.CertificatePackObservation, error) {
 	request := convertParametersToCertificatePackRequest(params)
 	
 	pack, err := c.client.CreateCertificatePack(ctx, params.Zone, request)
@@ -85,7 +85,7 @@ func (c *CloudflareCertificatePackClient) Delete(ctx context.Context, zoneID, ce
 }
 
 // RestartValidation restarts certificate validation for a Certificate Pack.
-func (c *CloudflareCertificatePackClient) RestartValidation(ctx context.Context, zoneID, certificatePackID string) (*v1alpha1.CertificatePackObservation, error) {
+func (c *CloudflareCertificatePackClient) RestartValidation(ctx context.Context, zoneID, certificatePackID string) (*v1beta1.CertificatePackObservation, error) {
 	pack, err := c.client.RestartCertificateValidation(ctx, zoneID, certificatePackID)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot restart certificate validation")
@@ -95,7 +95,7 @@ func (c *CloudflareCertificatePackClient) RestartValidation(ctx context.Context,
 }
 
 // convertParametersToCertificatePackRequest converts CertificatePackParameters to cloudflare.CertificatePackRequest.
-func convertParametersToCertificatePackRequest(params v1alpha1.CertificatePackParameters) cloudflare.CertificatePackRequest {
+func convertParametersToCertificatePackRequest(params v1beta1.CertificatePackParameters) cloudflare.CertificatePackRequest {
 	request := cloudflare.CertificatePackRequest{
 		Type:             params.Type,
 		Hosts:            params.Hosts,
@@ -118,8 +118,8 @@ func convertParametersToCertificatePackRequest(params v1alpha1.CertificatePackPa
 }
 
 // convertCertificatePackToObservation converts cloudflare.CertificatePack to CertificatePackObservation.
-func convertCertificatePackToObservation(pack cloudflare.CertificatePack) *v1alpha1.CertificatePackObservation {
-	obs := &v1alpha1.CertificatePackObservation{
+func convertCertificatePackToObservation(pack cloudflare.CertificatePack) *v1beta1.CertificatePackObservation {
+	obs := &v1beta1.CertificatePackObservation{
 		ID:               &pack.ID,
 		Type:             &pack.Type,
 		Hosts:            pack.Hosts,
@@ -140,9 +140,9 @@ func convertCertificatePackToObservation(pack cloudflare.CertificatePack) *v1alp
 
 	// Convert certificates
 	if len(pack.Certificates) > 0 {
-		obs.Certificates = make([]v1alpha1.CertificateInfo, len(pack.Certificates))
+		obs.Certificates = make([]v1beta1.CertificateInfo, len(pack.Certificates))
 		for i, cert := range pack.Certificates {
-			obs.Certificates[i] = v1alpha1.CertificateInfo{
+			obs.Certificates[i] = v1beta1.CertificateInfo{
 				ID:     &cert.ID,
 				Hosts:  cert.Hosts,
 				Issuer: &cert.Issuer,
@@ -165,9 +165,9 @@ func convertCertificatePackToObservation(pack cloudflare.CertificatePack) *v1alp
 
 	// Convert validation records
 	if len(pack.ValidationRecords) > 0 {
-		obs.ValidationRecords = make([]v1alpha1.SSLValidationRecord, len(pack.ValidationRecords))
+		obs.ValidationRecords = make([]v1beta1.SSLValidationRecord, len(pack.ValidationRecords))
 		for i, record := range pack.ValidationRecords {
-			obs.ValidationRecords[i] = v1alpha1.SSLValidationRecord{}
+			obs.ValidationRecords[i] = v1beta1.SSLValidationRecord{}
 
 			if record.TxtName != "" {
 				obs.ValidationRecords[i].TxtName = &record.TxtName
@@ -193,9 +193,9 @@ func convertCertificatePackToObservation(pack cloudflare.CertificatePack) *v1alp
 
 	// Convert validation errors
 	if len(pack.ValidationErrors) > 0 {
-		obs.ValidationErrors = make([]v1alpha1.SSLValidationError, len(pack.ValidationErrors))
+		obs.ValidationErrors = make([]v1beta1.SSLValidationError, len(pack.ValidationErrors))
 		for i, validationError := range pack.ValidationErrors {
-			obs.ValidationErrors[i] = v1alpha1.SSLValidationError{
+			obs.ValidationErrors[i] = v1beta1.SSLValidationError{
 				Message: &validationError.Message,
 			}
 		}

@@ -35,8 +35,8 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	originsslv1alpha1 "github.com/rossigee/provider-cloudflare/apis/originssl/v1alpha1"
-	providerv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	originsslv1beta1 "github.com/rossigee/provider-cloudflare/apis/originssl/v1beta1"
+	v1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	certificate "github.com/rossigee/provider-cloudflare/internal/clients/originssl/certificate"
 )
@@ -51,14 +51,14 @@ const (
 
 // SetupCertificate adds a controller that reconciles Certificate managed resources.
 func SetupCertificate(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(originsslv1alpha1.CertificateKind)
+	name := managed.ControllerName(originsslv1beta1.CertificateKind)
 
 	o := controller.Options{
 		MaxConcurrentReconciles: 5,
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(originsslv1alpha1.CertificateGroupVersionKind),
+		resource.ManagedKind(originsslv1beta1.CertificateGroupVersionKind),
 		managed.WithExternalConnecter(&certificateConnector{
 			kube: mgr.GetClient(),
 			newServiceFn: func(api *cloudflare.API) *certificate.CloudflareOriginCertificateClient {
@@ -74,7 +74,7 @@ func SetupCertificate(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRate
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&originsslv1alpha1.Certificate{}).
+		For(&originsslv1beta1.Certificate{}).
 		Complete(r)
 }
 
@@ -92,7 +92,7 @@ type certificateConnector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *certificateConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*originsslv1alpha1.Certificate)
+	cr, ok := mg.(*originsslv1beta1.Certificate)
 	if !ok {
 		return nil, errors.New(errNotCertificate)
 	}
@@ -101,7 +101,7 @@ func (c *certificateConnector) Connect(ctx context.Context, mg resource.Managed)
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	pc := &providerv1alpha1.ProviderConfig{}
+	pc := &v1beta1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -128,7 +128,7 @@ type certificateExternal struct {
 }
 
 func (c *certificateExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*originsslv1alpha1.Certificate)
+	cr, ok := mg.(*originsslv1beta1.Certificate)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotCertificate)
 	}
@@ -161,7 +161,7 @@ func (c *certificateExternal) Observe(ctx context.Context, mg resource.Managed) 
 }
 
 func (c *certificateExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*originsslv1alpha1.Certificate)
+	cr, ok := mg.(*originsslv1beta1.Certificate)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotCertificate)
 	}
@@ -180,7 +180,7 @@ func (c *certificateExternal) Create(ctx context.Context, mg resource.Managed) (
 }
 
 func (c *certificateExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*originsslv1alpha1.Certificate)
+	cr, ok := mg.(*originsslv1beta1.Certificate)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotCertificate)
 	}
@@ -196,7 +196,7 @@ func (c *certificateExternal) Update(ctx context.Context, mg resource.Managed) (
 }
 
 func (c *certificateExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*originsslv1alpha1.Certificate)
+	cr, ok := mg.(*originsslv1beta1.Certificate)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotCertificate)
 	}

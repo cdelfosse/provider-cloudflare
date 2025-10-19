@@ -23,7 +23,8 @@ import (
 
 	"github.com/cloudflare/cloudflare-go"
 
-	"github.com/rossigee/provider-cloudflare/apis/firewall/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/firewall/v1beta1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
@@ -43,7 +44,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -55,38 +55,38 @@ import (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-type ruleModifer func(*v1alpha1.Rule)
+type ruleModifer func(*v1beta1.Rule)
 
 func withAction(action string) ruleModifer {
-	return func(r *v1alpha1.Rule) { r.Spec.ForProvider.Action = action }
+	return func(r *v1beta1.Rule) { r.Spec.ForProvider.Action = action }
 }
 
 func withDescription(description string) ruleModifer {
-	return func(r *v1alpha1.Rule) { r.Spec.ForProvider.Description = &description }
+	return func(r *v1beta1.Rule) { r.Spec.ForProvider.Description = &description }
 }
 
 func withPaused(paused bool) ruleModifer {
-	return func(r *v1alpha1.Rule) { r.Spec.ForProvider.Paused = &paused }
+	return func(r *v1beta1.Rule) { r.Spec.ForProvider.Paused = &paused }
 }
 
-func withBypassProducts(bp []v1alpha1.RuleBypassProduct) ruleModifer {
-	return func(r *v1alpha1.Rule) { r.Spec.ForProvider.BypassProducts = bp }
+func withBypassProducts(bp []v1beta1.RuleBypassProduct) ruleModifer {
+	return func(r *v1beta1.Rule) { r.Spec.ForProvider.BypassProducts = bp }
 }
 
 func withZone(zone string) ruleModifer {
-	return func(r *v1alpha1.Rule) { r.Spec.ForProvider.Zone = &zone }
+	return func(r *v1beta1.Rule) { r.Spec.ForProvider.Zone = &zone }
 }
 
 func withExternalName(ruleID string) ruleModifer {
-	return func(r *v1alpha1.Rule) { meta.SetExternalName(r, ruleID) }
+	return func(r *v1beta1.Rule) { meta.SetExternalName(r, ruleID) }
 }
 
 func withFilter(filter string) ruleModifer {
-	return func(r *v1alpha1.Rule) { r.Spec.ForProvider.Filter = ptr.To(filter) }
+	return func(r *v1beta1.Rule) { r.Spec.ForProvider.Filter = ptr.To(filter) }
 }
 
-func ruleBuild(m ...ruleModifer) *v1alpha1.Rule {
-	cr := &v1alpha1.Rule{}
+func ruleBuild(m ...ruleModifer) *v1beta1.Rule {
+	cr := &v1beta1.Rule{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -133,7 +133,7 @@ func TestObserve(t *testing.T) {
 				client: &fake.MockClient{},
 			},
 			args: args{
-				mg: &v1alpha1.Rule{},
+				mg: &v1beta1.Rule{},
 			},
 			want: want{
 				o: managed.ExternalObservation{ResourceExists: false},
@@ -198,7 +198,7 @@ func TestObserve(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 				),
 			},
 			want: want{
@@ -273,7 +273,7 @@ func TestCreate(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},
@@ -306,7 +306,7 @@ func TestCreate(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},
@@ -367,8 +367,8 @@ func TestConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.Rule{
-					Spec: v1alpha1.RuleSpec{
+				mg: &v1beta1.Rule{
+					Spec: v1beta1.RuleSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -381,7 +381,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -397,8 +397,8 @@ func TestConnect(t *testing.T) {
 				newClient: NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.Rule{
-					Spec: v1alpha1.RuleSpec{
+				mg: &v1beta1.Rule{
+					Spec: v1beta1.RuleSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -468,7 +468,7 @@ func TestUpdate(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},
@@ -488,7 +488,7 @@ func TestUpdate(t *testing.T) {
 					withDescription("Test Description"),
 					withPaused(false),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},
@@ -524,7 +524,7 @@ func TestUpdate(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},
@@ -560,7 +560,7 @@ func TestUpdate(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},
@@ -627,7 +627,7 @@ func TestDelete(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},
@@ -651,7 +651,7 @@ func TestDelete(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},
@@ -675,7 +675,7 @@ func TestDelete(t *testing.T) {
 					withPaused(false),
 					withZone("Test Zone"),
 					withAction("allow"),
-					withBypassProducts([]v1alpha1.RuleBypassProduct{"waf"}),
+					withBypassProducts([]v1beta1.RuleBypassProduct{"waf"}),
 					withFilter("372e67954025e0ba6aaa6d586b9e0b61"),
 				),
 			},

@@ -26,8 +26,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/utils/ptr"
 
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
-	"github.com/rossigee/provider-cloudflare/apis/transform/v1alpha1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
+	"github.com/rossigee/provider-cloudflare/apis/transform/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	transformrule "github.com/rossigee/provider-cloudflare/internal/clients/transform/rule"
 	"github.com/rossigee/provider-cloudflare/internal/clients/transform/rule/fake"
@@ -44,14 +44,14 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 )
 
-type ruleModifier func(*v1alpha1.Rule)
+type ruleModifier func(*v1beta1.Rule)
 
 func withExternalName(name string) ruleModifier {
-	return func(r *v1alpha1.Rule) { meta.SetExternalName(r, name) }
+	return func(r *v1beta1.Rule) { meta.SetExternalName(r, name) }
 }
 
 func withZone(zoneID string) ruleModifier {
-	return func(r *v1alpha1.Rule) {
+	return func(r *v1beta1.Rule) {
 		if zoneID == "" {
 			r.Spec.ForProvider.Zone = nil
 		} else {
@@ -61,25 +61,25 @@ func withZone(zoneID string) ruleModifier {
 }
 
 func withExpression(expression string) ruleModifier {
-	return func(r *v1alpha1.Rule) { r.Spec.ForProvider.Expression = expression }
+	return func(r *v1beta1.Rule) { r.Spec.ForProvider.Expression = expression }
 }
 
 func withConditions(c ...xpv1.Condition) ruleModifier {
-	return func(r *v1alpha1.Rule) { r.Status.Conditions = c }
+	return func(r *v1beta1.Rule) { r.Status.Conditions = c }
 }
 
 
-func withStatus(s v1alpha1.RuleStatus) ruleModifier {
-	return func(r *v1alpha1.Rule) { r.Status = s }
+func withStatus(s v1beta1.RuleStatus) ruleModifier {
+	return func(r *v1beta1.Rule) { r.Status = s }
 }
 
-func rule(m ...ruleModifier) *v1alpha1.Rule {
-	cr := &v1alpha1.Rule{
+func rule(m ...ruleModifier) *v1beta1.Rule {
+	cr := &v1beta1.Rule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-rule",
 		},
-		Spec: v1alpha1.RuleSpec{
-			ForProvider: v1alpha1.RuleParameters{
+		Spec: v1beta1.RuleSpec{
+			ForProvider: v1beta1.RuleParameters{
 				Phase:      "http_request_transform",
 				Expression: `http.request.uri.path eq "/test"`,
 				Action:     "rewrite",
@@ -131,8 +131,8 @@ func TestConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.Rule{
-					Spec: v1alpha1.RuleSpec{
+				mg: &v1beta1.Rule{
+					Spec: v1beta1.RuleSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -145,7 +145,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -161,8 +161,8 @@ func TestConnect(t *testing.T) {
 				newClient: transformrule.NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.Rule{
-					Spec: v1alpha1.RuleSpec{
+				mg: &v1beta1.Rule{
+					Spec: v1beta1.RuleSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -326,13 +326,13 @@ func TestObserve(t *testing.T) {
 					withExternalName("test-rule-id"),
 					withZone("test-zone-id"),
 					withConditions(xpv1.Available()),
-					withStatus(v1alpha1.RuleStatus{
+					withStatus(v1beta1.RuleStatus{
 						ResourceStatus: xpv1.ResourceStatus{
 							ConditionedStatus: xpv1.ConditionedStatus{
 								Conditions: []xpv1.Condition{xpv1.Available()},
 							},
 						},
-						AtProvider: v1alpha1.RuleObservation{
+						AtProvider: v1beta1.RuleObservation{
 							ID: "test-rule-id",
 						},
 					}),
@@ -367,13 +367,13 @@ func TestObserve(t *testing.T) {
 					withExternalName("test-rule-id"),
 					withZone("test-zone-id"),
 					withConditions(xpv1.Available()),
-					withStatus(v1alpha1.RuleStatus{
+					withStatus(v1beta1.RuleStatus{
 						ResourceStatus: xpv1.ResourceStatus{
 							ConditionedStatus: xpv1.ConditionedStatus{
 								Conditions: []xpv1.Condition{xpv1.Available()},
 							},
 						},
-						AtProvider: v1alpha1.RuleObservation{
+						AtProvider: v1beta1.RuleObservation{
 							ID: "test-rule-id",
 						},
 					}),
@@ -454,7 +454,7 @@ func TestCreate(t *testing.T) {
 			reason: "We should return any errors during the create process",
 			fields: fields{
 				client: &fake.MockClient{
-					MockCreateTransformRule: func(ctx context.Context, zoneID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error) {
+					MockCreateTransformRule: func(ctx context.Context, zoneID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error) {
 						return cloudflare.RulesetRule{}, errBoom
 					},
 				},
@@ -472,7 +472,7 @@ func TestCreate(t *testing.T) {
 			reason: "We should return no error when a Rule is created",
 			fields: fields{
 				client: &fake.MockClient{
-					MockCreateTransformRule: func(ctx context.Context, zoneID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error) {
+					MockCreateTransformRule: func(ctx context.Context, zoneID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error) {
 						return cloudflare.RulesetRule{
 							ID:         "new-rule-id",
 							Expression: spec.Expression,
@@ -488,13 +488,13 @@ func TestCreate(t *testing.T) {
 				cr: rule(
 					withExternalName("new-rule-id"),
 					withConditions(xpv1.Creating()),
-					withStatus(v1alpha1.RuleStatus{
+					withStatus(v1beta1.RuleStatus{
 						ResourceStatus: xpv1.ResourceStatus{
 							ConditionedStatus: xpv1.ConditionedStatus{
 								Conditions: []xpv1.Condition{xpv1.Creating()},
 							},
 						},
-						AtProvider: v1alpha1.RuleObservation{
+						AtProvider: v1beta1.RuleObservation{
 							ID: "new-rule-id",
 						},
 					}),
@@ -590,7 +590,7 @@ func TestUpdate(t *testing.T) {
 			reason: "We should return any errors during the update process",
 			fields: fields{
 				client: &fake.MockClient{
-					MockUpdateTransformRule: func(ctx context.Context, zoneID, ruleID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error) {
+					MockUpdateTransformRule: func(ctx context.Context, zoneID, ruleID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error) {
 						return cloudflare.RulesetRule{}, errBoom
 					},
 				},
@@ -611,7 +611,7 @@ func TestUpdate(t *testing.T) {
 			reason: "We should return no error when a rule is updated",
 			fields: fields{
 				client: &fake.MockClient{
-					MockUpdateTransformRule: func(ctx context.Context, zoneID, ruleID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error) {
+					MockUpdateTransformRule: func(ctx context.Context, zoneID, ruleID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error) {
 						return cloudflare.RulesetRule{
 							ID:         ruleID,
 							Expression: spec.Expression,

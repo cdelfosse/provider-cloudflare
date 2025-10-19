@@ -33,7 +33,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/ssl/universalssl"
 )
@@ -48,14 +48,14 @@ const (
 
 // SetupUniversalSSLController adds a controller that reconciles Universal SSL managed resources.
 func SetupUniversalSSLController(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.UniversalSSLKind)
+	name := managed.ControllerName(v1beta1.UniversalSSLKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.UniversalSSLGroupVersionKind),
+		resource.ManagedKind(v1beta1.UniversalSSLGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (*cloudflare.API, error) {
@@ -71,7 +71,7 @@ func SetupUniversalSSLController(mgr ctrl.Manager, l logging.Logger, rl workqueu
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.UniversalSSL{}).
+		For(&v1beta1.UniversalSSL{}).
 		Complete(r)
 }
 
@@ -87,7 +87,7 @@ type connector struct {
 // 2. Getting the credentials specified by the ProviderConfig.
 // 3. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.UniversalSSL)
+	_, ok := mg.(*v1beta1.UniversalSSL)
 	if !ok {
 		return nil, errors.New(errNotUniversalSSL)
 	}
@@ -117,7 +117,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.UniversalSSL)
+	cr, ok := mg.(*v1beta1.UniversalSSL)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotUniversalSSL)
 	}
@@ -150,7 +150,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.UniversalSSL)
+	cr, ok := mg.(*v1beta1.UniversalSSL)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotUniversalSSL)
 	}
@@ -169,7 +169,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.UniversalSSL)
+	cr, ok := mg.(*v1beta1.UniversalSSL)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotUniversalSSL)
 	}
@@ -185,7 +185,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.UniversalSSL)
+	cr, ok := mg.(*v1beta1.UniversalSSL)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotUniversalSSL)
 	}

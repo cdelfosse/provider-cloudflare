@@ -27,7 +27,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -65,7 +65,7 @@ func TestGet(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.UniversalSSLObservation
+		obs *v1beta1.UniversalSSLObservation
 		err error
 	}
 
@@ -91,7 +91,7 @@ func TestGet(t *testing.T) {
 				zoneID: zoneID,
 			},
 			want: want{
-				obs: &v1alpha1.UniversalSSLObservation{
+				obs: &v1beta1.UniversalSSLObservation{
 					Enabled: ptr.To(true),
 				},
 				err: nil,
@@ -113,7 +113,7 @@ func TestGet(t *testing.T) {
 				zoneID: zoneID,
 			},
 			want: want{
-				obs: &v1alpha1.UniversalSSLObservation{
+				obs: &v1beta1.UniversalSSLObservation{
 					Enabled: ptr.To(false),
 				},
 				err: nil,
@@ -182,11 +182,11 @@ func TestUpdate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.UniversalSSLParameters
+		params v1beta1.UniversalSSLParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.UniversalSSLObservation
+		obs *v1beta1.UniversalSSLObservation
 		err error
 	}
 
@@ -215,13 +215,13 @@ func TestUpdate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.UniversalSSLParameters{
+				params: v1beta1.UniversalSSLParameters{
 					Zone:    zoneID,
 					Enabled: true,
 				},
 			},
 			want: want{
-				obs: &v1alpha1.UniversalSSLObservation{
+				obs: &v1beta1.UniversalSSLObservation{
 					Enabled: ptr.To(true),
 				},
 				err: nil,
@@ -246,13 +246,13 @@ func TestUpdate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.UniversalSSLParameters{
+				params: v1beta1.UniversalSSLParameters{
 					Zone:    zoneID,
 					Enabled: false,
 				},
 			},
 			want: want{
-				obs: &v1alpha1.UniversalSSLObservation{
+				obs: &v1beta1.UniversalSSLObservation{
 					Enabled: ptr.To(false),
 				},
 				err: nil,
@@ -269,7 +269,7 @@ func TestUpdate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.UniversalSSLParameters{
+				params: v1beta1.UniversalSSLParameters{
 					Zone:    zoneID,
 					Enabled: true,
 				},
@@ -305,8 +305,8 @@ func TestIsUpToDate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.UniversalSSLParameters
-		obs    v1alpha1.UniversalSSLObservation
+		params v1beta1.UniversalSSLParameters
+		obs    v1beta1.UniversalSSLObservation
 	}
 
 	type want struct {
@@ -327,11 +327,11 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.UniversalSSLParameters{
+				params: v1beta1.UniversalSSLParameters{
 					Zone:    zoneID,
 					Enabled: true,
 				},
-				obs: v1alpha1.UniversalSSLObservation{
+				obs: v1beta1.UniversalSSLObservation{
 					Enabled: ptr.To(true),
 				},
 			},
@@ -347,11 +347,11 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.UniversalSSLParameters{
+				params: v1beta1.UniversalSSLParameters{
 					Zone:    zoneID,
 					Enabled: true,
 				},
-				obs: v1alpha1.UniversalSSLObservation{
+				obs: v1beta1.UniversalSSLObservation{
 					Enabled: ptr.To(false),
 				},
 			},
@@ -367,11 +367,11 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.UniversalSSLParameters{
+				params: v1beta1.UniversalSSLParameters{
 					Zone:    zoneID,
 					Enabled: true,
 				},
-				obs: v1alpha1.UniversalSSLObservation{
+				obs: v1beta1.UniversalSSLObservation{
 					Enabled: nil,
 				},
 			},
@@ -399,7 +399,7 @@ func TestIsUpToDate(t *testing.T) {
 
 func TestConvertParametersToUniversalSSL(t *testing.T) {
 	type args struct {
-		params v1alpha1.UniversalSSLParameters
+		params v1beta1.UniversalSSLParameters
 	}
 
 	type want struct {
@@ -414,7 +414,7 @@ func TestConvertParametersToUniversalSSL(t *testing.T) {
 		"ConvertEnabled": {
 			reason: "convertParametersToUniversalSSL should convert enabled parameters correctly",
 			args: args{
-				params: v1alpha1.UniversalSSLParameters{
+				params: v1beta1.UniversalSSLParameters{
 					Zone:    "test-zone-id",
 					Enabled: true,
 				},
@@ -428,7 +428,7 @@ func TestConvertParametersToUniversalSSL(t *testing.T) {
 		"ConvertDisabled": {
 			reason: "convertParametersToUniversalSSL should convert disabled parameters correctly",
 			args: args{
-				params: v1alpha1.UniversalSSLParameters{
+				params: v1beta1.UniversalSSLParameters{
 					Zone:    "test-zone-id",
 					Enabled: false,
 				},
@@ -457,7 +457,7 @@ func TestConvertUniversalSSLToObservation(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.UniversalSSLObservation
+		obs *v1beta1.UniversalSSLObservation
 	}
 
 	cases := map[string]struct {
@@ -473,7 +473,7 @@ func TestConvertUniversalSSLToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.UniversalSSLObservation{
+				obs: &v1beta1.UniversalSSLObservation{
 					Enabled: ptr.To(true),
 				},
 			},
@@ -486,7 +486,7 @@ func TestConvertUniversalSSLToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.UniversalSSLObservation{
+				obs: &v1beta1.UniversalSSLObservation{
 					Enabled: ptr.To(false),
 				},
 			},

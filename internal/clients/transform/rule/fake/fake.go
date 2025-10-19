@@ -20,25 +20,25 @@ import (
 	"context"
 
 	"github.com/cloudflare/cloudflare-go"
-	"github.com/rossigee/provider-cloudflare/apis/transform/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/transform/v1beta1"
 )
 
 // MockClient provides a mock implementation of the Transform Rule client interface
 type MockClient struct {
-	MockCreateTransformRule func(ctx context.Context, zoneID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error)
-	MockUpdateTransformRule func(ctx context.Context, zoneID string, ruleID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error)
+	MockCreateTransformRule func(ctx context.Context, zoneID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error)
+	MockUpdateTransformRule func(ctx context.Context, zoneID string, ruleID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error)
 	MockGetTransformRule    func(ctx context.Context, zoneID string, ruleID string, phase string) (cloudflare.RulesetRule, error)
 	MockDeleteTransformRule func(ctx context.Context, zoneID string, ruleID string, phase string) error
 	MockListTransformRules  func(ctx context.Context, zoneID string, phase string) ([]cloudflare.RulesetRule, error)
 }
 
 // CreateTransformRule mocks creating a transform rule
-func (m *MockClient) CreateTransformRule(ctx context.Context, zoneID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error) {
+func (m *MockClient) CreateTransformRule(ctx context.Context, zoneID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error) {
 	return m.MockCreateTransformRule(ctx, zoneID, spec)
 }
 
 // UpdateTransformRule mocks updating a transform rule
-func (m *MockClient) UpdateTransformRule(ctx context.Context, zoneID string, ruleID string, spec *v1alpha1.RuleParameters) (cloudflare.RulesetRule, error) {
+func (m *MockClient) UpdateTransformRule(ctx context.Context, zoneID string, ruleID string, spec *v1beta1.RuleParameters) (cloudflare.RulesetRule, error) {
 	return m.MockUpdateTransformRule(ctx, zoneID, ruleID, spec)
 }
 

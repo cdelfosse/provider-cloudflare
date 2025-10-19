@@ -23,7 +23,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/rulesets/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/rulesets/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -36,10 +36,10 @@ const (
 
 // Client interface for Cloudflare Ruleset operations
 type Client interface {
-	CreateRuleset(ctx context.Context, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error)
-	GetRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error)
-	UpdateRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error)
-	DeleteRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) error
+	CreateRuleset(ctx context.Context, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error)
+	GetRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error)
+	UpdateRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error)
+	DeleteRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) error
 }
 
 // NewClient creates a new Cloudflare Ruleset client
@@ -56,7 +56,7 @@ type client struct {
 }
 
 // CreateRuleset creates a new Cloudflare ruleset
-func (c *client) CreateRuleset(ctx context.Context, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+func (c *client) CreateRuleset(ctx context.Context, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 	createParams := cloudflare.CreateRulesetParams{
 		Name:  params.Name,
 		Kind:  params.Kind,
@@ -86,7 +86,7 @@ func (c *client) CreateRuleset(ctx context.Context, params v1alpha1.RulesetParam
 }
 
 // GetRuleset retrieves a Cloudflare ruleset
-func (c *client) GetRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+func (c *client) GetRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 	var rc *cloudflare.ResourceContainer
 	if params.Zone != nil {
 		rc = cloudflare.ZoneIdentifier(*params.Zone)
@@ -105,7 +105,7 @@ func (c *client) GetRuleset(ctx context.Context, rulesetID string, params v1alph
 }
 
 // UpdateRuleset updates a Cloudflare ruleset
-func (c *client) UpdateRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+func (c *client) UpdateRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 	updateParams := cloudflare.UpdateRulesetParams{
 		ID:    rulesetID,
 		Rules: convertRulesToCloudflare(params.Rules),
@@ -133,7 +133,7 @@ func (c *client) UpdateRuleset(ctx context.Context, rulesetID string, params v1a
 }
 
 // DeleteRuleset deletes a Cloudflare ruleset
-func (c *client) DeleteRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) error {
+func (c *client) DeleteRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) error {
 	var rc *cloudflare.ResourceContainer
 	if params.Zone != nil {
 		rc = cloudflare.ZoneIdentifier(*params.Zone)
@@ -163,45 +163,22 @@ func IsRulesetNotFound(err error) bool {
 	return false
 }
 
-// convertRulesToCloudflare converts v1alpha1 rules to Cloudflare API format
-func convertRulesToCloudflare(rules []v1alpha1.RulesetRule) []cloudflare.RulesetRule {
+// convertRulesToCloudflare converts v1beta1 rules to Cloudflare API format
+func convertRulesToCloudflare(rules []v1beta1.RulesetRule) []cloudflare.RulesetRule {
 	var cfRules []cloudflare.RulesetRule
-	
+
 	for _, rule := range rules {
 		cfRule := cloudflare.RulesetRule{
 			Action:     rule.Action,
 			Expression: rule.Expression,
-			Enabled:    rule.Enabled,
-		}
-
-		if rule.ID != nil {
-			cfRule.ID = *rule.ID
 		}
 
 		if rule.Description != nil {
 			cfRule.Description = *rule.Description
 		}
 
-		if rule.Ref != nil {
-			cfRule.Ref = *rule.Ref
-		}
-
-		if rule.ScoreThreshold != nil {
-			cfRule.ScoreThreshold = *rule.ScoreThreshold
-		}
-
-		if rule.ActionParameters != nil {
-			cfRule.ActionParameters = convertActionParametersToCloudflare(*rule.ActionParameters)
-		}
-
-		if rule.RateLimit != nil {
-			cfRule.RateLimit = convertRateLimitToCloudflare(*rule.RateLimit)
-		}
-
-		if rule.Logging != nil {
-			cfRule.Logging = &cloudflare.RulesetRuleLogging{
-				Enabled: rule.Logging.Enabled,
-			}
+		if rule.Enabled != nil {
+			cfRule.Enabled = rule.Enabled
 		}
 
 		cfRules = append(cfRules, cfRule)
@@ -210,209 +187,25 @@ func convertRulesToCloudflare(rules []v1alpha1.RulesetRule) []cloudflare.Ruleset
 	return cfRules
 }
 
-// convertActionParametersToCloudflare converts action parameters to Cloudflare format
-func convertActionParametersToCloudflare(params v1alpha1.RulesetRuleActionParameters) *cloudflare.RulesetRuleActionParameters {
-	cfParams := &cloudflare.RulesetRuleActionParameters{}
 
-	if params.ID != nil {
-		cfParams.ID = *params.ID
-	}
-
-	if params.Ruleset != nil {
-		cfParams.Ruleset = *params.Ruleset
-	}
-
-	if len(params.Rulesets) > 0 {
-		cfParams.Rulesets = params.Rulesets
-	}
-
-	if params.Rules != nil {
-		cfParams.Rules = params.Rules
-	}
-
-	// Handle URI transformation parameters
-	if params.URI != nil {
-		cfParams.URI = &cloudflare.RulesetRuleActionParametersURI{
-			Origin: params.URI.Origin,
-		}
-		
-		// Handle path transformation
-		if params.URI.Path != nil {
-			cfParams.URI.Path = &cloudflare.RulesetRuleActionParametersURIPath{}
-			
-			// SDK expects string for Path.Value, our API uses *string
-			if params.URI.Path.Value != nil {
-				cfParams.URI.Path.Value = *params.URI.Path.Value
-			}
-			
-			if params.URI.Path.Expression != nil {
-				cfParams.URI.Path.Expression = *params.URI.Path.Expression
-			}
-		}
-		
-		// Handle query transformation
-		if params.URI.Query != nil {
-			cfParams.URI.Query = &cloudflare.RulesetRuleActionParametersURIQuery{
-				Value: params.URI.Query.Value, // Both use *string
-			}
-			
-			if params.URI.Query.Expression != nil {
-				cfParams.URI.Query.Expression = *params.URI.Query.Expression
-			}
-		}
-	}
-
-	if len(params.Headers) > 0 {
-		cfParams.Headers = make(map[string]cloudflare.RulesetRuleActionParametersHTTPHeader)
-		for k, v := range params.Headers {
-			header := cloudflare.RulesetRuleActionParametersHTTPHeader{
-				Operation: v.Operation,
-			}
-			if v.Value != nil {
-				header.Value = *v.Value
-			}
-			if v.Expression != nil {
-				header.Expression = *v.Expression
-			}
-			cfParams.Headers[k] = header
-		}
-	}
-
-	if params.Response != nil {
-		cfParams.StatusCode = uint16(params.Response.StatusCode)
-		cfParams.ContentType = params.Response.ContentType
-		cfParams.Content = params.Response.Content
-	}
-
-	if params.HostHeader != nil {
-		cfParams.HostHeader = *params.HostHeader
-	}
-
-	if params.Origin != nil {
-		cfParams.Origin = &cloudflare.RulesetRuleActionParametersOrigin{}
-		if params.Origin.Host != nil {
-			cfParams.Origin.Host = *params.Origin.Host
-		}
-		if params.Origin.Port != nil {
-			cfParams.Origin.Port = uint16(*params.Origin.Port)
-		}
-	}
-
-	if params.Overrides != nil {
-		cfParams.Overrides = &cloudflare.RulesetRuleActionParametersOverrides{
-			Enabled: params.Overrides.Enabled,
-		}
-
-		if params.Overrides.Action != nil {
-			cfParams.Overrides.Action = *params.Overrides.Action
-		}
-		if params.Overrides.SensitivityLevel != nil {
-			cfParams.Overrides.SensitivityLevel = *params.Overrides.SensitivityLevel
-		}
-
-		if len(params.Overrides.Categories) > 0 {
-			cfParams.Overrides.Categories = make([]cloudflare.RulesetRuleActionParametersCategories, len(params.Overrides.Categories))
-			for i, cat := range params.Overrides.Categories {
-				category := cloudflare.RulesetRuleActionParametersCategories{
-					Category: cat.Category,
-					Enabled:  cat.Enabled,
-				}
-				if cat.Action != nil {
-					category.Action = *cat.Action
-				}
-				cfParams.Overrides.Categories[i] = category
-			}
-		}
-
-		if len(params.Overrides.Rules) > 0 {
-			cfParams.Overrides.Rules = make([]cloudflare.RulesetRuleActionParametersRules, len(params.Overrides.Rules))
-			for i, rule := range params.Overrides.Rules {
-				cfRule := cloudflare.RulesetRuleActionParametersRules{
-					ID:      rule.ID,
-					Enabled: rule.Enabled,
-				}
-				if rule.Action != nil {
-					cfRule.Action = *rule.Action
-				}
-				if rule.ScoreThreshold != nil {
-					cfRule.ScoreThreshold = *rule.ScoreThreshold
-				}
-				if rule.SensitivityLevel != nil {
-					cfRule.SensitivityLevel = *rule.SensitivityLevel
-				}
-				cfParams.Overrides.Rules[i] = cfRule
-			}
-		}
-	}
-
-	if len(params.Products) > 0 {
-		cfParams.Products = params.Products
-	}
-
-	if len(params.Phases) > 0 {
-		cfParams.Phases = params.Phases
-	}
-
-	return cfParams
-}
-
-// convertRateLimitToCloudflare converts rate limit to Cloudflare format
-func convertRateLimitToCloudflare(rateLimit v1alpha1.RulesetRuleRateLimit) *cloudflare.RulesetRuleRateLimit {
-	cfRateLimit := &cloudflare.RulesetRuleRateLimit{
-		Characteristics: rateLimit.Characteristics,
-	}
-
-	if rateLimit.RequestsPerPeriod != nil {
-		cfRateLimit.RequestsPerPeriod = *rateLimit.RequestsPerPeriod
-	}
-
-	if rateLimit.ScorePerPeriod != nil {
-		cfRateLimit.ScorePerPeriod = *rateLimit.ScorePerPeriod
-	}
-
-	if rateLimit.Period != nil {
-		cfRateLimit.Period = *rateLimit.Period
-	}
-
-	if rateLimit.MitigationTimeout != nil {
-		cfRateLimit.MitigationTimeout = *rateLimit.MitigationTimeout
-	}
-
-	if rateLimit.CountingExpression != nil {
-		cfRateLimit.CountingExpression = *rateLimit.CountingExpression
-	}
-
-	if rateLimit.RequestsToOrigin != nil {
-		cfRateLimit.RequestsToOrigin = *rateLimit.RequestsToOrigin
-	}
-
-	return cfRateLimit
-}
 
 // GenerateObservation creates observation from Cloudflare ruleset
-func GenerateObservation(ruleset *cloudflare.Ruleset) v1alpha1.RulesetObservation {
-	observation := v1alpha1.RulesetObservation{
+func GenerateObservation(ruleset *cloudflare.Ruleset) v1beta1.RulesetObservation {
+	observation := v1beta1.RulesetObservation{
 		ID: ruleset.ID,
 	}
 
 	if ruleset.Version != nil && *ruleset.Version != "" {
-		observation.Version = ruleset.Version
+		observation.Version = *ruleset.Version
 	}
 
-	if ruleset.LastUpdated != nil {
-		lastUpdated := ruleset.LastUpdated.String()
-		observation.LastUpdated = &lastUpdated
-	}
 
-	if ruleset.ShareableEntitlementName != "" {
-		observation.ShareableEntitlementName = &ruleset.ShareableEntitlementName
-	}
 
 	return observation
 }
 
 // UpToDate determines if the Cloudflare ruleset is up to date
-func UpToDate(params *v1alpha1.RulesetParameters, ruleset *cloudflare.Ruleset) bool {
+func UpToDate(params *v1beta1.RulesetParameters, ruleset *cloudflare.Ruleset) bool {
 	if params.Name != ruleset.Name {
 		return false
 	}

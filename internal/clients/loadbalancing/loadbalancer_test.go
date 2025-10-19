@@ -23,7 +23,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
 )
 
 func stringPtr(s string) *string {
@@ -48,7 +48,7 @@ func TestGenerateLoadBalancerObservation(t *testing.T) {
 		ModifiedOn: &modifiedOn,
 	}
 
-	expected := v1alpha1.LoadBalancerObservation{
+	expected := v1beta1.LoadBalancerObservation{
 		ID:         "test-lb-id",
 		CreatedOn:  stringPtr("2025-01-01 00:00:00 +0000 UTC"),
 		ModifiedOn: stringPtr("2025-01-02 00:00:00 +0000 UTC"),
@@ -63,7 +63,7 @@ func TestGenerateLoadBalancerObservation(t *testing.T) {
 
 func TestIsLoadBalancerUpToDate(t *testing.T) {
 	type args struct {
-		params *v1alpha1.LoadBalancerParameters
+		params *v1beta1.LoadBalancerParameters
 		lb     *cloudflare.LoadBalancer
 	}
 
@@ -79,7 +79,7 @@ func TestIsLoadBalancerUpToDate(t *testing.T) {
 		"UpToDateIdentical": {
 			reason: "Should return true when all fields match",
 			args: args{
-				params: &v1alpha1.LoadBalancerParameters{
+				params: &v1beta1.LoadBalancerParameters{
 					Zone:            "example.com",
 					Name:            stringPtr("test-lb"),
 					Description:     stringPtr("Test load balancer"),
@@ -108,7 +108,7 @@ func TestIsLoadBalancerUpToDate(t *testing.T) {
 		"UpToDateDifferentName": {
 			reason: "Should return false when names differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerParameters{
+				params: &v1beta1.LoadBalancerParameters{
 					Zone: "example.com",
 					Name: stringPtr("test-lb-1"),
 				},
@@ -123,7 +123,7 @@ func TestIsLoadBalancerUpToDate(t *testing.T) {
 		"UpToDateDifferentDescription": {
 			reason: "Should return false when descriptions differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerParameters{
+				params: &v1beta1.LoadBalancerParameters{
 					Zone:        "example.com",
 					Description: stringPtr("Description 1"),
 				},
@@ -138,7 +138,7 @@ func TestIsLoadBalancerUpToDate(t *testing.T) {
 		"UpToDateDifferentDefaultPools": {
 			reason: "Should return false when default pools count differs",
 			args: args{
-				params: &v1alpha1.LoadBalancerParameters{
+				params: &v1beta1.LoadBalancerParameters{
 					Zone:         "example.com",
 					DefaultPools: []string{"pool1", "pool2"},
 				},
@@ -153,7 +153,7 @@ func TestIsLoadBalancerUpToDate(t *testing.T) {
 		"UpToDateNilDescription": {
 			reason: "Should return false when param description is nil but LB has description",
 			args: args{
-				params: &v1alpha1.LoadBalancerParameters{
+				params: &v1beta1.LoadBalancerParameters{
 					Zone:        "example.com",
 					Description: nil,
 				},
@@ -178,7 +178,7 @@ func TestIsLoadBalancerUpToDate(t *testing.T) {
 }
 
 func TestConvertSessionAffinityAttributesToCloudflare(t *testing.T) {
-	attrs := v1alpha1.SessionAffinityAttributes{
+	attrs := v1beta1.SessionAffinityAttributes{
 		SameSite:              stringPtr("lax"),
 		Secure:                stringPtr("auto"),
 		DrainDuration:         intPtr(100),
@@ -204,7 +204,7 @@ func TestConvertSessionAffinityAttributesToCloudflare(t *testing.T) {
 }
 
 func TestConvertRandomSteeringToCloudflare(t *testing.T) {
-	steering := v1alpha1.RandomSteering{
+	steering := v1beta1.RandomSteering{
 		DefaultWeight: stringPtr("0.5"),
 		PoolWeights: map[string]string{
 			"pool1": "0.3",
@@ -228,7 +228,7 @@ func TestConvertRandomSteeringToCloudflare(t *testing.T) {
 }
 
 func TestConvertAdaptiveRoutingToCloudflare(t *testing.T) {
-	routing := v1alpha1.AdaptiveRouting{
+	routing := v1beta1.AdaptiveRouting{
 		FailoverAcrossPools: boolPtr(true),
 	}
 
@@ -244,7 +244,7 @@ func TestConvertAdaptiveRoutingToCloudflare(t *testing.T) {
 }
 
 func TestConvertLocationStrategyToCloudflare(t *testing.T) {
-	strategy := v1alpha1.LocationStrategy{
+	strategy := v1beta1.LocationStrategy{
 		Mode:             stringPtr("resolver_ip"),
 		PreferECSRegion:  stringPtr("closest"),
 	}
@@ -262,14 +262,14 @@ func TestConvertLocationStrategyToCloudflare(t *testing.T) {
 }
 
 func TestConvertRulesToCloudflare(t *testing.T) {
-	rules := []v1alpha1.LoadBalancerRule{
+	rules := []v1beta1.LoadBalancerRule{
 		{
 			Name:       "test-rule",
 			Condition:  "http.request.uri.path contains \"/api\"",
 			Priority:   1,
 			Disabled:   boolPtr(false),
 			Terminates: boolPtr(true),
-			FixedResponse: &v1alpha1.LoadBalancerFixedResponse{
+			FixedResponse: &v1beta1.LoadBalancerFixedResponse{
 				MessageBody: stringPtr("API unavailable"),
 				StatusCode:  intPtr(503),
 				ContentType: stringPtr("text/plain"),

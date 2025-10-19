@@ -29,7 +29,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/logpush/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/logpush/v1beta1"
 )
 
 // MockLogpushJobAPI implements the LogpushJobAPI interface for testing
@@ -206,11 +206,11 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.JobParameters
+		params v1beta1.JobParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.JobObservation
+		obs *v1beta1.JobObservation
 		err error
 	}
 
@@ -262,7 +262,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
@@ -273,7 +273,7 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.JobObservation{
+				obs: &v1beta1.JobObservation{
 					ID:              ptr.To(123),
 					Dataset:         "http_requests",
 					Name:            "test-job",
@@ -308,14 +308,14 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "dns_logs",
 					Name:            "minimal-job",
 					DestinationConf: "gcs://bucket/path",
 				},
 			},
 			want: want{
-				obs: &v1alpha1.JobObservation{
+				obs: &v1beta1.JobObservation{
 					ID:              ptr.To(456),
 					Dataset:         "dns_logs",
 					Name:            "minimal-job",
@@ -335,7 +335,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
@@ -362,7 +362,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
@@ -404,7 +404,7 @@ func TestGet(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.JobObservation
+		obs *v1beta1.JobObservation
 		err error
 	}
 
@@ -460,7 +460,7 @@ func TestGet(t *testing.T) {
 				jobID: jobID,
 			},
 			want: want{
-				obs: &v1alpha1.JobObservation{
+				obs: &v1beta1.JobObservation{
 					ID:                        ptr.To(123),
 					Dataset:                   "http_requests",
 					Name:                      "test-job",
@@ -504,7 +504,7 @@ func TestGet(t *testing.T) {
 				jobID: 456,
 			},
 			want: want{
-				obs: &v1alpha1.JobObservation{
+				obs: &v1beta1.JobObservation{
 					ID:              ptr.To(456),
 					Dataset:         "dns_logs",
 					Name:            "minimal-job",
@@ -582,11 +582,11 @@ func TestUpdate(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		jobID  int
-		params v1alpha1.JobParameters
+		params v1beta1.JobParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.JobObservation
+		obs *v1beta1.JobObservation
 		err error
 	}
 
@@ -634,7 +634,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				jobID: jobID,
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "updated-job",
 					DestinationConf: "s3://updated-bucket/path",
@@ -642,7 +642,7 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.JobObservation{
+				obs: &v1beta1.JobObservation{
 					ID:              ptr.To(123),
 					Dataset:         "http_requests",
 					Name:            "updated-job",
@@ -663,7 +663,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				jobID: jobID,
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "updated-job",
 					DestinationConf: "s3://updated-bucket/path",
@@ -691,7 +691,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				jobID: jobID,
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "updated-job",
 					DestinationConf: "s3://updated-bucket/path",
@@ -860,7 +860,7 @@ func TestList(t *testing.T) {
 	}
 
 	type want struct {
-		obs []v1alpha1.JobObservation
+		obs []v1beta1.JobObservation
 		err error
 	}
 
@@ -913,7 +913,7 @@ func TestList(t *testing.T) {
 				ctx: context.Background(),
 			},
 			want: want{
-				obs: []v1alpha1.JobObservation{
+				obs: []v1beta1.JobObservation{
 					{
 						ID:              ptr.To(123),
 						Dataset:         "http_requests",
@@ -951,7 +951,7 @@ func TestList(t *testing.T) {
 				ctx: context.Background(),
 			},
 			want: want{
-				obs: []v1alpha1.JobObservation{},
+				obs: []v1beta1.JobObservation{},
 				err: nil,
 			},
 		},
@@ -1018,8 +1018,8 @@ func TestIsUpToDate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.JobParameters
-		obs    v1alpha1.JobObservation
+		params v1beta1.JobParameters
+		obs    v1beta1.JobObservation
 	}
 
 	type want struct {
@@ -1040,13 +1040,13 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
 					Enabled:         ptr.To(true),
 				},
-				obs: v1alpha1.JobObservation{
+				obs: v1beta1.JobObservation{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
@@ -1065,12 +1065,12 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "updated-job",
 					DestinationConf: "s3://bucket/path",
 				},
-				obs: v1alpha1.JobObservation{
+				obs: v1beta1.JobObservation{
 					Dataset:         "http_requests",
 					Name:            "original-job",
 					DestinationConf: "s3://bucket/path",
@@ -1088,12 +1088,12 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "dns_logs",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
 				},
-				obs: v1alpha1.JobObservation{
+				obs: v1beta1.JobObservation{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
@@ -1111,12 +1111,12 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "gcs://different-bucket/path",
 				},
-				obs: v1alpha1.JobObservation{
+				obs: v1beta1.JobObservation{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
@@ -1134,13 +1134,13 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.JobParameters{
+				params: v1beta1.JobParameters{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",
 					Enabled:         ptr.To(false),
 				},
-				obs: v1alpha1.JobObservation{
+				obs: v1beta1.JobObservation{
 					Dataset:         "http_requests",
 					Name:            "test-job",
 					DestinationConf: "s3://bucket/path",

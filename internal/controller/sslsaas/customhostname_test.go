@@ -25,8 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1alpha1"
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1beta1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	customhostname "github.com/rossigee/provider-cloudflare/internal/clients/sslsaas/customhostname"
 	"github.com/rossigee/provider-cloudflare/internal/clients/sslsaas/customhostname/fake"
@@ -51,14 +51,14 @@ import (
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-type customHostnameModifier func(*v1alpha1.CustomHostname)
+type customHostnameModifier func(*v1beta1.CustomHostname)
 
 func withExternalName(name string) customHostnameModifier {
-	return func(ch *v1alpha1.CustomHostname) { meta.SetExternalName(ch, name) }
+	return func(ch *v1beta1.CustomHostname) { meta.SetExternalName(ch, name) }
 }
 
 func withZone(zoneID string) customHostnameModifier {
-	return func(ch *v1alpha1.CustomHostname) { 
+	return func(ch *v1beta1.CustomHostname) { 
 		if zoneID == "" {
 			ch.Spec.ForProvider.Zone = nil
 		} else {
@@ -68,7 +68,7 @@ func withZone(zoneID string) customHostnameModifier {
 }
 
 func withSSLMethod(method string) customHostnameModifier {
-	return func(ch *v1alpha1.CustomHostname) { 
+	return func(ch *v1beta1.CustomHostname) { 
 		if method == "" {
 			ch.Spec.ForProvider.SSL.Method = nil
 		} else {
@@ -78,23 +78,23 @@ func withSSLMethod(method string) customHostnameModifier {
 }
 
 func withConditions(c ...xpv1.Condition) customHostnameModifier {
-	return func(ch *v1alpha1.CustomHostname) { ch.Status.Conditions = c }
+	return func(ch *v1beta1.CustomHostname) { ch.Status.Conditions = c }
 }
 
-func withAtProvider(obs v1alpha1.CustomHostnameObservation) customHostnameModifier {
-	return func(ch *v1alpha1.CustomHostname) { ch.Status.AtProvider = obs }
+func withAtProvider(obs v1beta1.CustomHostnameObservation) customHostnameModifier {
+	return func(ch *v1beta1.CustomHostname) { ch.Status.AtProvider = obs }
 }
 
-func customHostname(m ...customHostnameModifier) *v1alpha1.CustomHostname {
-	cr := &v1alpha1.CustomHostname{
+func customHostname(m ...customHostnameModifier) *v1beta1.CustomHostname {
+	cr := &v1beta1.CustomHostname{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-custom-hostname",
 		},
-		Spec: v1alpha1.CustomHostnameSpec{
-			ForProvider: v1alpha1.CustomHostnameParameters{
+		Spec: v1beta1.CustomHostnameSpec{
+			ForProvider: v1beta1.CustomHostnameParameters{
 				Hostname: "example.com",
 				Zone:     stringPtr("test-zone-id"),
-				SSL: v1alpha1.CustomHostnameSSL{
+				SSL: v1beta1.CustomHostnameSSL{
 					Method: stringPtr("http"),
 					Type:   stringPtr("dv"),
 				},
@@ -145,8 +145,8 @@ func TestCustomHostnameConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.CustomHostname{
-					Spec: v1alpha1.CustomHostnameSpec{
+				mg: &v1beta1.CustomHostname{
+					Spec: v1beta1.CustomHostnameSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -159,7 +159,7 @@ func TestCustomHostnameConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -175,8 +175,8 @@ func TestCustomHostnameConnect(t *testing.T) {
 				newClient: customhostname.NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.CustomHostname{
-					Spec: v1alpha1.CustomHostnameSpec{
+				mg: &v1beta1.CustomHostname{
+					Spec: v1beta1.CustomHostnameSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -339,7 +339,7 @@ func TestCustomHostnameObserve(t *testing.T) {
 				cr: customHostname(
 					withExternalName("test-hostname-id"),
 					withZone("test-zone-id"),
-					withAtProvider(v1alpha1.CustomHostnameObservation{
+					withAtProvider(v1beta1.CustomHostnameObservation{
 						Status: cloudflare.ACTIVE,
 					}),
 				),
@@ -372,7 +372,7 @@ func TestCustomHostnameObserve(t *testing.T) {
 				cr: customHostname(
 					withExternalName("test-hostname-id"),
 					withZone("test-zone-id"),
-					withAtProvider(v1alpha1.CustomHostnameObservation{
+					withAtProvider(v1beta1.CustomHostnameObservation{
 						Status: cloudflare.ACTIVE,
 					}),
 				),
@@ -396,8 +396,8 @@ func TestCustomHostnameObserve(t *testing.T) {
 			}
 			// Verify AtProvider is set for successful cases  
 			if tc.want.cr != nil {
-				wantCH := tc.want.cr.(*v1alpha1.CustomHostname)
-				actualCH := tc.args.mg.(*v1alpha1.CustomHostname)
+				wantCH := tc.want.cr.(*v1beta1.CustomHostname)
+				actualCH := tc.args.mg.(*v1beta1.CustomHostname)
 				if wantCH.Status.AtProvider.Status != "" && actualCH.Status.AtProvider.Status != wantCH.Status.AtProvider.Status {
 					t.Errorf("\n%s\nAtProvider.Status: want %s, got %s\n", tc.reason, wantCH.Status.AtProvider.Status, actualCH.Status.AtProvider.Status)
 				}
@@ -506,7 +506,7 @@ func TestCustomHostnameCreate(t *testing.T) {
 			want: want{
 				cr: customHostname(
 					withExternalName("new-hostname-id"),
-					withAtProvider(v1alpha1.CustomHostnameObservation{
+					withAtProvider(v1beta1.CustomHostnameObservation{
 						Status: cloudflare.PENDING,
 					}),
 				),
@@ -527,8 +527,8 @@ func TestCustomHostnameCreate(t *testing.T) {
 			}
 			// Verify external name and AtProvider status for successful cases
 			if tc.want.cr != nil {
-				wantCH := tc.want.cr.(*v1alpha1.CustomHostname)
-				actualCH := tc.args.mg.(*v1alpha1.CustomHostname)
+				wantCH := tc.want.cr.(*v1beta1.CustomHostname)
+				actualCH := tc.args.mg.(*v1beta1.CustomHostname)
 				if meta.GetExternalName(wantCH) != "" && meta.GetExternalName(actualCH) != meta.GetExternalName(wantCH) {
 					t.Errorf("\n%s\nExternal name: want %s, got %s\n", tc.reason, meta.GetExternalName(wantCH), meta.GetExternalName(actualCH))
 				}

@@ -23,14 +23,15 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/rossigee/provider-cloudflare/apis/cache/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/cache/v1beta1"
 )
 
 func stringPtr(s string) *string {
 	return &s
 }
 
-func intPtr(i int) *int {
+
+func int64Ptr(i int64) *int64 {
 	return &i
 }
 
@@ -54,16 +55,17 @@ func TestGenerateCacheRuleObservation(t *testing.T) {
 
 	ruleset := &cloudflare.Ruleset{
 		ID:          "test-ruleset-id",
+		Phase:       "http_request_cache_settings",
 		Version:     &version,
 		LastUpdated: &lastUpdated,
 	}
 
-	expected := v1alpha1.CacheRuleObservation{
-		ID:          "test-rule-id",
-		RulesetID:   "test-ruleset-id",
-		Version:     "1",
-		LastUpdated: stringPtr("2025-01-01 00:00:00 +0000 UTC"),
-		ModifiedOn:  stringPtr("2025-01-01 00:00:00 +0000 UTC"),
+	expected := v1beta1.CacheRuleObservation{
+		ID:           "test-rule-id",
+		RulesetID:    "test-ruleset-id",
+		Phase:        "http_request_cache_settings",
+		Version:      "1",
+		LastModified: "2025-01-01 00:00:00 +0000 UTC",
 	}
 
 	result := GenerateCacheRuleObservation(rule, ruleset)
@@ -75,7 +77,7 @@ func TestGenerateCacheRuleObservation(t *testing.T) {
 
 func TestIsCacheRuleUpToDate(t *testing.T) {
 	type args struct {
-		params *v1alpha1.CacheRuleParameters
+		params *v1beta1.CacheRuleParameters
 		rule   *cloudflare.RulesetRule
 	}
 
@@ -91,14 +93,15 @@ func TestIsCacheRuleUpToDate(t *testing.T) {
 		"UpToDateIdentical": {
 			reason: "Should return true when all fields match",
 			args: args{
-				params: &v1alpha1.CacheRuleParameters{
+				params: &v1beta1.CacheRuleParameters{
 					Zone:        "test-zone-id",
 					Name:        "test-cache-rule",
 					Description: stringPtr("Test cache rule"),
 					Expression:  "(http.request.uri.path contains \"/images/\")",
 					Enabled:     boolPtr(true),
-					Priority:    intPtr(1000),
-					Cache:       boolPtr(true),
+					ActionParameters: &v1beta1.CacheRuleActionParameters{
+						Cache: boolPtr(true),
+					},
 				},
 				rule: &cloudflare.RulesetRule{
 					Description: "Test cache rule",
@@ -117,7 +120,7 @@ func TestIsCacheRuleUpToDate(t *testing.T) {
 		"OutOfDateDescription": {
 			reason: "Should return false when description differs",
 			args: args{
-				params: &v1alpha1.CacheRuleParameters{
+				params: &v1beta1.CacheRuleParameters{
 					Zone:        "test-zone-id",
 					Name:        "test-cache-rule",
 					Description: stringPtr("Updated description"),
@@ -138,7 +141,7 @@ func TestIsCacheRuleUpToDate(t *testing.T) {
 		"OutOfDateExpression": {
 			reason: "Should return false when expression differs",
 			args: args{
-				params: &v1alpha1.CacheRuleParameters{
+				params: &v1beta1.CacheRuleParameters{
 					Zone:        "test-zone-id",
 					Name:        "test-cache-rule",
 					Expression:  "(http.request.uri.path contains \"/css/\")",
@@ -157,7 +160,7 @@ func TestIsCacheRuleUpToDate(t *testing.T) {
 		"OutOfDateEnabled": {
 			reason: "Should return false when enabled status differs",
 			args: args{
-				params: &v1alpha1.CacheRuleParameters{
+				params: &v1beta1.CacheRuleParameters{
 					Zone:       "test-zone-id",
 					Name:       "test-cache-rule",
 					Expression: "(http.request.uri.path contains \"/images/\")",
@@ -176,7 +179,7 @@ func TestIsCacheRuleUpToDate(t *testing.T) {
 		"NilEnabled": {
 			reason: "Should handle nil enabled values",
 			args: args{
-				params: &v1alpha1.CacheRuleParameters{
+				params: &v1beta1.CacheRuleParameters{
 					Zone:       "test-zone-id",
 					Name:       "test-cache-rule",
 					Expression: "(http.request.uri.path contains \"/images/\")",
@@ -206,7 +209,7 @@ func TestIsCacheRuleUpToDate(t *testing.T) {
 
 func TestConvertCacheRuleParametersToCloudflare(t *testing.T) {
 	type args struct {
-		params v1alpha1.CacheRuleParameters
+		params v1beta1.CacheRuleParameters
 	}
 
 	type want struct {
@@ -221,14 +224,15 @@ func TestConvertCacheRuleParametersToCloudflare(t *testing.T) {
 		"BasicCacheRule": {
 			reason: "Should convert basic cache rule parameters correctly",
 			args: args{
-				params: v1alpha1.CacheRuleParameters{
+				params: v1beta1.CacheRuleParameters{
 					Zone:        "test-zone-id",
 					Name:        "test-cache-rule",
 					Description: stringPtr("Test cache rule"),
 					Expression:  "(http.request.uri.path contains \"/images/\")",
 					Enabled:     boolPtr(true),
-					Priority:    intPtr(1000),
-					Cache:       boolPtr(true),
+					ActionParameters: &v1beta1.CacheRuleActionParameters{
+						Cache: boolPtr(true),
+					},
 				},
 			},
 			want: want{
@@ -246,17 +250,19 @@ func TestConvertCacheRuleParametersToCloudflare(t *testing.T) {
 		"ComplexCacheRuleWithTTL": {
 			reason: "Should convert cache rule with TTL settings correctly",
 			args: args{
-				params: v1alpha1.CacheRuleParameters{
+				params: v1beta1.CacheRuleParameters{
 					Zone:       "test-zone-id",
 					Name:       "test-cache-rule",
 					Expression: "(http.request.uri.path contains \"/images/\")",
-					EdgeTTL: &v1alpha1.EdgeTTL{
-						Mode:    "override_origin",
-						Default: intPtr(3600),
-					},
-					BrowserTTL: &v1alpha1.BrowserTTL{
-						Mode:    "override_origin",
-						Default: intPtr(1800),
+					ActionParameters: &v1beta1.CacheRuleActionParameters{
+						EdgeTTL: &v1beta1.EdgeTTL{
+							Mode:    stringPtr("override_origin"),
+							Default: int64Ptr(3600),
+						},
+						BrowserTTL: &v1beta1.BrowserTTL{
+							Mode:    stringPtr("override_origin"),
+							Default: int64Ptr(1800),
+						},
 					},
 				},
 			},
@@ -280,12 +286,14 @@ func TestConvertCacheRuleParametersToCloudflare(t *testing.T) {
 		"CacheRuleWithServeStale": {
 			reason: "Should convert cache rule with serve stale settings correctly",
 			args: args{
-				params: v1alpha1.CacheRuleParameters{
+				params: v1beta1.CacheRuleParameters{
 					Zone:       "test-zone-id",
 					Name:       "test-cache-rule",
 					Expression: "(http.request.uri.path contains \"/images/\")",
-					ServeStale: &v1alpha1.ServeStale{
-						DisableStaleWhileUpdating: boolPtr(true),
+					ActionParameters: &v1beta1.CacheRuleActionParameters{
+						ServeStale: &v1beta1.ServeStale{
+							DisableStaleWhileUpdating: boolPtr(true),
+						},
 					},
 				},
 			},
@@ -304,16 +312,17 @@ func TestConvertCacheRuleParametersToCloudflare(t *testing.T) {
 		"CacheRuleWithCacheKey": {
 			reason: "Should convert cache rule with cache key settings correctly",
 			args: args{
-				params: v1alpha1.CacheRuleParameters{
+				params: v1beta1.CacheRuleParameters{
 					Zone:       "test-zone-id",
 					Name:       "test-cache-rule",
 					Expression: "(http.request.uri.path contains \"/images/\")",
-					CacheKey: &v1alpha1.CacheKey{
-						CacheByDeviceType:       boolPtr(true),
-						IgnoreQueryStringsOrder: boolPtr(false),
-						CustomKey: &v1alpha1.CustomKey{
-							Query: &v1alpha1.CustomKeyQuery{
-								Include: []string{"param1", "param2"},
+					ActionParameters: &v1beta1.CacheRuleActionParameters{
+						CacheKey: &v1beta1.CacheKey{
+							IgnoreQueryStringsOrder: boolPtr(false),
+							CustomKey: &v1beta1.CustomKey{
+								Query: &v1beta1.QueryKey{
+									Include: []string{"param1", "param2"},
+								},
 							},
 						},
 					},
@@ -325,7 +334,6 @@ func TestConvertCacheRuleParametersToCloudflare(t *testing.T) {
 					Action:     "set_cache_settings",
 					ActionParameters: &cloudflare.RulesetRuleActionParameters{
 						CacheKey: &cloudflare.RulesetRuleActionParametersCacheKey{
-							CacheByDeviceType:       boolPtr(true),
 							IgnoreQueryStringsOrder: boolPtr(false),
 							CustomKey: &cloudflare.RulesetRuleActionParametersCustomKey{
 								Query: &cloudflare.RulesetRuleActionParametersCustomKeyQuery{

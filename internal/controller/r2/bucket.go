@@ -34,7 +34,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/r2/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/r2/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	bucketclient "github.com/rossigee/provider-cloudflare/internal/clients/r2/bucket"
 	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
@@ -55,7 +55,7 @@ const (
 
 // SetupBucket adds a controller that reconciles Bucket managed resources.
 func SetupBucket(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.BucketKind)
+	name := managed.ControllerName(v1beta1.BucketKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -64,7 +64,7 @@ func SetupBucket(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimit
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.BucketGroupVersionKind),
+		resource.ManagedKind(v1beta1.BucketGroupVersionKind),
 		managed.WithExternalConnecter(&bucketConnector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (*cloudflare.API, error) {
@@ -81,7 +81,7 @@ func SetupBucket(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimit
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.Bucket{}).
+		For(&v1beta1.Bucket{}).
 		Complete(r)
 }
 
@@ -95,7 +95,7 @@ type bucketConnector struct {
 // Connect produces a valid configuration for a Cloudflare API
 // instance, and returns it as an external client.
 func (c *bucketConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Bucket)
+	_, ok := mg.(*v1beta1.Bucket)
 	if !ok {
 		return nil, errors.New(errNotBucket)
 	}
@@ -124,7 +124,7 @@ type bucketExternal struct {
 }
 
 func (c *bucketExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Bucket)
+	cr, ok := mg.(*v1beta1.Bucket)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotBucket)
 	}
@@ -151,7 +151,7 @@ func (c *bucketExternal) Observe(ctx context.Context, mg resource.Managed) (mana
 }
 
 func (c *bucketExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Bucket)
+	cr, ok := mg.(*v1beta1.Bucket)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotBucket)
 	}
@@ -171,7 +171,7 @@ func (c *bucketExternal) Create(ctx context.Context, mg resource.Managed) (manag
 }
 
 func (c *bucketExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	_, ok := mg.(*v1alpha1.Bucket)
+	_, ok := mg.(*v1beta1.Bucket)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotBucket)
 	}
@@ -182,7 +182,7 @@ func (c *bucketExternal) Update(ctx context.Context, mg resource.Managed) (manag
 }
 
 func (c *bucketExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Bucket)
+	cr, ok := mg.(*v1beta1.Bucket)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotBucket)
 	}

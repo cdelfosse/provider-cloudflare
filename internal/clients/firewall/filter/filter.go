@@ -35,7 +35,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/firewall/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/firewall/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
 )
@@ -143,12 +143,12 @@ func IsFilterNotFound(err error) bool {
 }
 
 // GenerateObservation creates observation data from a Filter
-func GenerateObservation(filter cloudflare.Filter) v1alpha1.FilterObservation {
-	return v1alpha1.FilterObservation{}
+func GenerateObservation(filter cloudflare.Filter) v1beta1.FilterObservation {
+	return v1beta1.FilterObservation{}
 }
 
 // LateInitialize initializes FilterParameters based on the remote resource
-func LateInitialize(spec *v1alpha1.FilterParameters, filter cloudflare.Filter) bool {
+func LateInitialize(spec *v1beta1.FilterParameters, filter cloudflare.Filter) bool {
 	if spec == nil {
 		return false
 	}
@@ -163,7 +163,7 @@ func LateInitialize(spec *v1alpha1.FilterParameters, filter cloudflare.Filter) b
 }
 
 // UpToDate checks if the remote Filter is up to date with the requested resource parameters
-func UpToDate(spec *v1alpha1.FilterParameters, filter cloudflare.Filter) bool {
+func UpToDate(spec *v1beta1.FilterParameters, filter cloudflare.Filter) bool {
 	if spec == nil {
 		return true
 	}
@@ -184,7 +184,7 @@ func UpToDate(spec *v1alpha1.FilterParameters, filter cloudflare.Filter) bool {
 }
 
 // CreateFilter creates a Filter from FilterParameters
-func CreateFilter(ctx context.Context, client Client, params *v1alpha1.FilterParameters) (*cloudflare.Filter, error) {
+func CreateFilter(ctx context.Context, client Client, params *v1beta1.FilterParameters) (*cloudflare.Filter, error) {
 	if params.Zone == nil {
 		return nil, errors.New("zone is required")
 	}
@@ -210,7 +210,7 @@ func CreateFilter(ctx context.Context, client Client, params *v1alpha1.FilterPar
 }
 
 // UpdateFilter updates an existing Filter
-func UpdateFilter(ctx context.Context, client Client, filterID string, params *v1alpha1.FilterParameters) error {
+func UpdateFilter(ctx context.Context, client Client, filterID string, params *v1beta1.FilterParameters) error {
 	if params.Zone == nil {
 		return errors.New("zone is required")
 	}
@@ -233,7 +233,7 @@ func UpdateFilter(ctx context.Context, client Client, filterID string, params *v
 
 // Setup adds a controller that reconciles Filter managed resources.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.FilterGroupKind)
+	name := managed.ControllerName(v1beta1.FilterGroupKind)
 
 	o := controller.Options{
 		RateLimiter:             nil, // Use default rate limiter
@@ -242,7 +242,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.FilterGroupVersionKind),
+		resource.ManagedKind(v1beta1.FilterGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (Client, error) {
@@ -259,7 +259,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.Filter{}).
+		For(&v1beta1.Filter{}).
 		Complete(r)
 }
 
@@ -273,7 +273,7 @@ type connector struct {
 // Connect produces a valid configuration for a Cloudflare API
 // instance, and returns it as an external client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Filter)
+	_, ok := mg.(*v1beta1.Filter)
 	if !ok {
 		return nil, errors.New(errNotFilter)
 	}
@@ -299,7 +299,7 @@ type external struct {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Filter)
+	cr, ok := mg.(*v1beta1.Filter)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotFilter)
 	}
@@ -333,7 +333,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Filter)
+	cr, ok := mg.(*v1beta1.Filter)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotFilter)
 	}
@@ -357,7 +357,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Filter)
+	cr, ok := mg.(*v1beta1.Filter)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotFilter)
 	}
@@ -381,7 +381,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Filter)
+	cr, ok := mg.(*v1beta1.Filter)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotFilter)
 	}

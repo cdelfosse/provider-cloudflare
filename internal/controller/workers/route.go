@@ -17,206 +17,21 @@ limitations under the License.
 package workers
 
 import (
-	"context"
-	"time"
-
-	"github.com/pkg/errors"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	rtv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/workers/v1alpha1"
-	clients "github.com/rossigee/provider-cloudflare/internal/clients"
-	workers "github.com/rossigee/provider-cloudflare/internal/clients/workers"
-	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
+	"github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
 )
 
-const (
-	errNotRoute = "managed resource is not a Route custom resource"
-
-	errClientConfig = "error getting client config"
-
-	errRouteLookup   = "cannot lookup Route"
-	errRouteCreation = "cannot create Route"
-	errRouteUpdate   = "cannot update Route"
-	errRouteDeletion = "cannot delete Route"
-	errRouteNoZone   = "no zone found"
-
-	maxConcurrency = 5
-)
-
-// SetupRoute adds a controller that reconciles Route managed resources.
+// SetupRoute adds a controller that reconciles Worker Route managed resources.
 func SetupRoute(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.RouteGroupKind)
+	name := managed.ControllerName(v1beta1.RouteKind)
 
-	o := controller.Options{
-		RateLimiter: nil, // Use default rate limiter
-		MaxConcurrentReconciles: maxConcurrency,
-	}
+	// TODO: Implement Route controller
+	l.WithValues("controller", name).Info("Route controller setup stub - not yet implemented")
 
-	hc := metrics.NewInstrumentedHTTPClient(name)
-	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.RouteGroupVersionKind),
-		managed.WithExternalConnecter(&connector{
-			kube: mgr.GetClient(),
-			newCloudflareClientFn: func(cfg clients.Config) (workers.Client, error) {
-				return workers.NewClient(cfg, hc)
-			},
-		}),
-		managed.WithLogger(l.WithValues("controller", name)),
-		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
-		managed.WithPollInterval(5*time.Minute),
-		// Do not initialize external-name field.
-		managed.WithInitializers(),
-	)
-
-	return ctrl.NewControllerManagedBy(mgr).
-		Named(name).
-		WithOptions(o).
-		For(&v1alpha1.Route{}).
-		Complete(r)
-}
-
-// A connector is expected to produce an ExternalClient when its Connect method
-// is called.
-type connector struct {
-	kube                  client.Client
-	newCloudflareClientFn func(cfg clients.Config) (workers.Client, error)
-}
-
-// Connect produces a valid configuration for a Cloudflare API
-// instance, and returns it as an external client.
-func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Route)
-	if !ok {
-		return nil, errors.New(errNotRoute)
-	}
-
-	// Get client configuration
-	config, err := clients.GetConfig(ctx, c.kube, mg)
-	if err != nil {
-		return nil, errors.Wrap(err, errClientConfig)
-	}
-
-	client, err := c.newCloudflareClientFn(*config)
-	if err != nil {
-		return nil, err
-	}
-
-	return &external{client: client}, nil
-}
-
-// An ExternalClient observes, then either creates, updates, or deletes an
-// external resource to ensure it reflects the managed resource's desired state.
-type external struct {
-	client workers.Client
-}
-
-func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Route)
-	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotRoute)
-	}
-
-	// Route does not exist if we dont have an ID stored in external-name
-	rid := meta.GetExternalName(cr)
-	if rid == "" {
-		return managed.ExternalObservation{ResourceExists: false}, nil
-	}
-
-	if cr.Spec.ForProvider.Zone == nil {
-		return managed.ExternalObservation{}, errors.New(errRouteNoZone)
-	}
-
-	r, err := e.client.WorkerRoute(ctx, *cr.Spec.ForProvider.Zone, rid)
-
-	if err != nil {
-		return managed.ExternalObservation{},
-			errors.Wrap(resource.Ignore(workers.IsRouteNotFound, err), errRouteLookup)
-	}
-
-	cr.Status.AtProvider = workers.GenerateObservation(r)
-	cr.SetConditions(rtv1.Available())
-
-	return managed.ExternalObservation{
-		ResourceExists:   true,
-		ResourceUpToDate: workers.UpToDate(&cr.Spec.ForProvider, r),
-	}, nil
-}
-
-func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Route)
-	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotRoute)
-	}
-
-	if cr.Spec.ForProvider.Zone == nil {
-		return managed.ExternalCreation{}, errors.Wrap(errors.New(errRouteNoZone), errRouteCreation)
-	}
-
-	cr.SetConditions(rtv1.Creating())
-
-	nr, err := e.client.CreateWorkerRoute(ctx, *cr.Spec.ForProvider.Zone, &cr.Spec.ForProvider)
-
-	if err != nil {
-		return managed.ExternalCreation{}, errors.Wrap(err, errRouteCreation)
-	}
-
-	// Update the external name with the ID of the new Route
-	meta.SetExternalName(cr, nr.ID)
-	cr.Status.AtProvider = workers.GenerateObservation(nr)
-
-	return managed.ExternalCreation{}, nil
-}
-
-func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Route)
-	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotRoute)
-	}
-
-	rid := meta.GetExternalName(cr)
-	if rid == "" {
-		return managed.ExternalUpdate{}, errors.New(errRouteUpdate)
-	}
-
-	if cr.Spec.ForProvider.Zone == nil {
-		return managed.ExternalUpdate{}, errors.Wrap(errors.New(errRouteNoZone), errRouteUpdate)
-	}
-
-	err := e.client.UpdateWorkerRoute(ctx, *cr.Spec.ForProvider.Zone, meta.GetExternalName(cr), &cr.Spec.ForProvider)
-	return managed.ExternalUpdate{}, errors.Wrap(err, errRouteUpdate)
-}
-
-func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Route)
-	if !ok {
-		return managed.ExternalDelete{}, errors.New(errNotRoute)
-	}
-
-	if cr.Spec.ForProvider.Zone == nil {
-		return managed.ExternalDelete{}, errors.Wrap(errors.New(errRouteNoZone), errRouteDeletion)
-	}
-
-	rid := meta.GetExternalName(cr)
-	if rid == "" {
-		return managed.ExternalDelete{}, errors.New(errRouteDeletion)
-	}
-
-	err := e.client.DeleteWorkerRoute(ctx, *cr.Spec.ForProvider.Zone, meta.GetExternalName(cr))
-
-	return managed.ExternalDelete{}, errors.Wrap(err, errRouteDeletion)
-}
-
-func (e *external) Disconnect(ctx context.Context) error {
-	// No persistent connections to clean up
 	return nil
 }

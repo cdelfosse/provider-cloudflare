@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/rulesets/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/rulesets/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	ruleset "github.com/rossigee/provider-cloudflare/internal/clients/rulesets"
 
@@ -44,43 +44,43 @@ import (
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
 type mockRulesetClient struct {
-	MockCreateRuleset func(ctx context.Context, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error)
-	MockGetRuleset    func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error)
-	MockUpdateRuleset func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error)
-	MockDeleteRuleset func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) error
+	MockCreateRuleset func(ctx context.Context, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error)
+	MockGetRuleset    func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error)
+	MockUpdateRuleset func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error)
+	MockDeleteRuleset func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) error
 }
 
-func (m *mockRulesetClient) CreateRuleset(ctx context.Context, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+func (m *mockRulesetClient) CreateRuleset(ctx context.Context, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 	return m.MockCreateRuleset(ctx, params)
 }
 
-func (m *mockRulesetClient) GetRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+func (m *mockRulesetClient) GetRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 	return m.MockGetRuleset(ctx, rulesetID, params)
 }
 
-func (m *mockRulesetClient) UpdateRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+func (m *mockRulesetClient) UpdateRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 	return m.MockUpdateRuleset(ctx, rulesetID, params)
 }
 
-func (m *mockRulesetClient) DeleteRuleset(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) error {
+func (m *mockRulesetClient) DeleteRuleset(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) error {
 	return m.MockDeleteRuleset(ctx, rulesetID, params)
 }
 
-type rulesetModifier func(*v1alpha1.Ruleset)
+type rulesetModifier func(*v1beta1.Ruleset)
 
 func withZone(zone string) rulesetModifier {
-	return func(rs *v1alpha1.Ruleset) { rs.Spec.ForProvider.Zone = &zone }
+	return func(rs *v1beta1.Ruleset) { rs.Spec.ForProvider.Zone = &zone }
 }
 
 
 func withRulesetID(id string) rulesetModifier {
-	return func(rs *v1alpha1.Ruleset) { rs.Status.AtProvider.ID = id }
+	return func(rs *v1beta1.Ruleset) { rs.Status.AtProvider.ID = id }
 }
 
-func rulesetCR(m ...rulesetModifier) *v1alpha1.Ruleset {
-	rs := &v1alpha1.Ruleset{
-		Spec: v1alpha1.RulesetSpec{
-			ForProvider: v1alpha1.RulesetParameters{
+func rulesetCR(m ...rulesetModifier) *v1beta1.Ruleset {
+	rs := &v1beta1.Ruleset{
+		Spec: v1beta1.RulesetSpec{
+			ForProvider: v1beta1.RulesetParameters{
 				Name:        "test-ruleset",
 				Description: stringPtr("Test ruleset"),
 				Kind:        "zone",
@@ -190,9 +190,9 @@ func TestObserve(t *testing.T) {
 		"ErrNoScope": {
 			reason: "Should return an error if neither zone nor account is specified",
 			args: args{
-				mg: &v1alpha1.Ruleset{
-					Spec: v1alpha1.RulesetSpec{
-						ForProvider: v1alpha1.RulesetParameters{
+				mg: &v1beta1.Ruleset{
+					Spec: v1beta1.RulesetSpec{
+						ForProvider: v1beta1.RulesetParameters{
 							Name: "test-ruleset",
 						},
 					},
@@ -206,7 +206,7 @@ func TestObserve(t *testing.T) {
 			reason: "Should return any error encountered getting the ruleset",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockGetRuleset: func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+					MockGetRuleset: func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 						return nil, errors.New("boom")
 					},
 				},
@@ -215,7 +215,7 @@ func TestObserve(t *testing.T) {
 				mg: rulesetCR(
 					withZone("test-zone-id"),
 					withRulesetID("test-ruleset-id"),
-					func(rs *v1alpha1.Ruleset) {
+					func(rs *v1beta1.Ruleset) {
 						rs.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-ruleset-id",
 						})
@@ -230,7 +230,7 @@ func TestObserve(t *testing.T) {
 			reason: "Should report that the ruleset does not exist",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockGetRuleset: func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+					MockGetRuleset: func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 						return nil, &cloudflare.Error{StatusCode: 404}
 					},
 				},
@@ -239,7 +239,7 @@ func TestObserve(t *testing.T) {
 				mg: rulesetCR(
 					withZone("test-zone-id"),
 					withRulesetID("test-ruleset-id"),
-					func(rs *v1alpha1.Ruleset) {
+					func(rs *v1beta1.Ruleset) {
 						rs.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-ruleset-id",
 						})
@@ -256,7 +256,7 @@ func TestObserve(t *testing.T) {
 			reason: "Should report that the ruleset exists and is up to date",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockGetRuleset: func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+					MockGetRuleset: func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 						return &cloudflare.Ruleset{
 							ID:          "test-ruleset-id",
 							Name:        "test-ruleset",
@@ -270,7 +270,7 @@ func TestObserve(t *testing.T) {
 			args: args{
 				mg: rulesetCR(
 					withZone("test-zone-id"),
-					func(rs *v1alpha1.Ruleset) {
+					func(rs *v1beta1.Ruleset) {
 						rs.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-ruleset-id",
 						})
@@ -344,9 +344,9 @@ func TestCreate(t *testing.T) {
 		"ErrNoScope": {
 			reason: "Should return an error if neither zone nor account is specified",
 			args: args{
-				mg: &v1alpha1.Ruleset{
-					Spec: v1alpha1.RulesetSpec{
-						ForProvider: v1alpha1.RulesetParameters{
+				mg: &v1beta1.Ruleset{
+					Spec: v1beta1.RulesetSpec{
+						ForProvider: v1beta1.RulesetParameters{
 							Name: "test-ruleset",
 						},
 					},
@@ -360,7 +360,7 @@ func TestCreate(t *testing.T) {
 			reason: "Should return any error encountered creating the ruleset",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockCreateRuleset: func(ctx context.Context, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+					MockCreateRuleset: func(ctx context.Context, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 						return nil, errors.New("boom")
 					},
 				},
@@ -376,7 +376,7 @@ func TestCreate(t *testing.T) {
 			reason: "Should return no error when ruleset is created successfully",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockCreateRuleset: func(ctx context.Context, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+					MockCreateRuleset: func(ctx context.Context, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 						return &cloudflare.Ruleset{
 							ID:          "test-ruleset-id",
 							Name:        "test-ruleset",
@@ -443,9 +443,9 @@ func TestUpdate(t *testing.T) {
 		"ErrNoScope": {
 			reason: "Should return an error if neither zone nor account is specified",
 			args: args{
-				mg: &v1alpha1.Ruleset{
-					Spec: v1alpha1.RulesetSpec{
-						ForProvider: v1alpha1.RulesetParameters{
+				mg: &v1beta1.Ruleset{
+					Spec: v1beta1.RulesetSpec{
+						ForProvider: v1beta1.RulesetParameters{
 							Name: "test-ruleset",
 						},
 					},
@@ -468,7 +468,7 @@ func TestUpdate(t *testing.T) {
 			reason: "Should return any error encountered updating the ruleset",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockUpdateRuleset: func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+					MockUpdateRuleset: func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 						return nil, errors.New("boom")
 					},
 				},
@@ -476,7 +476,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				mg: rulesetCR(
 					withZone("test-zone-id"),
-					func(rs *v1alpha1.Ruleset) {
+					func(rs *v1beta1.Ruleset) {
 						rs.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-ruleset-id",
 						})
@@ -491,7 +491,7 @@ func TestUpdate(t *testing.T) {
 			reason: "Should return no error when ruleset is updated successfully",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockUpdateRuleset: func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) (*cloudflare.Ruleset, error) {
+					MockUpdateRuleset: func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) (*cloudflare.Ruleset, error) {
 						return &cloudflare.Ruleset{
 							ID:          "test-ruleset-id",
 							Name:        "test-ruleset",
@@ -505,7 +505,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				mg: rulesetCR(
 					withZone("test-zone-id"),
-					func(rs *v1alpha1.Ruleset) {
+					func(rs *v1beta1.Ruleset) {
 						rs.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-ruleset-id",
 						})
@@ -564,9 +564,9 @@ func TestDelete(t *testing.T) {
 		"ErrNoScope": {
 			reason: "Should return an error if neither zone nor account is specified",
 			args: args{
-				mg: &v1alpha1.Ruleset{
-					Spec: v1alpha1.RulesetSpec{
-						ForProvider: v1alpha1.RulesetParameters{
+				mg: &v1beta1.Ruleset{
+					Spec: v1beta1.RulesetSpec{
+						ForProvider: v1beta1.RulesetParameters{
 							Name: "test-ruleset",
 						},
 					},
@@ -589,7 +589,7 @@ func TestDelete(t *testing.T) {
 			reason: "Should return any error encountered deleting the ruleset",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockDeleteRuleset: func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) error {
+					MockDeleteRuleset: func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) error {
 						return errors.New("boom")
 					},
 				},
@@ -597,7 +597,7 @@ func TestDelete(t *testing.T) {
 			args: args{
 				mg: rulesetCR(
 					withZone("test-zone-id"),
-					func(rs *v1alpha1.Ruleset) {
+					func(rs *v1beta1.Ruleset) {
 						rs.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-ruleset-id",
 						})
@@ -612,7 +612,7 @@ func TestDelete(t *testing.T) {
 			reason: "Should return no error when ruleset is deleted successfully",
 			fields: fields{
 				client: &mockRulesetClient{
-					MockDeleteRuleset: func(ctx context.Context, rulesetID string, params v1alpha1.RulesetParameters) error {
+					MockDeleteRuleset: func(ctx context.Context, rulesetID string, params v1beta1.RulesetParameters) error {
 						return nil
 					},
 				},
@@ -620,7 +620,7 @@ func TestDelete(t *testing.T) {
 			args: args{
 				mg: rulesetCR(
 					withZone("test-zone-id"),
-					func(rs *v1alpha1.Ruleset) {
+					func(rs *v1beta1.Ruleset) {
 						rs.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-ruleset-id",
 						})

@@ -26,29 +26,32 @@ import (
 // Setup creates all Workers controllers with the supplied logger and adds them to
 // the supplied manager.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	// Setup Route controller (existing pattern)
+	// Setup Script controller - the primary Workers resource
+	if err := SetupScript(mgr, l, rl); err != nil {
+		return err
+	}
+
+	// Setup Route controller
 	if err := SetupRoute(mgr, l, rl); err != nil {
 		return err
 	}
 
-	// Setup new Workers controllers with proper account management
-	// Enable CronTrigger first, then add others as they're fixed
+	// Setup CronTrigger controller
 	if err := SetupCronTrigger(mgr, l, rl); err != nil {
 		return err
 	}
-	
-	// Enable Script and KV Namespace controllers - compilation issues resolved
-	if err := SetupScript(mgr, l, rl); err != nil {
+
+	// Setup Domain controller
+	if err := SetupDomain(mgr, l, rl); err != nil {
 		return err
 	}
+
+	// Setup KVNamespace controller
 	if err := SetupKVNamespace(mgr, l, rl); err != nil {
 		return err
 	}
 
-	// Enable Domain and Subdomain controllers
-	if err := SetupDomain(mgr, l, rl); err != nil {
-		return err
-	}
+	// Setup Subdomain controller
 	if err := SetupSubdomain(mgr, l, rl); err != nil {
 		return err
 	}

@@ -35,7 +35,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/zone/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/zone/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	zones "github.com/rossigee/provider-cloudflare/internal/clients/zones"
 	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
@@ -59,7 +59,7 @@ const (
 
 // Setup adds a controller that reconciles Zone managed resources.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.ZoneGroupKind)
+	name := managed.ControllerName(v1beta1.ZoneKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -68,7 +68,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.ZoneGroupVersionKind),
+		resource.ManagedKind(v1beta1.ZoneGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (zones.Client, error) {
@@ -85,7 +85,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.Zone{}).
+		For(&v1beta1.Zone{}).
 		Complete(r)
 }
 
@@ -99,7 +99,7 @@ type connector struct {
 // Connect produces a valid configuration for a Cloudflare API
 // instance, and returns it as an external client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Zone)
+	_, ok := mg.(*v1beta1.Zone)
 	if !ok {
 		return nil, errors.New(errNotZone)
 	}
@@ -127,7 +127,7 @@ type external struct {
 func (e *external) Observe(ctx context.Context,
 	mg resource.Managed) (managed.ExternalObservation, error) {
 
-	cr, ok := mg.(*v1alpha1.Zone)
+	cr, ok := mg.(*v1beta1.Zone)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotZone)
 	}
@@ -152,7 +152,7 @@ func (e *external) Observe(ctx context.Context,
 		cr.Status.SetConditions(rtv1.Unavailable())
 	}
 
-	observedSettings := &v1alpha1.ZoneSettings{}
+	observedSettings := &v1beta1.ZoneSettings{}
 	if err := zones.LoadSettingsForZone(ctx, e.client, z.ID, observedSettings); err != nil {
 		return managed.ExternalObservation{ResourceExists: true},
 			errors.Wrap(err, errZoneObservation)
@@ -166,7 +166,7 @@ func (e *external) Observe(ctx context.Context,
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Zone)
+	cr, ok := mg.(*v1beta1.Zone)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotZone)
 	}
@@ -209,7 +209,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Zone)
+	cr, ok := mg.(*v1beta1.Zone)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotZone)
 	}
@@ -231,7 +231,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Zone)
+	cr, ok := mg.(*v1beta1.Zone)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotZone)
 	}

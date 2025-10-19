@@ -32,7 +32,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/emailrouting/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/emailrouting/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	emailroutingruleclient "github.com/rossigee/provider-cloudflare/internal/clients/emailrouting/rule"
 )
@@ -49,10 +49,10 @@ const (
 
 // SetupRule adds a controller that reconciles Rule managed resources.
 func SetupRule(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.RuleKind)
+	name := managed.ControllerName(v1beta1.RuleKind)
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.RuleGroupVersionKind),
+		resource.ManagedKind(v1beta1.RuleGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube:         mgr.GetClient(),
 			newServiceFn: emailroutingruleclient.NewClientFromAPI,
@@ -62,7 +62,7 @@ func SetupRule(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		For(&v1alpha1.Rule{}).
+		For(&v1beta1.Rule{}).
 		Complete(r)
 }
 
@@ -77,7 +77,7 @@ type connector struct {
 // 1. Getting the managed resource's credentials.
 // 2. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Rule)
+	_, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return nil, errors.New(errNotRule)
 	}
@@ -106,7 +106,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Rule)
+	cr, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotRule)
 	}
@@ -144,7 +144,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Rule)
+	cr, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotRule)
 	}
@@ -167,7 +167,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Rule)
+	cr, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotRule)
 	}
@@ -190,7 +190,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Rule)
+	cr, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotRule)
 	}

@@ -20,43 +20,45 @@ package apis
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	cachev1alpha1 "github.com/rossigee/provider-cloudflare/apis/cache/v1alpha1"
-	dnsv1alpha1 "github.com/rossigee/provider-cloudflare/apis/dns/v1alpha1"
-	emailroutingv1alpha1 "github.com/rossigee/provider-cloudflare/apis/emailrouting/v1alpha1"
-	firewallv1alpha1 "github.com/rossigee/provider-cloudflare/apis/firewall/v1alpha1"
-	loadbalancingv1alpha1 "github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
-	originsslv1alpha1 "github.com/rossigee/provider-cloudflare/apis/originssl/v1alpha1"
-	r2v1alpha1 "github.com/rossigee/provider-cloudflare/apis/r2/v1alpha1"
-	rulesetsv1alpha1 "github.com/rossigee/provider-cloudflare/apis/rulesets/v1alpha1"
-	securityv1alpha1 "github.com/rossigee/provider-cloudflare/apis/security/v1alpha1"
-	spectrumv1alpha1 "github.com/rossigee/provider-cloudflare/apis/spectrum/v1alpha1"
-	sslv1alpha1 "github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
-	sslsaasv1alpha1 "github.com/rossigee/provider-cloudflare/apis/sslsaas/v1alpha1"
-	transformv1alpha1 "github.com/rossigee/provider-cloudflare/apis/transform/v1alpha1"
-	cloudflarev1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
-	workersv1alpha1 "github.com/rossigee/provider-cloudflare/apis/workers/v1alpha1"
-	zonev1alpha1 "github.com/rossigee/provider-cloudflare/apis/zone/v1alpha1"
+	cachev1beta1 "github.com/rossigee/provider-cloudflare/apis/cache/v1beta1"
+	dnsv1beta1 "github.com/rossigee/provider-cloudflare/apis/dns/v1beta1"
+	emailroutingv1beta1 "github.com/rossigee/provider-cloudflare/apis/emailrouting/v1beta1"
+	firewallv1beta1 "github.com/rossigee/provider-cloudflare/apis/firewall/v1beta1"
+	loadbalancingv1beta1 "github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
+	logpushv1beta1 "github.com/rossigee/provider-cloudflare/apis/logpush/v1beta1"
+	originsslv1beta1 "github.com/rossigee/provider-cloudflare/apis/originssl/v1beta1"
+	r2v1beta1 "github.com/rossigee/provider-cloudflare/apis/r2/v1beta1"
+	rulesetsv1beta1 "github.com/rossigee/provider-cloudflare/apis/rulesets/v1beta1"
+	securityv1beta1 "github.com/rossigee/provider-cloudflare/apis/security/v1beta1"
+	spectrumv1beta1 "github.com/rossigee/provider-cloudflare/apis/spectrum/v1beta1"
+	sslv1beta1 "github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
+	sslsaasv1beta1 "github.com/rossigee/provider-cloudflare/apis/sslsaas/v1beta1"
+	transformv1beta1 "github.com/rossigee/provider-cloudflare/apis/transform/v1beta1"
+	cloudflarev1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
+	workersv1beta1 "github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
+	zonev1beta1 "github.com/rossigee/provider-cloudflare/apis/zone/v1beta1"
 )
 
 func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(AddToSchemes,
-		cloudflarev1alpha1.SchemeBuilder.AddToScheme,
-		cachev1alpha1.SchemeBuilder.AddToScheme,
-		dnsv1alpha1.SchemeBuilder.AddToScheme,
-		emailroutingv1alpha1.SchemeBuilder.AddToScheme,
-		sslsaasv1alpha1.SchemeBuilder.AddToScheme,
-		originsslv1alpha1.SchemeBuilder.AddToScheme,
-		spectrumv1alpha1.SchemeBuilder.AddToScheme,
-		zonev1alpha1.SchemeBuilder.AddToScheme,
-		firewallv1alpha1.SchemeBuilder.AddToScheme,
-		workersv1alpha1.SchemeBuilder.AddToScheme,
-		transformv1alpha1.SchemeBuilder.AddToScheme,
-		rulesetsv1alpha1.SchemeBuilder.AddToScheme,
-		securityv1alpha1.SchemeBuilder.AddToScheme,
-		sslv1alpha1.SchemeBuilder.AddToScheme,
-		loadbalancingv1alpha1.SchemeBuilder.AddToScheme,
-		r2v1alpha1.SchemeBuilder.AddToScheme,
+		cloudflarev1beta1.SchemeBuilder.AddToScheme,
+		cachev1beta1.SchemeBuilder.AddToScheme,
+		dnsv1beta1.SchemeBuilder.AddToScheme,
+		emailroutingv1beta1.SchemeBuilder.AddToScheme,
+		sslsaasv1beta1.SchemeBuilder.AddToScheme,
+		originsslv1beta1.SchemeBuilder.AddToScheme,
+		spectrumv1beta1.SchemeBuilder.AddToScheme,
+		zonev1beta1.SchemeBuilder.AddToScheme,
+		firewallv1beta1.SchemeBuilder.AddToScheme,
+		workersv1beta1.SchemeBuilder.AddToScheme,
+		transformv1beta1.SchemeBuilder.AddToScheme,
+		rulesetsv1beta1.SchemeBuilder.AddToScheme,
+		securityv1beta1.SchemeBuilder.AddToScheme,
+		sslv1beta1.SchemeBuilder.AddToScheme,
+		loadbalancingv1beta1.SchemeBuilder.AddToScheme,
+		logpushv1beta1.SchemeBuilder.AddToScheme,
+		r2v1beta1.SchemeBuilder.AddToScheme,
 	)
 }
 

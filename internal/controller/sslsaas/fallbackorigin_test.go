@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	fallbackorigin "github.com/rossigee/provider-cloudflare/internal/clients/sslsaas/fallbackorigin"
 
@@ -61,20 +61,20 @@ func (m *mockFallbackOriginClient) DeleteFallbackOrigin(ctx context.Context, zon
 	return m.MockDeleteFallbackOrigin(ctx, zoneID)
 }
 
-type fallbackOriginModifier func(*v1alpha1.FallbackOrigin)
+type fallbackOriginModifier func(*v1beta1.FallbackOrigin)
 
 func withFallbackZone(zone string) fallbackOriginModifier {
-	return func(fo *v1alpha1.FallbackOrigin) { fo.Spec.ForProvider.Zone = &zone }
+	return func(fo *v1beta1.FallbackOrigin) { fo.Spec.ForProvider.Zone = &zone }
 }
 
 func withFallbackOrigin(origin string) fallbackOriginModifier {
-	return func(fo *v1alpha1.FallbackOrigin) { fo.Spec.ForProvider.Origin = &origin }
+	return func(fo *v1beta1.FallbackOrigin) { fo.Spec.ForProvider.Origin = &origin }
 }
 
-func fallbackOriginCR(m ...fallbackOriginModifier) *v1alpha1.FallbackOrigin {
-	fo := &v1alpha1.FallbackOrigin{
-		Spec: v1alpha1.FallbackOriginSpec{
-			ForProvider: v1alpha1.FallbackOriginParameters{},
+func fallbackOriginCR(m ...fallbackOriginModifier) *v1beta1.FallbackOrigin {
+	fo := &v1beta1.FallbackOrigin{
+		Spec: v1beta1.FallbackOriginSpec{
+			ForProvider: v1beta1.FallbackOriginParameters{},
 		},
 	}
 	for _, f := range m {

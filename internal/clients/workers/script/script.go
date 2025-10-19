@@ -25,9 +25,8 @@ import (
 
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/workers/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -221,7 +220,7 @@ func (c *ScriptClient) retryWithBackoff(ctx context.Context, operation func() er
 
 // convertToCloudflareBindings converts Crossplane bindings to cloudflare-go bindings.
 // Returns error via panic for unsupported bindings (to be caught by caller).
-func convertToCloudflareBindings(bindings []v1alpha1.WorkerBinding) map[string]cloudflare.WorkerBinding {
+func convertToCloudflareBindings(bindings []v1beta1.WorkerBinding) map[string]cloudflare.WorkerBinding {
 	cfBindings := make(map[string]cloudflare.WorkerBinding)
 
 	for _, binding := range bindings {
@@ -256,7 +255,7 @@ func convertToCloudflareBindings(bindings []v1alpha1.WorkerBinding) map[string]c
 }
 
 // convertToCloudflareConsumers converts Crossplane tail consumers to cloudflare-go consumers.
-func convertToCloudflareConsumers(consumers []v1alpha1.TailConsumer) *[]cloudflare.WorkersTailConsumer {
+func convertToCloudflareConsumers(consumers []v1beta1.TailConsumer) *[]cloudflare.WorkersTailConsumer {
 	if len(consumers) == 0 {
 		return nil
 	}
@@ -274,7 +273,7 @@ func convertToCloudflareConsumers(consumers []v1alpha1.TailConsumer) *[]cloudfla
 }
 
 // convertToCloudflareParams converts Crossplane parameters to cloudflare-go parameters.
-func convertToCloudflareParams(params v1alpha1.ScriptParameters) cloudflare.CreateWorkerParams {
+func convertToCloudflareParams(params v1beta1.ScriptParameters) cloudflare.CreateWorkerParams {
 	createParams := cloudflare.CreateWorkerParams{
 		ScriptName: params.ScriptName,
 		Script:     params.Script,
@@ -294,70 +293,57 @@ func convertToCloudflareParams(params v1alpha1.ScriptParameters) cloudflare.Crea
 		createParams.CompatibilityFlags = params.CompatibilityFlags
 	}
 
-	if params.Logpush != nil {
-		createParams.Logpush = params.Logpush
+	if params.LogPush != nil {
+		createParams.Logpush = params.LogPush
 	}
 
 	if params.TailConsumers != nil {
 		createParams.TailConsumers = convertToCloudflareConsumers(params.TailConsumers)
 	}
 
-	if params.PlacementMode != nil {
+	if params.Placement != nil {
 		placement := &cloudflare.Placement{
-			Mode: cloudflare.PlacementMode(*params.PlacementMode),
+			Mode: cloudflare.PlacementMode(*params.Placement),
 		}
 		createParams.Placement = placement
-	}
-
-	if params.DispatchNamespace != nil {
-		createParams.DispatchNamespaceName = params.DispatchNamespace
 	}
 
 	return createParams
 }
 
 // convertToObservation converts cloudflare-go worker metadata to Crossplane observation.
-func convertToObservation(metadata cloudflare.WorkerMetaData, script *cloudflare.WorkerScript) v1alpha1.ScriptObservation {
-	obs := v1alpha1.ScriptObservation{
-		ID:    metadata.ID,
-		ETAG:  metadata.ETAG,
-		Size:  metadata.Size,
+func convertToObservation(metadata cloudflare.WorkerMetaData, script *cloudflare.WorkerScript) v1beta1.ScriptObservation {
+	obs := v1beta1.ScriptObservation{
+		ID:   metadata.ID,
+		ETAG: metadata.ETAG,
+		Size: int64(metadata.Size),
 	}
 
 	if !metadata.CreatedOn.IsZero() {
-		obs.CreatedOn = &metav1.Time{Time: metadata.CreatedOn}
+		obs.CreatedOn = metadata.CreatedOn.Format(time.RFC3339)
 	}
 
 	if !metadata.ModifiedOn.IsZero() {
-		obs.ModifiedOn = &metav1.Time{Time: metadata.ModifiedOn}
+		obs.ModifiedOn = metadata.ModifiedOn.Format(time.RFC3339)
 	}
 
 	if metadata.LastDeployedFrom != nil {
-		obs.LastDeployedFrom = metadata.LastDeployedFrom
+		obs.LastDeployedFrom = *metadata.LastDeployedFrom
 	}
 
 	if metadata.DeploymentId != nil {
-		obs.DeploymentID = metadata.DeploymentId
-	}
-
-	if metadata.Placement != nil && metadata.Placement.Status != "" {
-		status := string(metadata.Placement.Status)
-		obs.PlacementStatus = &status
-	}
-
-	if metadata.PipelineHash != nil {
-		obs.PipelineHash = metadata.PipelineHash
+		obs.DeploymentId = *metadata.DeploymentId
 	}
 
 	if script != nil && script.UsageModel != "" {
-		obs.UsageModel = &script.UsageModel
+		obs.UsageModel = script.UsageModel
 	}
 
 	return obs
 }
 
 // Create creates a new Worker script.
-func (c *ScriptClient) Create(ctx context.Context, params v1alpha1.ScriptParameters) (*v1alpha1.ScriptObservation, error) {
+func (c *ScriptClient) Create(ctx context.Context, params v1beta1.ScriptParameters) (*v1beta1.ScriptObservation, error) {
 	createParams := convertToCloudflareParams(params)
 	
 	accountID, err := c.getAccountID(ctx)
@@ -393,7 +379,7 @@ func (c *ScriptClient) Create(ctx context.Context, params v1alpha1.ScriptParamet
 }
 
 // Get retrieves a Worker script with caching to reduce API calls.
-func (c *ScriptClient) Get(ctx context.Context, scriptName string) (*v1alpha1.ScriptObservation, error) {
+func (c *ScriptClient) Get(ctx context.Context, scriptName string) (*v1beta1.ScriptObservation, error) {
 	// Try to get from cache first
 	if cachedWorkerData, ok := c.getWorkerDataFromCache(scriptName); ok {
 		if cachedSettings, ok := c.getScriptSettingsFromCache(scriptName); ok {
@@ -457,7 +443,7 @@ func (c *ScriptClient) Get(ctx context.Context, scriptName string) (*v1alpha1.Sc
 }
 
 // Update updates an existing Worker script.
-func (c *ScriptClient) Update(ctx context.Context, params v1alpha1.ScriptParameters) (*v1alpha1.ScriptObservation, error) {
+func (c *ScriptClient) Update(ctx context.Context, params v1beta1.ScriptParameters) (*v1beta1.ScriptObservation, error) {
 	createParams := convertToCloudflareParams(params)
 	
 	accountID, err := c.getAccountID(ctx)
@@ -477,21 +463,17 @@ func (c *ScriptClient) Update(ctx context.Context, params v1alpha1.ScriptParamet
 }
 
 // Delete removes a Worker script.
-func (c *ScriptClient) Delete(ctx context.Context, scriptName string, dispatchNamespace *string) error {
+func (c *ScriptClient) Delete(ctx context.Context, scriptName string) error {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to get account ID")
 	}
 	rc := cloudflare.AccountIdentifier(accountID)
-	
+
 	deleteParams := cloudflare.DeleteWorkerParams{
 		ScriptName: scriptName,
 	}
-	
-	if dispatchNamespace != nil {
-		deleteParams.DispatchNamespace = dispatchNamespace
-	}
-	
+
 	err = c.client.DeleteWorker(ctx, rc, deleteParams)
 	if err != nil {
 		return errors.Wrap(err, errDeleteScript)
@@ -501,7 +483,7 @@ func (c *ScriptClient) Delete(ctx context.Context, scriptName string, dispatchNa
 }
 
 // List retrieves all Worker scripts.
-func (c *ScriptClient) List(ctx context.Context) ([]v1alpha1.ScriptObservation, error) {
+func (c *ScriptClient) List(ctx context.Context) ([]v1beta1.ScriptObservation, error) {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account ID")
@@ -515,7 +497,7 @@ func (c *ScriptClient) List(ctx context.Context) ([]v1alpha1.ScriptObservation, 
 		return nil, errors.Wrap(err, errListScripts)
 	}
 
-	observations := make([]v1alpha1.ScriptObservation, len(resp.WorkerList))
+	observations := make([]v1beta1.ScriptObservation, len(resp.WorkerList))
 	for i, worker := range resp.WorkerList {
 		observations[i] = convertToObservation(worker, nil)
 	}
@@ -524,7 +506,7 @@ func (c *ScriptClient) List(ctx context.Context) ([]v1alpha1.ScriptObservation, 
 }
 
 // IsUpToDate checks if the Worker script is up to date using cached data when possible.
-func (c *ScriptClient) IsUpToDate(ctx context.Context, params v1alpha1.ScriptParameters, obs v1alpha1.ScriptObservation) (bool, error) {
+func (c *ScriptClient) IsUpToDate(ctx context.Context, params v1beta1.ScriptParameters, obs v1beta1.ScriptObservation) (bool, error) {
 	// Try to get script content from cache first
 	var currentScript string
 	if cachedContent, ok := c.getScriptContentFromCache(params.ScriptName); ok {
@@ -577,10 +559,10 @@ func (c *ScriptClient) IsUpToDate(ctx context.Context, params v1alpha1.ScriptPar
 	}
 
 	// Compare key metadata fields that affect the script
-	
+
 	// Compare logpush setting
-	if params.Logpush != nil {
-		if settingsResp.Logpush == nil || *settingsResp.Logpush != *params.Logpush {
+	if params.LogPush != nil {
+		if settingsResp.Logpush == nil || *settingsResp.Logpush != *params.LogPush {
 			return false, nil
 		}
 	} else if settingsResp.Logpush != nil && *settingsResp.Logpush {
@@ -592,9 +574,9 @@ func (c *ScriptClient) IsUpToDate(ctx context.Context, params v1alpha1.ScriptPar
 	// This field is validated only during script creation
 
 	// Compare placement mode
-	if params.PlacementMode != nil {
-		if settingsResp.Placement == nil || 
-		   string(settingsResp.Placement.Mode) != string(*params.PlacementMode) {
+	if params.Placement != nil {
+		if settingsResp.Placement == nil ||
+		   string(settingsResp.Placement.Mode) != string(*params.Placement) {
 			return false, nil
 		}
 	}

@@ -26,28 +26,27 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/providerconfig"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/v1beta1"
 )
 
-// Setup adds a controller that reconciles ProviderConfigs by accounting for
-// their current usage.
+// Setup adds a controller that reconciles ProviderConfigs using v2 patterns.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := providerconfig.ControllerName(v1alpha1.ProviderConfigGroupKind)
+	name := providerconfig.ControllerName(v1beta1.ProviderConfigGroupKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
 	}
 
 	of := resource.ProviderConfigKinds{
-		Config:    v1alpha1.ProviderConfigGroupVersionKind,
-		UsageList: v1alpha1.ProviderConfigUsageListGroupVersionKind,
+		Config:    v1beta1.ProviderConfigGroupVersionKind,
+		UsageList: v1beta1.ProviderConfigUsageListGroupVersionKind,
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.ProviderConfig{}).
-		Watches(&v1alpha1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
+		For(&v1beta1.ProviderConfig{}).
+		// Removed ProviderConfigUsage watch for v2 compatibility
 		Complete(providerconfig.NewReconciler(mgr, of,
 			providerconfig.WithLogger(l.WithValues("controller", name)),
 			providerconfig.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name)))))

@@ -18,6 +18,9 @@ package record
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,7 +38,7 @@ import (
 
 	"github.com/cloudflare/cloudflare-go"
 
-	"github.com/rossigee/provider-cloudflare/apis/dns/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/dns/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	records "github.com/rossigee/provider-cloudflare/internal/clients/records"
 	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
@@ -59,7 +62,7 @@ const (
 
 // Setup adds a controller that reconciles Record managed resources.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.RecordGroupKind)
+	name := managed.ControllerName(v1beta1.RecordGroupKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -68,7 +71,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.RecordGroupVersionKind),
+		resource.ManagedKind(v1beta1.RecordGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube: mgr.GetClient(),
 			newCloudflareClientFn: func(cfg clients.Config) (records.Client, error) {
@@ -85,7 +88,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.Record{}).
+		For(&v1beta1.Record{}).
 		Complete(r)
 }
 
@@ -99,7 +102,7 @@ type connector struct {
 // Connect produces a valid configuration for a Cloudflare API
 // instance, and returns it as an external client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Record)
+	_, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return nil, errors.New(errNotRecord)
 	}
@@ -125,7 +128,7 @@ type external struct {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Record)
+	cr, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotRecord)
 	}
@@ -160,7 +163,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Record)
+	cr, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotRecord)
 	}
@@ -226,6 +229,16 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		params.Priority = nil
 		params.Content = ""
 	}
+
+	// For TLSA records, parse content and use Data field
+	if *cr.Spec.ForProvider.Type == "TLSA" {
+		tlsaData, err := parseTLSAContent(cr.Spec.ForProvider.Content)
+		if err != nil {
+			return managed.ExternalCreation{}, errors.Wrap(err, errRecordCreation)
+		}
+		params.Data = tlsaData
+		params.Content = ""
+	}
 	
 	res, err := e.client.CreateDNSRecord(ctx, rc, params)
 
@@ -242,7 +255,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Record)
+	cr, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotRecord)
 	}
@@ -266,7 +279,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Record)
+	cr, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotRecord)
 	}
@@ -290,4 +303,41 @@ func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 func (e *external) Disconnect(ctx context.Context) error {
 	// No persistent connections to clean up
 	return nil
+}
+
+// parseTLSAContent parses a TLSA content string into CloudFlare API format.
+// Input format: "usage selector matching_type certificate"
+// Example: "3 1 1 0b9fa5a59eed715c26c1020c711b4f6ec42d58b0015e14337a39dad301c5afc3"
+func parseTLSAContent(content string) (map[string]interface{}, error) {
+	parts := strings.Fields(content)
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("TLSA content must have 4 space-separated fields (usage selector matching_type certificate), got %d", len(parts))
+	}
+
+	usage, err := strconv.Atoi(parts[0])
+	if err != nil || usage < 0 || usage > 3 {
+		return nil, fmt.Errorf("TLSA usage must be 0-3, got: %s", parts[0])
+	}
+
+	selector, err := strconv.Atoi(parts[1])
+	if err != nil || selector < 0 || selector > 1 {
+		return nil, fmt.Errorf("TLSA selector must be 0-1, got: %s", parts[1])
+	}
+
+	matchingType, err := strconv.Atoi(parts[2])
+	if err != nil || matchingType < 0 || matchingType > 2 {
+		return nil, fmt.Errorf("TLSA matching_type must be 0-2, got: %s", parts[2])
+	}
+
+	certificate := parts[3]
+	if len(certificate) == 0 {
+		return nil, fmt.Errorf("TLSA certificate cannot be empty")
+	}
+
+	return map[string]interface{}{
+		"usage":         usage,
+		"selector":      selector,
+		"matching_type": matchingType,
+		"certificate":   certificate,
+	}, nil
 }

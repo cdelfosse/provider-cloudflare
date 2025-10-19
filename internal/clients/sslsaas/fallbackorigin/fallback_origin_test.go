@@ -34,8 +34,8 @@ import (
 	rtfake "github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1alpha1"
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	providerv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
+	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/sslsaas/fallbackorigin/fake"
 )
@@ -58,7 +58,7 @@ type connector struct {
 }
 
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.FallbackOrigin)
+	_, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return nil, errors.New(errNotFallbackOrigin)
 	}
@@ -81,7 +81,7 @@ type external struct {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.FallbackOrigin)
+	cr, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotFallbackOrigin)
 	}
@@ -106,7 +106,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.FallbackOrigin)
+	cr, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotFallbackOrigin)
 	}
@@ -120,7 +120,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.FallbackOrigin)
+	cr, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotFallbackOrigin)
 	}
@@ -140,7 +140,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.FallbackOrigin)
+	cr, ok := mg.(*v1beta1.FallbackOrigin)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotFallbackOrigin)
 	}
@@ -166,18 +166,18 @@ func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 // https://github.com/golang/go/wiki/TestComments
 // https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md#contributing-code
 
-type fallbackOriginModifier func(*v1alpha1.FallbackOrigin)
+type fallbackOriginModifier func(*v1beta1.FallbackOrigin)
 
 func withZone(zoneID string) fallbackOriginModifier {
-	return func(r *v1alpha1.FallbackOrigin) { r.Spec.ForProvider.Zone = &zoneID }
+	return func(r *v1beta1.FallbackOrigin) { r.Spec.ForProvider.Zone = &zoneID }
 }
 
 func withOrigin(origin string) fallbackOriginModifier {
-	return func(r *v1alpha1.FallbackOrigin) { r.Spec.ForProvider.Origin = &origin }
+	return func(r *v1beta1.FallbackOrigin) { r.Spec.ForProvider.Origin = &origin }
 }
 
-func fallbackOrigin(m ...fallbackOriginModifier) *v1alpha1.FallbackOrigin {
-	cr := &v1alpha1.FallbackOrigin{}
+func fallbackOrigin(m ...fallbackOriginModifier) *v1beta1.FallbackOrigin {
+	cr := &v1beta1.FallbackOrigin{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -225,8 +225,8 @@ func TestConnect(t *testing.T) {
 				kube: mc,
 			},
 			args: args{
-				mg: &v1alpha1.FallbackOrigin{
-					Spec: v1alpha1.FallbackOriginSpec{
+				mg: &v1beta1.FallbackOrigin{
+					Spec: v1beta1.FallbackOriginSpec{
 						ResourceSpec: xpv1.ResourceSpec{},
 					},
 				},
@@ -239,7 +239,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj k8sclient.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *providerv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -255,8 +255,8 @@ func TestConnect(t *testing.T) {
 				newClient: NewClient,
 			},
 			args: args{
-				mg: &v1alpha1.FallbackOrigin{
-					Spec: v1alpha1.FallbackOriginSpec{
+				mg: &v1beta1.FallbackOrigin{
+					Spec: v1beta1.FallbackOriginSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -364,7 +364,7 @@ func TestObserve(t *testing.T) {
 				},
 			},
 			args: args{
-				mg: &v1alpha1.FallbackOrigin{},
+				mg: &v1beta1.FallbackOrigin{},
 			},
 			want: want{
 				o:   managed.ExternalObservation{},

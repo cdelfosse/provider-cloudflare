@@ -1,0 +1,54 @@
+---
+apiVersion: dns.cloudflare.crossplane.io/v1beta1
+kind: Record
+metadata:
+  name: example-tlsa-dane-ee
+  namespace: default
+spec:
+  forProvider:
+    # TLSA record name format: _port._protocol.hostname
+    name: "_443._tcp.service.example.com"
+    type: "TLSA"
+    # TLSA content format: "usage selector matching_type certificate"
+    # This example: DANE-EE (3), SPKI (1), SHA-256 (1), certificate hash
+    content: "3 1 1 0b9fa5a59eed715c26c1020c711b4f6ec42d58b0015e14337a39dad301c5afc3"
+    ttl: 3600
+    # Zone ID where this record will be created
+    zone: "your-zone-id-here"
+  providerConfigRef:
+    name: default
+  deletionPolicy: Delete
+---
+apiVersion: dns.cloudflare.crossplane.io/v1beta1
+kind: Record
+metadata:
+  name: example-tlsa-pkix-ta
+  namespace: default
+spec:
+  forProvider:
+    name: "_443._tcp.mail.example.com"
+    type: "TLSA"
+    # PKIX-TA (0), Full Cert (0), SHA-512 (2)
+    content: "0 0 2 d2abde240d7cd3ee6b4b28c54df034b97983a1d16e8a410e4561cb106618e971f8"
+    ttl: 3600
+    zone: "your-zone-id-here"
+  providerConfigRef:
+    name: default
+  deletionPolicy: Delete
+---
+apiVersion: dns.cloudflare.crossplane.io/v1beta1
+kind: Record
+metadata:
+  name: example-tlsa-dane-ta
+  namespace: default
+spec:
+  forProvider:
+    name: "_25._tcp.smtp.example.com"
+    type: "TLSA"
+    # DANE-TA (2), SPKI (1), SHA-256 (1)
+    content: "2 1 1 92003ba34942dc74152e2f2c408d29eca5a520e7f2e06bb944f4dca346baf63c"
+    ttl: 7200
+    zone: "your-zone-id-here"
+  providerConfigRef:
+    name: default
+  deletionPolicy: Delete

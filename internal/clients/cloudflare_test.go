@@ -40,7 +40,7 @@ import (
 	rtfake "github.com/crossplane/crossplane-runtime/v2/pkg/resource/fake"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	v1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	v1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 )
 
 // testProviderConfigReferencer is a test helper that implements ProviderConfigReferencer
@@ -129,7 +129,7 @@ func TestGetConfig(t *testing.T) {
 				client: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *v1alpha1.ProviderConfig:
+						case *v1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{}
 						case *corev1.Secret:

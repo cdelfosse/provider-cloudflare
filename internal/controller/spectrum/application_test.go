@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	applications "github.com/rossigee/provider-cloudflare/internal/clients/spectrum"
 
@@ -45,8 +45,8 @@ import (
 
 type mockApplicationClient struct {
 	MockSpectrumApplication       func(ctx context.Context, zoneID, applicationID string) (cloudflare.SpectrumApplication, error)
-	MockCreateSpectrumApplication func(ctx context.Context, zoneID string, params *v1alpha1.ApplicationParameters) (cloudflare.SpectrumApplication, error)
-	MockUpdateSpectrumApplication func(ctx context.Context, zoneID, applicationID string, params *v1alpha1.ApplicationParameters) error
+	MockCreateSpectrumApplication func(ctx context.Context, zoneID string, params *v1beta1.ApplicationParameters) (cloudflare.SpectrumApplication, error)
+	MockUpdateSpectrumApplication func(ctx context.Context, zoneID, applicationID string, params *v1beta1.ApplicationParameters) error
 	MockDeleteSpectrumApplication func(ctx context.Context, zoneID, applicationID string) error
 }
 
@@ -54,11 +54,11 @@ func (m *mockApplicationClient) SpectrumApplication(ctx context.Context, zoneID,
 	return m.MockSpectrumApplication(ctx, zoneID, applicationID)
 }
 
-func (m *mockApplicationClient) CreateSpectrumApplication(ctx context.Context, zoneID string, params *v1alpha1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
+func (m *mockApplicationClient) CreateSpectrumApplication(ctx context.Context, zoneID string, params *v1beta1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
 	return m.MockCreateSpectrumApplication(ctx, zoneID, params)
 }
 
-func (m *mockApplicationClient) UpdateSpectrumApplication(ctx context.Context, zoneID, applicationID string, params *v1alpha1.ApplicationParameters) error {
+func (m *mockApplicationClient) UpdateSpectrumApplication(ctx context.Context, zoneID, applicationID string, params *v1beta1.ApplicationParameters) error {
 	return m.MockUpdateSpectrumApplication(ctx, zoneID, applicationID, params)
 }
 
@@ -66,28 +66,28 @@ func (m *mockApplicationClient) DeleteSpectrumApplication(ctx context.Context, z
 	return m.MockDeleteSpectrumApplication(ctx, zoneID, applicationID)
 }
 
-type applicationModifier func(*v1alpha1.Application)
+type applicationModifier func(*v1beta1.Application)
 
 func withZone(zone string) applicationModifier {
-	return func(app *v1alpha1.Application) { app.Spec.ForProvider.Zone = &zone }
+	return func(app *v1beta1.Application) { app.Spec.ForProvider.Zone = &zone }
 }
 
 func withProtocol(protocol string) applicationModifier {
-	return func(app *v1alpha1.Application) { app.Spec.ForProvider.Protocol = protocol }
+	return func(app *v1beta1.Application) { app.Spec.ForProvider.Protocol = protocol }
 }
 
 func withExternalName(id string) applicationModifier {
-	return func(app *v1alpha1.Application) {
+	return func(app *v1beta1.Application) {
 		app.SetAnnotations(map[string]string{
 			"crossplane.io/external-name": id,
 		})
 	}
 }
 
-func applicationCR(m ...applicationModifier) *v1alpha1.Application {
-	app := &v1alpha1.Application{
-		Spec: v1alpha1.ApplicationSpec{
-			ForProvider: v1alpha1.ApplicationParameters{
+func applicationCR(m ...applicationModifier) *v1beta1.Application {
+	app := &v1beta1.Application{
+		Spec: v1beta1.ApplicationSpec{
+			ForProvider: v1beta1.ApplicationParameters{
 				Protocol: "TCP/80",
 			},
 		},
@@ -209,7 +209,7 @@ func TestObserve(t *testing.T) {
 			args: args{
 				mg: applicationCR(
 					withZone("test-zone-id"),
-					func(app *v1alpha1.Application) {
+					func(app *v1beta1.Application) {
 						app.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-app-id",
 						})
@@ -257,7 +257,7 @@ func TestObserve(t *testing.T) {
 				mg: applicationCR(
 					withZone("test-zone-id"),
 					withProtocol("TCP/80"),
-					func(app *v1alpha1.Application) {
+					func(app *v1beta1.Application) {
 						app.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-app-id",
 						})
@@ -342,7 +342,7 @@ func TestCreate(t *testing.T) {
 			reason: "Should return any error encountered creating the application",
 			fields: fields{
 				client: &mockApplicationClient{
-					MockCreateSpectrumApplication: func(ctx context.Context, zoneID string, params *v1alpha1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
+					MockCreateSpectrumApplication: func(ctx context.Context, zoneID string, params *v1beta1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
 						return cloudflare.SpectrumApplication{}, errors.New("boom")
 					},
 				},
@@ -358,7 +358,7 @@ func TestCreate(t *testing.T) {
 			reason: "Should return no error when application is created successfully",
 			fields: fields{
 				client: &mockApplicationClient{
-					MockCreateSpectrumApplication: func(ctx context.Context, zoneID string, params *v1alpha1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
+					MockCreateSpectrumApplication: func(ctx context.Context, zoneID string, params *v1beta1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
 						return cloudflare.SpectrumApplication{
 							ID:       "test-app-id",
 							Protocol: "TCP/80",
@@ -441,7 +441,7 @@ func TestUpdate(t *testing.T) {
 			reason: "Should return any error encountered updating the application",
 			fields: fields{
 				client: &mockApplicationClient{
-					MockUpdateSpectrumApplication: func(ctx context.Context, zoneID, applicationID string, params *v1alpha1.ApplicationParameters) error {
+					MockUpdateSpectrumApplication: func(ctx context.Context, zoneID, applicationID string, params *v1beta1.ApplicationParameters) error {
 						return errors.New("boom")
 					},
 				},
@@ -449,7 +449,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				mg: applicationCR(
 					withZone("test-zone-id"),
-					func(app *v1alpha1.Application) {
+					func(app *v1beta1.Application) {
 						app.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-app-id",
 						})
@@ -464,7 +464,7 @@ func TestUpdate(t *testing.T) {
 			reason: "Should return no error when application is updated successfully",
 			fields: fields{
 				client: &mockApplicationClient{
-					MockUpdateSpectrumApplication: func(ctx context.Context, zoneID, applicationID string, params *v1alpha1.ApplicationParameters) error {
+					MockUpdateSpectrumApplication: func(ctx context.Context, zoneID, applicationID string, params *v1beta1.ApplicationParameters) error {
 						return nil
 					},
 				},
@@ -472,7 +472,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				mg: applicationCR(
 					withZone("test-zone-id"),
-					func(app *v1alpha1.Application) {
+					func(app *v1beta1.Application) {
 						app.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-app-id",
 						})
@@ -558,7 +558,7 @@ func TestDelete(t *testing.T) {
 			args: args{
 				mg: applicationCR(
 					withZone("test-zone-id"),
-					func(app *v1alpha1.Application) {
+					func(app *v1beta1.Application) {
 						app.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-app-id",
 						})
@@ -581,7 +581,7 @@ func TestDelete(t *testing.T) {
 			args: args{
 				mg: applicationCR(
 					withZone("test-zone-id"),
-					func(app *v1alpha1.Application) {
+					func(app *v1beta1.Application) {
 						app.SetAnnotations(map[string]string{
 							"crossplane.io/external-name": "test-app-id",
 						})

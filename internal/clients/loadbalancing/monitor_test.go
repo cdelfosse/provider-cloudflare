@@ -23,7 +23,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
 )
 
 func TestGenerateMonitorObservation(t *testing.T) {
@@ -36,7 +36,7 @@ func TestGenerateMonitorObservation(t *testing.T) {
 		ModifiedOn: &modifiedOn,
 	}
 
-	expected := v1alpha1.LoadBalancerMonitorObservation{
+	expected := v1beta1.LoadBalancerMonitorObservation{
 		ID:         "test-monitor-id",
 		CreatedOn:  stringPtr("2025-01-01 00:00:00 +0000 UTC"),
 		ModifiedOn: stringPtr("2025-01-02 00:00:00 +0000 UTC"),
@@ -51,7 +51,7 @@ func TestGenerateMonitorObservation(t *testing.T) {
 
 func TestIsMonitorUpToDate(t *testing.T) {
 	type args struct {
-		params  *v1alpha1.LoadBalancerMonitorParameters
+		params  *v1beta1.LoadBalancerMonitorParameters
 		monitor *cloudflare.LoadBalancerMonitor
 	}
 
@@ -67,7 +67,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateIdentical": {
 			reason: "Should return true when all fields match",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:             "http",
 					Description:      stringPtr("Test monitor"),
 					Method:           stringPtr("GET"),
@@ -109,7 +109,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentType": {
 			reason: "Should return false when types differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type: "http",
 				},
 				monitor: &cloudflare.LoadBalancerMonitor{
@@ -123,7 +123,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentDescription": {
 			reason: "Should return false when descriptions differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:        "http",
 					Description: stringPtr("Description 1"),
 				},
@@ -139,7 +139,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateNilDescription": {
 			reason: "Should return false when param description is nil but monitor has description",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:        "http",
 					Description: nil,
 				},
@@ -155,7 +155,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentMethod": {
 			reason: "Should return false when methods differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:   "http",
 					Method: stringPtr("GET"),
 				},
@@ -171,7 +171,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentPath": {
 			reason: "Should return false when paths differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type: "http",
 					Path: stringPtr("/health"),
 				},
@@ -187,7 +187,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentTimeout": {
 			reason: "Should return false when timeouts differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:    "http",
 					Timeout: intPtr(10),
 				},
@@ -203,7 +203,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentRetries": {
 			reason: "Should return false when retries differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:    "http",
 					Retries: intPtr(3),
 				},
@@ -219,7 +219,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentInterval": {
 			reason: "Should return false when intervals differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:     "http",
 					Interval: intPtr(60),
 				},
@@ -235,7 +235,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentConsecutiveUp": {
 			reason: "Should return false when consecutive up values differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:          "http",
 					ConsecutiveUp: intPtr(2),
 				},
@@ -251,7 +251,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentConsecutiveDown": {
 			reason: "Should return false when consecutive down values differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:            "http",
 					ConsecutiveDown: intPtr(3),
 				},
@@ -267,7 +267,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentPort": {
 			reason: "Should return false when ports differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type: "http",
 					Port: intPtr(80),
 				},
@@ -283,7 +283,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentExpectedBody": {
 			reason: "Should return false when expected bodies differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:         "http",
 					ExpectedBody: stringPtr("OK"),
 				},
@@ -299,7 +299,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentExpectedCodes": {
 			reason: "Should return false when expected codes differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:          "http",
 					ExpectedCodes: stringPtr("200"),
 				},
@@ -315,7 +315,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentFollowRedirects": {
 			reason: "Should return false when follow redirects differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:            "http",
 					FollowRedirects: boolPtr(true),
 				},
@@ -331,7 +331,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentAllowInsecure": {
 			reason: "Should return false when allow insecure differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:          "http",
 					AllowInsecure: boolPtr(true),
 				},
@@ -347,7 +347,7 @@ func TestIsMonitorUpToDate(t *testing.T) {
 		"UpToDateDifferentProbeZone": {
 			reason: "Should return false when probe zones differ",
 			args: args{
-				params: &v1alpha1.LoadBalancerMonitorParameters{
+				params: &v1beta1.LoadBalancerMonitorParameters{
 					Type:      "http",
 					ProbeZone: stringPtr("example.com"),
 				},

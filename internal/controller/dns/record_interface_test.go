@@ -34,7 +34,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/dns/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/dns/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -56,7 +56,7 @@ type interfaceExternal struct {
 }
 
 func (e *interfaceExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Record)
+	cr, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotRecord)
 	}
@@ -77,7 +77,7 @@ func (e *interfaceExternal) Observe(ctx context.Context, mg resource.Managed) (m
 	}
 
 	// Update status with observed values
-	cr.Status.AtProvider = v1alpha1.RecordObservation{
+	cr.Status.AtProvider = v1beta1.RecordObservation{
 		Proxiable:  record.Proxiable,
 		FQDN:       record.Name,
 		Zone:       "", // Zone name not available in new API response
@@ -105,7 +105,7 @@ func (e *interfaceExternal) Observe(ctx context.Context, mg resource.Managed) (m
 }
 
 func (e *interfaceExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Record)
+	cr, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotRecord)
 	}
@@ -147,7 +147,7 @@ func (e *interfaceExternal) Create(ctx context.Context, mg resource.Managed) (ma
 }
 
 func (e *interfaceExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Record)
+	cr, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotRecord)
 	}
@@ -191,7 +191,7 @@ func (e *interfaceExternal) Update(ctx context.Context, mg resource.Managed) (ma
 }
 
 func (e *interfaceExternal) Delete(ctx context.Context, mg resource.Managed) error {
-	cr, ok := mg.(*v1alpha1.Record)
+	cr, ok := mg.(*v1beta1.Record)
 	if !ok {
 		return errors.New(errNotRecord)
 	}
@@ -223,24 +223,24 @@ func getInt64Value(i *int64) int64 {
 	return *i
 }
 
-type interfaceRecordModifier func(*v1alpha1.Record)
+type interfaceRecordModifier func(*v1beta1.Record)
 
 func withInterfaceConditions(c ...xpv1.Condition) interfaceRecordModifier {
-	return func(r *v1alpha1.Record) { r.Status.Conditions = c }
+	return func(r *v1beta1.Record) { r.Status.Conditions = c }
 }
 
 func withInterfaceExternalName(name string) interfaceRecordModifier {
-	return func(r *v1alpha1.Record) { 
+	return func(r *v1beta1.Record) { 
 		meta.SetExternalName(r, name)
 	}
 }
 
-func withInterfaceSpec(s v1alpha1.RecordSpec) interfaceRecordModifier {
-	return func(r *v1alpha1.Record) { r.Spec = s }
+func withInterfaceSpec(s v1beta1.RecordSpec) interfaceRecordModifier {
+	return func(r *v1beta1.Record) { r.Spec = s }
 }
 
-func withInterfaceStatus(s v1alpha1.RecordStatus) interfaceRecordModifier {
-	return func(r *v1alpha1.Record) { 
+func withInterfaceStatus(s v1beta1.RecordStatus) interfaceRecordModifier {
+	return func(r *v1beta1.Record) { 
 		// Preserve existing conditions and only update AtProvider
 		r.Status.AtProvider = s.AtProvider
 		if len(s.Conditions) > 0 {
@@ -249,13 +249,13 @@ func withInterfaceStatus(s v1alpha1.RecordStatus) interfaceRecordModifier {
 	}
 }
 
-func interfaceRecord(m ...interfaceRecordModifier) *v1alpha1.Record {
-	cr := &v1alpha1.Record{
+func interfaceRecord(m ...interfaceRecordModifier) *v1beta1.Record {
+	cr := &v1beta1.Record{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testRecordName,
 		},
-		Spec: v1alpha1.RecordSpec{
-			ForProvider: v1alpha1.RecordParameters{
+		Spec: v1beta1.RecordSpec{
+			ForProvider: v1beta1.RecordParameters{
 				Zone:    &testZoneID,
 				Name:    testRecordName,
 				Type:    &testRecordType,
@@ -309,8 +309,8 @@ func TestInterfaceObserve(t *testing.T) {
 				cr: interfaceRecord(
 					withInterfaceExternalName(testRecordID),
 					withInterfaceConditions(xpv1.Available()),
-					withInterfaceStatus(v1alpha1.RecordStatus{
-						AtProvider: v1alpha1.RecordObservation{
+					withInterfaceStatus(v1beta1.RecordStatus{
+						AtProvider: v1beta1.RecordObservation{
 							Proxiable:  false,
 							FQDN:       testRecordName,
 							Zone:       "",
@@ -356,8 +356,8 @@ func TestInterfaceObserve(t *testing.T) {
 				cr: interfaceRecord(
 					withInterfaceExternalName(testRecordID),
 					withInterfaceConditions(xpv1.Available()),
-					withInterfaceStatus(v1alpha1.RecordStatus{
-						AtProvider: v1alpha1.RecordObservation{
+					withInterfaceStatus(v1beta1.RecordStatus{
+						AtProvider: v1beta1.RecordObservation{
 							Proxiable:  false,
 							FQDN:       testRecordName,
 							Zone:       "",
@@ -376,8 +376,8 @@ func TestInterfaceObserve(t *testing.T) {
 			args: args{
 				mg: interfaceRecord(
 					withInterfaceExternalName(testRecordID),
-					withInterfaceSpec(v1alpha1.RecordSpec{
-						ForProvider: v1alpha1.RecordParameters{
+					withInterfaceSpec(v1beta1.RecordSpec{
+						ForProvider: v1beta1.RecordParameters{
 							Name:    testRecordName,
 							Type:    &testRecordType,
 							Content: testRecordContent,
@@ -390,8 +390,8 @@ func TestInterfaceObserve(t *testing.T) {
 			want: want{
 				cr: interfaceRecord(
 					withInterfaceExternalName(testRecordID),
-					withInterfaceSpec(v1alpha1.RecordSpec{
-						ForProvider: v1alpha1.RecordParameters{
+					withInterfaceSpec(v1beta1.RecordSpec{
+						ForProvider: v1beta1.RecordParameters{
 							Name:    testRecordName,
 							Type:    &testRecordType,
 							Content: testRecordContent,
@@ -470,8 +470,8 @@ func TestInterfaceCreate(t *testing.T) {
 		"FailedSRVValidation": {
 			reason: "Should fail to create SRV record with invalid content",
 			args: args{
-				mg: interfaceRecord(withInterfaceSpec(v1alpha1.RecordSpec{
-					ForProvider: v1alpha1.RecordParameters{
+				mg: interfaceRecord(withInterfaceSpec(v1beta1.RecordSpec{
+					ForProvider: v1beta1.RecordParameters{
 						Zone:    &testZoneID,
 						Name:    testRecordName,
 						Type:    stringPtr("SRV"),
@@ -482,8 +482,8 @@ func TestInterfaceCreate(t *testing.T) {
 				cf: clients.NewMockCloudflareClient(),
 			},
 			want: want{
-				cr: interfaceRecord(withInterfaceSpec(v1alpha1.RecordSpec{
-					ForProvider: v1alpha1.RecordParameters{
+				cr: interfaceRecord(withInterfaceSpec(v1beta1.RecordSpec{
+					ForProvider: v1beta1.RecordParameters{
 						Zone:    &testZoneID,
 						Name:    testRecordName,
 						Type:    stringPtr("SRV"),
@@ -497,8 +497,8 @@ func TestInterfaceCreate(t *testing.T) {
 		"SuccessfulARecord": {
 			reason: "Should successfully create A record",
 			args: args{
-				mg: interfaceRecord(withInterfaceSpec(v1alpha1.RecordSpec{
-					ForProvider: v1alpha1.RecordParameters{
+				mg: interfaceRecord(withInterfaceSpec(v1beta1.RecordSpec{
+					ForProvider: v1beta1.RecordParameters{
 						Zone:    &testZoneID,
 						Name:    testRecordName,
 						Type:    stringPtr("A"),
@@ -523,8 +523,8 @@ func TestInterfaceCreate(t *testing.T) {
 			want: want{
 				cr: interfaceRecord(
 					withInterfaceExternalName(testRecordID),
-					withInterfaceSpec(v1alpha1.RecordSpec{
-						ForProvider: v1alpha1.RecordParameters{
+					withInterfaceSpec(v1beta1.RecordSpec{
+						ForProvider: v1beta1.RecordParameters{
 							Zone:    &testZoneID,
 							Name:    testRecordName,
 							Type:    stringPtr("A"),
@@ -540,8 +540,8 @@ func TestInterfaceCreate(t *testing.T) {
 		"FailedARecordValidation": {
 			reason: "Should fail to create A record with invalid IP",
 			args: args{
-				mg: interfaceRecord(withInterfaceSpec(v1alpha1.RecordSpec{
-					ForProvider: v1alpha1.RecordParameters{
+				mg: interfaceRecord(withInterfaceSpec(v1beta1.RecordSpec{
+					ForProvider: v1beta1.RecordParameters{
 						Zone:    &testZoneID,
 						Name:    testRecordName,
 						Type:    stringPtr("A"),
@@ -552,8 +552,8 @@ func TestInterfaceCreate(t *testing.T) {
 				cf: clients.NewMockCloudflareClient(),
 			},
 			want: want{
-				cr: interfaceRecord(withInterfaceSpec(v1alpha1.RecordSpec{
-					ForProvider: v1alpha1.RecordParameters{
+				cr: interfaceRecord(withInterfaceSpec(v1beta1.RecordSpec{
+					ForProvider: v1beta1.RecordParameters{
 						Zone:    &testZoneID,
 						Name:    testRecordName,
 						Type:    stringPtr("A"),
@@ -625,8 +625,8 @@ func TestInterfaceUpdate(t *testing.T) {
 			args: args{
 				mg: interfaceRecord(
 					withInterfaceExternalName(testRecordID),
-					withInterfaceSpec(v1alpha1.RecordSpec{
-						ForProvider: v1alpha1.RecordParameters{
+					withInterfaceSpec(v1beta1.RecordSpec{
+						ForProvider: v1beta1.RecordParameters{
 							Zone:    &testZoneID,
 							Name:    testRecordName,
 							Type:    stringPtr("A"),
@@ -640,8 +640,8 @@ func TestInterfaceUpdate(t *testing.T) {
 			want: want{
 				cr: interfaceRecord(
 					withInterfaceExternalName(testRecordID),
-					withInterfaceSpec(v1alpha1.RecordSpec{
-						ForProvider: v1alpha1.RecordParameters{
+					withInterfaceSpec(v1beta1.RecordSpec{
+						ForProvider: v1beta1.RecordParameters{
 							Zone:    &testZoneID,
 							Name:    testRecordName,
 							Type:    stringPtr("A"),

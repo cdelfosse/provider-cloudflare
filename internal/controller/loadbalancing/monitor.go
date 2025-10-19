@@ -34,30 +34,29 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
-	apisv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
+	apisv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing"
 )
 
 const (
-	errNotMonitor          = "managed resource is not a LoadBalancerMonitor custom resource"
-	errTrackMonitorPCUsage = "cannot track ProviderConfig usage"
-	errGetMonitorPC        = "cannot get ProviderConfig"
-	errGetMonitorCreds     = "cannot get credentials"
-	errNewMonitorClient    = "cannot create new Service"
+	errNotMonitor       = "managed resource is not a LoadBalancerMonitor custom resource"
+	errGetMonitorPC     = "cannot get ProviderConfig"
+	errGetMonitorCreds  = "cannot get credentials"
+	errNewMonitorClient = "cannot create new Service"
 )
 
 // SetupMonitor adds a controller that reconciles LoadBalancerMonitor managed resources.
 func SetupMonitor(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.LoadBalancerMonitorGroupKind)
+	name := managed.ControllerName(v1beta1.LoadBalancerMonitorGroupKind)
 
 	o := controller.Options{
 		MaxConcurrentReconciles: 5,
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.LoadBalancerMonitorGroupVersionKind),
+		resource.ManagedKind(v1beta1.LoadBalancerMonitorGroupVersionKind),
 		managed.WithExternalConnecter(&monitorConnector{
 			kube: mgr.GetClient(),
 			newServiceFn: func(cfg clients.Config, httpClient *http.Client) (loadbalancing.MonitorClient, error) {
@@ -73,7 +72,7 @@ func SetupMonitor(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimi
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.LoadBalancerMonitor{}).
+		For(&v1beta1.LoadBalancerMonitor{}).
 		Complete(r)
 }
 
@@ -81,26 +80,20 @@ func SetupMonitor(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimi
 // is called.
 type monitorConnector struct {
 	kube         client.Client
-	usage        resource.Tracker
 	newServiceFn func(cfg clients.Config, httpClient *http.Client) (loadbalancing.MonitorClient, error)
 }
 
 // Connect typically produces an ExternalClient by:
-// 1. Tracking that the managed resource is using a ProviderConfig.
-// 2. Getting the managed resource's ProviderConfig.
-// 3. Getting the credentials specified by the ProviderConfig.
-// 4. Using the credentials to form a client.
+// 1. Getting the managed resource's ProviderConfig.
+// 2. Getting the credentials specified by the ProviderConfig.
+// 3. Using the credentials to form a client.
 func (c *monitorConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerMonitor)
+	cr, ok := mg.(*v1beta1.LoadBalancerMonitor)
 	if !ok {
 		return nil, errors.New(errNotMonitor)
 	}
 
-	if err := c.usage.Track(ctx, mg); err != nil {
-		return nil, errors.Wrap(err, errTrackMonitorPCUsage)
-	}
-
-	pc := &apisv1alpha1.ProviderConfig{}
+	pc := &apisv1beta1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetMonitorPC)
 	}
@@ -126,7 +119,7 @@ type monitorExternal struct {
 }
 
 func (c *monitorExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerMonitor)
+	cr, ok := mg.(*v1beta1.LoadBalancerMonitor)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotMonitor)
 	}
@@ -158,7 +151,7 @@ func (c *monitorExternal) Observe(ctx context.Context, mg resource.Managed) (man
 }
 
 func (c *monitorExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerMonitor)
+	cr, ok := mg.(*v1beta1.LoadBalancerMonitor)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotMonitor)
 	}
@@ -176,7 +169,7 @@ func (c *monitorExternal) Create(ctx context.Context, mg resource.Managed) (mana
 }
 
 func (c *monitorExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerMonitor)
+	cr, ok := mg.(*v1beta1.LoadBalancerMonitor)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotMonitor)
 	}
@@ -192,7 +185,7 @@ func (c *monitorExternal) Update(ctx context.Context, mg resource.Managed) (mana
 }
 
 func (c *monitorExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.LoadBalancerMonitor)
+	cr, ok := mg.(*v1beta1.LoadBalancerMonitor)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotMonitor)
 	}
@@ -210,7 +203,7 @@ func (c *monitorExternal) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-func (c *monitorExternal) lateInitialize(spec *v1alpha1.LoadBalancerMonitorParameters, monitor *cloudflare.LoadBalancerMonitor) bool {
+func (c *monitorExternal) lateInitialize(spec *v1beta1.LoadBalancerMonitorParameters, monitor *cloudflare.LoadBalancerMonitor) bool {
 	li := false
 
 	if spec.Description == nil && monitor.Description != "" {

@@ -23,7 +23,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 
 	"github.com/rossigee/provider-cloudflare/internal/controller/cache"
-	"github.com/rossigee/provider-cloudflare/internal/controller/config"
+	// "github.com/rossigee/provider-cloudflare/internal/controller/config" // Temporarily disabled
 	record "github.com/rossigee/provider-cloudflare/internal/controller/dns"
 	emailrouting "github.com/rossigee/provider-cloudflare/internal/controller/emailrouting"
 	loadbalancing "github.com/rossigee/provider-cloudflare/internal/controller/loadbalancing"
@@ -35,7 +35,7 @@ import (
 	ssl "github.com/rossigee/provider-cloudflare/internal/controller/ssl"
 	sslsaas "github.com/rossigee/provider-cloudflare/internal/controller/sslsaas"
 	transform "github.com/rossigee/provider-cloudflare/internal/controller/transform"
-	workers "github.com/rossigee/provider-cloudflare/internal/controller/workers"
+	// workers "github.com/rossigee/provider-cloudflare/internal/controller/workers" // Disabled - implementation incomplete
 	zone "github.com/rossigee/provider-cloudflare/internal/controller/zone"
 )
 
@@ -43,11 +43,11 @@ import (
 // the supplied manager.
 func Setup(mgr ctrl.Manager, l logging.Logger, wl workqueue.TypedRateLimiter[any]) error {
 	for _, setup := range []func(ctrl.Manager, logging.Logger, workqueue.TypedRateLimiter[any]) error{
-		config.Setup,
+		// config.Setup, // Temporarily disabled for v2 compatibility debugging
 		zone.Setup,
 		record.Setup,
 		application.Setup,
-		workers.Setup,
+		// workers.Setup, // Temporarily disabled - workers client implementation incomplete
 		ssl.Setup,
 		sslsaas.Setup,
 		transform.Setup,
@@ -68,5 +68,26 @@ func Setup(mgr ctrl.Manager, l logging.Logger, wl workqueue.TypedRateLimiter[any
 
 // SetupMinimal creates minimal controllers with only config, zone, and dns record support.
 func SetupMinimal(mgr ctrl.Manager, l logging.Logger, wl workqueue.TypedRateLimiter[any]) error {
-	return Setup(mgr, l, wl)
+	for _, setup := range []func(ctrl.Manager, logging.Logger, workqueue.TypedRateLimiter[any]) error{
+		// config.Setup, // Temporarily disabled for v2 compatibility debugging
+		zone.Setup,
+		record.Setup,
+		application.Setup,
+		// workers.Setup, // Temporarily disabled - workers client implementation incomplete
+		ssl.Setup,
+		sslsaas.Setup,
+		transform.Setup,
+		rulesets.Setup,
+		security.Setup,
+		loadbalancing.Setup,
+		originssl.Setup,
+		cache.Setup,
+		r2.Setup,
+		emailrouting.Setup,
+	} {
+		if err := setup(mgr, l, wl); err != nil {
+			return err
+		}
+	}
+	return nil
 }

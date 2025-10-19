@@ -24,10 +24,9 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/rossigee/provider-cloudflare/apis/workers/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -43,15 +42,14 @@ const (
 
 var (
 	testTime = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	testMetaTime = metav1.Time{Time: testTime}
 )
 
 func TestCreate(t *testing.T) {
 	type args struct {
-		params v1alpha1.ScriptParameters
+		params v1beta1.ScriptParameters
 	}
 	type want struct {
-		obs *v1alpha1.ScriptObservation
+		obs *v1beta1.ScriptObservation
 		err error
 	}
 
@@ -62,11 +60,11 @@ func TestCreate(t *testing.T) {
 	}{
 		"CreateSuccess": {
 			args: args{
-				params: v1alpha1.ScriptParameters{
+				params: v1beta1.ScriptParameters{
 					ScriptName: testScriptName,
 					Script:     testScript,
 					Module:     ptr.To(false),
-					Logpush:    ptr.To(true),
+					LogPush:    ptr.To(true),
 				},
 			},
 			mockClient: func() clients.ClientInterface {
@@ -99,22 +97,22 @@ func TestCreate(t *testing.T) {
 				return client
 			},
 			want: want{
-				obs: &v1alpha1.ScriptObservation{
+				obs: &v1beta1.ScriptObservation{
 					ID:         "test-id",
-					ETAG:       "test-etag", 
+					ETAG:       "test-etag",
 					Size:       1024,
-					CreatedOn:  &testMetaTime,
-					ModifiedOn: &testMetaTime,
-					UsageModel: ptr.To("standard"),
+					CreatedOn:  testTime.Format(time.RFC3339),
+					ModifiedOn: testTime.Format(time.RFC3339),
+					UsageModel: "standard",
 				},
 			},
 		},
 		"CreateWithBindings": {
 			args: args{
-				params: v1alpha1.ScriptParameters{
+				params: v1beta1.ScriptParameters{
 					ScriptName: testScriptName,
 					Script:     testScript,
-					Bindings: []v1alpha1.WorkerBinding{
+					Bindings: []v1beta1.WorkerBinding{
 						{
 							Type:        "kv_namespace",
 							Name:        "MY_KV",
@@ -159,7 +157,7 @@ func TestCreate(t *testing.T) {
 				return client
 			},
 			want: want{
-				obs: &v1alpha1.ScriptObservation{
+				obs: &v1beta1.ScriptObservation{
 					ID:   "test-id",
 					Size: 1024,
 				},
@@ -167,7 +165,7 @@ func TestCreate(t *testing.T) {
 		},
 		"CreateError": {
 			args: args{
-				params: v1alpha1.ScriptParameters{
+				params: v1beta1.ScriptParameters{
 					ScriptName: testScriptName,
 					Script:     testScript,
 				},
@@ -222,7 +220,7 @@ func TestGet(t *testing.T) {
 		scriptName string
 	}
 	type want struct {
-		obs *v1alpha1.ScriptObservation
+		obs *v1beta1.ScriptObservation
 		err error
 	}
 
@@ -264,13 +262,13 @@ func TestGet(t *testing.T) {
 				return client
 			},
 			want: want{
-				obs: &v1alpha1.ScriptObservation{
+				obs: &v1beta1.ScriptObservation{
 					ID:         "test-id",
 					ETAG:       "test-etag",
 					Size:       1024,
-					CreatedOn:  &testMetaTime,
-					ModifiedOn: &testMetaTime,
-					UsageModel: ptr.To("standard"),
+					CreatedOn:  testTime.Format(time.RFC3339),
+					ModifiedOn: testTime.Format(time.RFC3339),
+					UsageModel: "standard",
 				},
 			},
 		},
@@ -320,8 +318,7 @@ func TestGet(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	type args struct {
-		scriptName        string
-		dispatchNamespace *string
+		scriptName string
 	}
 	type want struct {
 		err error
@@ -339,31 +336,11 @@ func TestDelete(t *testing.T) {
 			mockClient: func() clients.ClientInterface {
 				client := clients.NewMockClient()
 				client.On("GetAccountID").Return(testAccountID)
-				client.On("DeleteWorker", 
-					context.Background(), 
+				client.On("DeleteWorker",
+					context.Background(),
 					cloudflare.AccountIdentifier(testAccountID),
 					cloudflare.DeleteWorkerParams{
 						ScriptName: testScriptName,
-					},
-				).Return(nil)
-				return client
-			},
-			want: want{},
-		},
-		"DeleteWithDispatchNamespace": {
-			args: args{
-				scriptName:        testScriptName,
-				dispatchNamespace: ptr.To("test-namespace"),
-			},
-			mockClient: func() clients.ClientInterface {
-				client := clients.NewMockClient()
-				client.On("GetAccountID").Return(testAccountID)
-				client.On("DeleteWorker", 
-					context.Background(), 
-					cloudflare.AccountIdentifier(testAccountID),
-					cloudflare.DeleteWorkerParams{
-						ScriptName:        testScriptName,
-						DispatchNamespace: ptr.To("test-namespace"),
 					},
 				).Return(nil)
 				return client
@@ -377,8 +354,8 @@ func TestDelete(t *testing.T) {
 			mockClient: func() clients.ClientInterface {
 				client := clients.NewMockClient()
 				client.On("GetAccountID").Return(testAccountID)
-				client.On("DeleteWorker", 
-					context.Background(), 
+				client.On("DeleteWorker",
+					context.Background(),
 					cloudflare.AccountIdentifier(testAccountID),
 					cloudflare.DeleteWorkerParams{
 						ScriptName: testScriptName,
@@ -395,7 +372,7 @@ func TestDelete(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			client := NewClient(tc.mockClient())
-			err := client.Delete(context.Background(), tc.args.scriptName, tc.args.dispatchNamespace)
+			err := client.Delete(context.Background(), tc.args.scriptName)
 
 			if tc.want.err != nil {
 				if err == nil || err.Error() != tc.want.err.Error() {
@@ -413,8 +390,8 @@ func TestDelete(t *testing.T) {
 
 func TestIsUpToDate(t *testing.T) {
 	type args struct {
-		params v1alpha1.ScriptParameters
-		obs    v1alpha1.ScriptObservation
+		params v1beta1.ScriptParameters
+		obs    v1beta1.ScriptObservation
 	}
 	type want struct {
 		isUpToDate bool
@@ -428,13 +405,13 @@ func TestIsUpToDate(t *testing.T) {
 	}{
 		"UpToDate": {
 			args: args{
-				params: v1alpha1.ScriptParameters{
+				params: v1beta1.ScriptParameters{
 					ScriptName:        testScriptName,
-					Script:           testScript,
-					Logpush:          ptr.To(true),
+					Script:            testScript,
+					LogPush:           ptr.To(true),
 					CompatibilityDate: ptr.To("2023-01-01"),
 				},
-				obs: v1alpha1.ScriptObservation{
+				obs: v1beta1.ScriptObservation{
 					ID: "test-id",
 				},
 			},
@@ -463,11 +440,11 @@ func TestIsUpToDate(t *testing.T) {
 		},
 		"ScriptContentChanged": {
 			args: args{
-				params: v1alpha1.ScriptParameters{
+				params: v1beta1.ScriptParameters{
 					ScriptName: testScriptName,
 					Script:     testScript,
 				},
-				obs: v1alpha1.ScriptObservation{
+				obs: v1beta1.ScriptObservation{
 					ID: "test-id",
 				},
 			},
@@ -487,12 +464,12 @@ func TestIsUpToDate(t *testing.T) {
 		},
 		"LogpushChanged": {
 			args: args{
-				params: v1alpha1.ScriptParameters{
+				params: v1beta1.ScriptParameters{
 					ScriptName: testScriptName,
 					Script:     testScript,
-					Logpush:    ptr.To(true),
+					LogPush:    ptr.To(true),
 				},
-				obs: v1alpha1.ScriptObservation{
+				obs: v1beta1.ScriptObservation{
 					ID: "test-id",
 				},
 			},

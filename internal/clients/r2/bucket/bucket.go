@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/r2/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/r2/v1beta1"
 )
 
 // R2BucketAPI defines the interface for R2 Bucket operations
@@ -80,8 +80,8 @@ func (c *BucketClient) getAccountID(ctx context.Context) (string, error) {
 }
 
 // convertToObservation converts cloudflare-go R2 bucket to Crossplane observation.
-func convertToObservation(bucket cloudflare.R2Bucket) v1alpha1.BucketObservation {
-	obs := v1alpha1.BucketObservation{
+func convertToObservation(bucket cloudflare.R2Bucket) v1beta1.BucketObservation {
+	obs := v1beta1.BucketObservation{
 		Name:     bucket.Name,
 		Location: bucket.Location,
 	}
@@ -94,7 +94,7 @@ func convertToObservation(bucket cloudflare.R2Bucket) v1alpha1.BucketObservation
 }
 
 // convertToCloudflareParams converts Crossplane parameters to cloudflare-go parameters.
-func convertToCloudflareParams(params v1alpha1.BucketParameters) cloudflare.CreateR2BucketParameters {
+func convertToCloudflareParams(params v1beta1.BucketParameters) cloudflare.CreateR2BucketParameters {
 	cfParams := cloudflare.CreateR2BucketParameters{
 		Name: params.Name,
 	}
@@ -107,7 +107,7 @@ func convertToCloudflareParams(params v1alpha1.BucketParameters) cloudflare.Crea
 }
 
 // Create creates a new R2 Bucket.
-func (c *BucketClient) Create(ctx context.Context, params v1alpha1.BucketParameters) (*v1alpha1.BucketObservation, error) {
+func (c *BucketClient) Create(ctx context.Context, params v1beta1.BucketParameters) (*v1beta1.BucketObservation, error) {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account ID")
@@ -126,7 +126,7 @@ func (c *BucketClient) Create(ctx context.Context, params v1alpha1.BucketParamet
 }
 
 // Get retrieves an R2 Bucket.
-func (c *BucketClient) Get(ctx context.Context, bucketName string) (*v1alpha1.BucketObservation, error) {
+func (c *BucketClient) Get(ctx context.Context, bucketName string) (*v1beta1.BucketObservation, error) {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account ID")
@@ -159,7 +159,7 @@ func (c *BucketClient) Delete(ctx context.Context, bucketName string) error {
 }
 
 // List retrieves all R2 Buckets.
-func (c *BucketClient) List(ctx context.Context) ([]v1alpha1.BucketObservation, error) {
+func (c *BucketClient) List(ctx context.Context) ([]v1beta1.BucketObservation, error) {
 	accountID, err := c.getAccountID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get account ID")
@@ -171,7 +171,7 @@ func (c *BucketClient) List(ctx context.Context) ([]v1alpha1.BucketObservation, 
 		return nil, errors.Wrap(err, errListBuckets)
 	}
 
-	observations := make([]v1alpha1.BucketObservation, len(buckets))
+	observations := make([]v1beta1.BucketObservation, len(buckets))
 	for i, bucket := range buckets {
 		observations[i] = convertToObservation(bucket)
 	}
@@ -180,7 +180,7 @@ func (c *BucketClient) List(ctx context.Context) ([]v1alpha1.BucketObservation, 
 }
 
 // IsUpToDate checks if the R2 Bucket is up to date.
-func (c *BucketClient) IsUpToDate(ctx context.Context, params v1alpha1.BucketParameters, obs v1alpha1.BucketObservation) (bool, error) {
+func (c *BucketClient) IsUpToDate(ctx context.Context, params v1beta1.BucketParameters, obs v1beta1.BucketObservation) (bool, error) {
 	// R2 buckets don't have many updatable properties
 	// Main check is if the bucket exists with the correct name
 	return obs.Name == params.Name, nil

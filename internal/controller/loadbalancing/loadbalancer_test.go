@@ -25,8 +25,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1alpha1"
-	pcv1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/loadbalancing/v1beta1"
+	pcv1beta1 "github.com/rossigee/provider-cloudflare/apis/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing"
 	"github.com/rossigee/provider-cloudflare/internal/clients/loadbalancing/fake"
@@ -54,23 +54,23 @@ func (m *mockTracker) Track(ctx context.Context, mg resource.Managed) error {
 	return nil
 }
 
-type loadbalancerModifier func(*v1alpha1.LoadBalancer)
+type loadbalancerModifier func(*v1beta1.LoadBalancer)
 
 
 func withZone(zone string) loadbalancerModifier {
-	return func(lb *v1alpha1.LoadBalancer) { lb.Spec.ForProvider.Zone = zone }
+	return func(lb *v1beta1.LoadBalancer) { lb.Spec.ForProvider.Zone = zone }
 }
 
 func withName(name string) loadbalancerModifier {
-	return func(lb *v1alpha1.LoadBalancer) { lb.Spec.ForProvider.Name = &name }
+	return func(lb *v1beta1.LoadBalancer) { lb.Spec.ForProvider.Name = &name }
 }
 
 func withID(id string) loadbalancerModifier {
-	return func(lb *v1alpha1.LoadBalancer) { lb.Status.AtProvider.ID = id }
+	return func(lb *v1beta1.LoadBalancer) { lb.Status.AtProvider.ID = id }
 }
 
-func loadbalancer(m ...loadbalancerModifier) *v1alpha1.LoadBalancer {
-	cr := &v1alpha1.LoadBalancer{}
+func loadbalancer(m ...loadbalancerModifier) *v1beta1.LoadBalancer {
+	cr := &v1beta1.LoadBalancer{}
 	for _, f := range m {
 		f(cr)
 	}
@@ -113,8 +113,8 @@ func TestConnect(t *testing.T) {
 				usage: &mockTracker{},
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancer{
-					Spec: v1alpha1.LoadBalancerSpec{
+				mg: &v1beta1.LoadBalancer{
+					Spec: v1beta1.LoadBalancerSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "test-config",
@@ -131,7 +131,7 @@ func TestConnect(t *testing.T) {
 				kube: &test.MockClient{
 					MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
 						switch o := obj.(type) {
-						case *pcv1alpha1.ProviderConfig:
+						case *pcv1beta1.ProviderConfig:
 							o.Spec.Credentials.Source = "Secret"
 							o.Spec.Credentials.SecretRef = &xpv1.SecretKeySelector{
 								Key: "creds",
@@ -150,8 +150,8 @@ func TestConnect(t *testing.T) {
 				},
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancer{
-					Spec: v1alpha1.LoadBalancerSpec{
+				mg: &v1beta1.LoadBalancer{
+					Spec: v1beta1.LoadBalancerSpec{
 						ResourceSpec: xpv1.ResourceSpec{
 							ProviderConfigReference: &xpv1.Reference{
 								Name: "blah",
@@ -214,7 +214,7 @@ func TestObserve(t *testing.T) {
 				service: &fake.MockLoadBalancerClient{},
 			},
 			args: args{
-				mg: &v1alpha1.LoadBalancer{},
+				mg: &v1beta1.LoadBalancer{},
 			},
 			want: want{
 				o: managed.ExternalObservation{ResourceExists: false},
@@ -224,7 +224,7 @@ func TestObserve(t *testing.T) {
 			reason: "We should return an empty observation and an error if the API returned an error",
 			fields: fields{
 				service: &fake.MockLoadBalancerClient{
-					MockGetLoadBalancer: func(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+					MockGetLoadBalancer: func(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 						return nil, errBoom
 					},
 				},
@@ -244,7 +244,7 @@ func TestObserve(t *testing.T) {
 			reason: "We should return ResourceExists: true and no error when a load balancer is found",
 			fields: fields{
 				service: &fake.MockLoadBalancerClient{
-					MockGetLoadBalancer: func(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+					MockGetLoadBalancer: func(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 						return &cloudflare.LoadBalancer{
 							ID: lbID,
 						}, nil
@@ -316,7 +316,7 @@ func TestCreate(t *testing.T) {
 			reason: "We should return any errors during the create process",
 			fields: fields{
 				service: &fake.MockLoadBalancerClient{
-					MockCreateLoadBalancer: func(ctx context.Context, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+					MockCreateLoadBalancer: func(ctx context.Context, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 						return nil, errBoom
 					},
 				},
@@ -336,7 +336,7 @@ func TestCreate(t *testing.T) {
 			reason: "We should return ExternalNameAssigned: true and no error when a load balancer is created",
 			fields: fields{
 				service: &fake.MockLoadBalancerClient{
-					MockCreateLoadBalancer: func(ctx context.Context, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+					MockCreateLoadBalancer: func(ctx context.Context, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 						return &cloudflare.LoadBalancer{
 							ID:   "1234beef",
 							Name: *params.Name,
@@ -409,7 +409,7 @@ func TestUpdate(t *testing.T) {
 			reason: "We should return any errors during the update process",
 			fields: fields{
 				service: &fake.MockLoadBalancerClient{
-					MockUpdateLoadBalancer: func(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+					MockUpdateLoadBalancer: func(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 						return nil, errBoom
 					},
 				},
@@ -430,7 +430,7 @@ func TestUpdate(t *testing.T) {
 			reason: "We should return no error when a load balancer is updated",
 			fields: fields{
 				service: &fake.MockLoadBalancerClient{
-					MockUpdateLoadBalancer: func(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
+					MockUpdateLoadBalancer: func(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) (*cloudflare.LoadBalancer, error) {
 						return &cloudflare.LoadBalancer{}, nil
 					},
 				},
@@ -500,7 +500,7 @@ func TestDelete(t *testing.T) {
 			reason: "We should return any errors during the delete process",
 			fields: fields{
 				service: &fake.MockLoadBalancerClient{
-					MockDeleteLoadBalancer: func(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) error {
+					MockDeleteLoadBalancer: func(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) error {
 						return errBoom
 					},
 				},
@@ -519,7 +519,7 @@ func TestDelete(t *testing.T) {
 			reason: "We should return no error when a load balancer is deleted",
 			fields: fields{
 				service: &fake.MockLoadBalancerClient{
-					MockDeleteLoadBalancer: func(ctx context.Context, lbID string, params v1alpha1.LoadBalancerParameters) error {
+					MockDeleteLoadBalancer: func(ctx context.Context, lbID string, params v1beta1.LoadBalancerParameters) error {
 						return nil
 					},
 				},

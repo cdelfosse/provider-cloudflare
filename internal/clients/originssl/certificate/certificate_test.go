@@ -29,7 +29,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/test"
 
-	"github.com/rossigee/provider-cloudflare/apis/originssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/originssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -75,7 +75,7 @@ func TestGet(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.CertificateObservation
+		obs *v1beta1.CertificateObservation
 		err error
 	}
 
@@ -111,7 +111,7 @@ func TestGet(t *testing.T) {
 				certificateID: certificateID,
 			},
 			want: want{
-				obs: &v1alpha1.CertificateObservation{
+				obs: &v1beta1.CertificateObservation{
 					ID:              "test-cert-id",
 					Certificate:     "-----BEGIN CERTIFICATE-----\nMIIDTest...\n-----END CERTIFICATE-----",
 					Hostnames:       []string{"example.com", "*.example.com"},
@@ -141,7 +141,7 @@ func TestGet(t *testing.T) {
 				certificateID: "minimal-cert-id",
 			},
 			want: want{
-				obs: &v1alpha1.CertificateObservation{
+				obs: &v1beta1.CertificateObservation{
 					ID:          "minimal-cert-id",
 					Certificate: "-----BEGIN CERTIFICATE-----\nMinimal...\n-----END CERTIFICATE-----",
 					Hostnames:   []string{"minimal.example.com"},
@@ -211,11 +211,11 @@ func TestCreate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.CertificateParameters
+		params v1beta1.CertificateParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.CertificateObservation
+		obs *v1beta1.CertificateObservation
 		err error
 	}
 
@@ -257,7 +257,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames:       []string{"example.com", "*.example.com"},
 					RequestType:     ptr.To("origin-rsa"),
 					RequestValidity: ptr.To(365),
@@ -265,7 +265,7 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.CertificateObservation{
+				obs: &v1beta1.CertificateObservation{
 					ID:              "new-cert-id",
 					Certificate:     "-----BEGIN CERTIFICATE-----\nNewCert...\n-----END CERTIFICATE-----",
 					Hostnames:       []string{"example.com", "*.example.com"},
@@ -292,12 +292,12 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames: []string{"minimal.example.com"},
 				},
 			},
 			want: want{
-				obs: &v1alpha1.CertificateObservation{
+				obs: &v1beta1.CertificateObservation{
 					ID:          "minimal-cert-id",
 					Certificate: "-----BEGIN CERTIFICATE-----\nMinimal...\n-----END CERTIFICATE-----",
 					Hostnames:   []string{"minimal.example.com"},
@@ -324,13 +324,13 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames:   []string{"ecdsa.example.com"},
 					RequestType: ptr.To("origin-ecc"),
 				},
 			},
 			want: want{
-				obs: &v1alpha1.CertificateObservation{
+				obs: &v1beta1.CertificateObservation{
 					ID:          "ecdsa-cert-id",
 					Certificate: "-----BEGIN CERTIFICATE-----\nECDSA...\n-----END CERTIFICATE-----",
 					Hostnames:   []string{"ecdsa.example.com"},
@@ -350,7 +350,7 @@ func TestCreate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames: []string{"test.example.com"},
 				},
 			},
@@ -386,11 +386,11 @@ func TestUpdate(t *testing.T) {
 	type args struct {
 		ctx           context.Context
 		certificateID string
-		params        v1alpha1.CertificateParameters
+		params        v1beta1.CertificateParameters
 	}
 
 	type want struct {
-		obs *v1alpha1.CertificateObservation
+		obs *v1beta1.CertificateObservation
 		err error
 	}
 
@@ -408,7 +408,7 @@ func TestUpdate(t *testing.T) {
 			args: args{
 				ctx:           context.Background(),
 				certificateID: certificateID,
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames: []string{"updated.example.com"},
 				},
 			},
@@ -532,8 +532,8 @@ func TestIsUpToDate(t *testing.T) {
 
 	type args struct {
 		ctx    context.Context
-		params v1alpha1.CertificateParameters
-		obs    v1alpha1.CertificateObservation
+		params v1beta1.CertificateParameters
+		obs    v1beta1.CertificateObservation
 	}
 
 	type want struct {
@@ -554,10 +554,10 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames: []string{"example.com", "*.example.com"},
 				},
-				obs: v1alpha1.CertificateObservation{
+				obs: v1beta1.CertificateObservation{
 					ID:        "cert-id",
 					Hostnames: []string{"example.com", "*.example.com"},
 				},
@@ -574,10 +574,10 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames: []string{"*.example.com", "example.com"},
 				},
-				obs: v1alpha1.CertificateObservation{
+				obs: v1beta1.CertificateObservation{
 					ID:        "cert-id",
 					Hostnames: []string{"example.com", "*.example.com"},
 				},
@@ -594,10 +594,10 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames: []string{"example.com"},
 				},
-				obs: v1alpha1.CertificateObservation{
+				obs: v1beta1.CertificateObservation{
 					ID:        "cert-id",
 					Hostnames: []string{"example.com", "*.example.com"},
 				},
@@ -614,10 +614,10 @@ func TestIsUpToDate(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames: []string{"different.example.com"},
 				},
-				obs: v1alpha1.CertificateObservation{
+				obs: v1beta1.CertificateObservation{
 					ID:        "cert-id",
 					Hostnames: []string{"example.com"},
 				},
@@ -646,7 +646,7 @@ func TestIsUpToDate(t *testing.T) {
 
 func TestConvertParametersToCreate(t *testing.T) {
 	type args struct {
-		params v1alpha1.CertificateParameters
+		params v1beta1.CertificateParameters
 	}
 
 	type want struct {
@@ -661,7 +661,7 @@ func TestConvertParametersToCreate(t *testing.T) {
 		"ConvertAllParameters": {
 			reason: "convertParametersToCreate should convert all parameters correctly",
 			args: args{
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames:       []string{"example.com", "*.example.com"},
 					RequestType:     ptr.To("origin-rsa"),
 					RequestValidity: ptr.To(365),
@@ -680,7 +680,7 @@ func TestConvertParametersToCreate(t *testing.T) {
 		"ConvertMinimalParameters": {
 			reason: "convertParametersToCreate should handle minimal parameters",
 			args: args{
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames: []string{"minimal.example.com"},
 				},
 			},
@@ -693,7 +693,7 @@ func TestConvertParametersToCreate(t *testing.T) {
 		"ConvertECDSAParameters": {
 			reason: "convertParametersToCreate should handle ECDSA parameters",
 			args: args{
-				params: v1alpha1.CertificateParameters{
+				params: v1beta1.CertificateParameters{
 					Hostnames:       []string{"ecdsa.example.com"},
 					RequestType:     ptr.To("origin-ecc"),
 					RequestValidity: ptr.To(7300),
@@ -725,7 +725,7 @@ func TestConvertCertificateToObservation(t *testing.T) {
 	}
 
 	type want struct {
-		obs *v1alpha1.CertificateObservation
+		obs *v1beta1.CertificateObservation
 	}
 
 	cases := map[string]struct {
@@ -748,7 +748,7 @@ func TestConvertCertificateToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.CertificateObservation{
+				obs: &v1beta1.CertificateObservation{
 					ID:              "full-cert-id",
 					Certificate:     "-----BEGIN CERTIFICATE-----\nFull...\n-----END CERTIFICATE-----",
 					Hostnames:       []string{"full.example.com", "*.full.example.com"},
@@ -770,7 +770,7 @@ func TestConvertCertificateToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.CertificateObservation{
+				obs: &v1beta1.CertificateObservation{
 					ID:          "minimal-cert-id",
 					Certificate: "-----BEGIN CERTIFICATE-----\nMinimal...\n-----END CERTIFICATE-----",
 					Hostnames:   []string{"minimal.example.com"},
@@ -790,7 +790,7 @@ func TestConvertCertificateToObservation(t *testing.T) {
 				},
 			},
 			want: want{
-				obs: &v1alpha1.CertificateObservation{
+				obs: &v1beta1.CertificateObservation{
 					ID:              "ecdsa-cert-id",
 					Certificate:     "-----BEGIN CERTIFICATE-----\nECDSA...\n-----END CERTIFICATE-----",
 					Hostnames:       []string{"ecdsa.example.com"},

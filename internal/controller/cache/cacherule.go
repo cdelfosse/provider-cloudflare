@@ -32,7 +32,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/cache/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/cache/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	"github.com/rossigee/provider-cloudflare/internal/clients/cache"
 	"github.com/rossigee/provider-cloudflare/internal/metrics"
@@ -46,7 +46,7 @@ const (
 
 // SetupCacheRule adds a controller that reconciles CacheRule managed resources.
 func SetupCacheRule(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.CacheRuleGroupKind)
+	name := managed.ControllerName(v1beta1.CacheRuleGroupKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -55,7 +55,7 @@ func SetupCacheRule(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLi
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.CacheRuleGroupVersionKind),
+		resource.ManagedKind(v1beta1.CacheRuleGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube: mgr.GetClient(),
 			newClientFn: func(cfg clients.Config) (cache.CacheRuleClient, error) {
@@ -71,7 +71,7 @@ func SetupCacheRule(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLi
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.CacheRule{}).
+		For(&v1beta1.CacheRule{}).
 		Complete(r)
 }
 
@@ -87,7 +87,7 @@ type connector struct {
 // 2. Getting the credentials specified by the ProviderConfig.
 // 3. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.CacheRule)
+	cr, ok := mg.(*v1beta1.CacheRule)
 	if !ok {
 		return nil, errors.New(errNotCacheRule)
 	}
@@ -112,7 +112,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.CacheRule)
+	cr, ok := mg.(*v1beta1.CacheRule)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotCacheRule)
 	}
@@ -147,7 +147,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.CacheRule)
+	cr, ok := mg.(*v1beta1.CacheRule)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotCacheRule)
 	}
@@ -166,7 +166,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.CacheRule)
+	cr, ok := mg.(*v1beta1.CacheRule)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotCacheRule)
 	}
@@ -187,7 +187,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.CacheRule)
+	cr, ok := mg.(*v1beta1.CacheRule)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotCacheRule)
 	}

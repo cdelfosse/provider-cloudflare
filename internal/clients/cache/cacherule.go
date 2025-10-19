@@ -24,7 +24,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/cache/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/cache/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -45,10 +45,10 @@ const (
 
 // CacheRuleClient interface for Cloudflare Cache Rule operations
 type CacheRuleClient interface {
-	CreateCacheRule(ctx context.Context, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
-	GetCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
-	UpdateCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
-	DeleteCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) error
+	CreateCacheRule(ctx context.Context, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
+	GetCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
+	UpdateCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error)
+	DeleteCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) error
 }
 
 // NewCacheRuleClient creates a new Cloudflare Cache Rule client
@@ -65,7 +65,7 @@ type cacheRuleClient struct {
 }
 
 // CreateCacheRule creates a new cache rule in Cloudflare
-func (c *cacheRuleClient) CreateCacheRule(ctx context.Context, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+func (c *cacheRuleClient) CreateCacheRule(ctx context.Context, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 	rc := cloudflare.ZoneIdentifier(params.Zone)
 
 	// First, find or create the cache rules ruleset
@@ -97,7 +97,7 @@ func (c *cacheRuleClient) CreateCacheRule(ctx context.Context, params v1alpha1.C
 }
 
 // GetCacheRule retrieves a cache rule from Cloudflare
-func (c *cacheRuleClient) GetCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+func (c *cacheRuleClient) GetCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 	rc := cloudflare.ZoneIdentifier(params.Zone)
 
 	ruleset, err := c.api.GetRuleset(ctx, rc, rulesetID)
@@ -116,7 +116,7 @@ func (c *cacheRuleClient) GetCacheRule(ctx context.Context, rulesetID, ruleID st
 }
 
 // UpdateCacheRule updates an existing cache rule in Cloudflare
-func (c *cacheRuleClient) UpdateCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
+func (c *cacheRuleClient) UpdateCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) (*cloudflare.RulesetRule, *cloudflare.Ruleset, error) {
 	rc := cloudflare.ZoneIdentifier(params.Zone)
 
 	// Get the current ruleset
@@ -163,7 +163,7 @@ func (c *cacheRuleClient) UpdateCacheRule(ctx context.Context, rulesetID, ruleID
 }
 
 // DeleteCacheRule deletes a cache rule from Cloudflare
-func (c *cacheRuleClient) DeleteCacheRule(ctx context.Context, rulesetID, ruleID string, params v1alpha1.CacheRuleParameters) error {
+func (c *cacheRuleClient) DeleteCacheRule(ctx context.Context, rulesetID, ruleID string, params v1beta1.CacheRuleParameters) error {
 	rc := cloudflare.ZoneIdentifier(params.Zone)
 
 	// Get the current ruleset
@@ -211,7 +211,7 @@ func (c *cacheRuleClient) DeleteCacheRule(ctx context.Context, rulesetID, ruleID
 }
 
 // findOrCreateCacheRuleset finds an existing cache rules ruleset or creates a new one
-func (c *cacheRuleClient) findOrCreateCacheRuleset(ctx context.Context, rc *cloudflare.ResourceContainer, params v1alpha1.CacheRuleParameters) (*cloudflare.Ruleset, error) {
+func (c *cacheRuleClient) findOrCreateCacheRuleset(ctx context.Context, rc *cloudflare.ResourceContainer, params v1beta1.CacheRuleParameters) (*cloudflare.Ruleset, error) {
 	// List existing rulesets to find the cache rules ruleset
 	rulesets, err := c.api.ListRulesets(ctx, rc, cloudflare.ListRulesetsParams{})
 	if err != nil {
@@ -243,7 +243,7 @@ func (c *cacheRuleClient) findOrCreateCacheRuleset(ctx context.Context, rc *clou
 }
 
 // convertCacheRuleParametersToCloudflare converts cache rule parameters to Cloudflare format
-func convertCacheRuleParametersToCloudflare(params v1alpha1.CacheRuleParameters) cloudflare.RulesetRule {
+func convertCacheRuleParametersToCloudflare(params v1beta1.CacheRuleParameters) cloudflare.RulesetRule {
 	rule := cloudflare.RulesetRule{
 		Action:     cacheAction,
 		Expression: params.Expression,
@@ -258,62 +258,45 @@ func convertCacheRuleParametersToCloudflare(params v1alpha1.CacheRuleParameters)
 	}
 
 	// Convert action parameters
-	actionParams := &cloudflare.RulesetRuleActionParameters{}
+	if params.ActionParameters != nil {
+		actionParams := &cloudflare.RulesetRuleActionParameters{}
 
-	if params.Cache != nil {
-		actionParams.Cache = params.Cache
+		if params.ActionParameters.Cache != nil {
+			actionParams.Cache = params.ActionParameters.Cache
+		}
+
+		if params.ActionParameters.EdgeTTL != nil {
+			actionParams.EdgeTTL = convertEdgeTTLToCloudflare(*params.ActionParameters.EdgeTTL)
+		}
+
+		if params.ActionParameters.BrowserTTL != nil {
+			actionParams.BrowserTTL = convertBrowserTTLToCloudflare(*params.ActionParameters.BrowserTTL)
+		}
+
+		if params.ActionParameters.ServeStale != nil {
+			actionParams.ServeStale = convertServeStaleToCloudflare(*params.ActionParameters.ServeStale)
+		}
+
+		if params.ActionParameters.CacheKey != nil {
+			actionParams.CacheKey = convertCacheKeyToCloudflare(*params.ActionParameters.CacheKey)
+		}
+
+		if params.ActionParameters.OriginErrorPagePassThru != nil {
+			actionParams.OriginErrorPagePassthru = params.ActionParameters.OriginErrorPagePassThru
+		}
+
+		rule.ActionParameters = actionParams
 	}
-
-	if params.EdgeTTL != nil {
-		actionParams.EdgeTTL = convertEdgeTTLToCloudflare(*params.EdgeTTL)
-	}
-
-	if params.BrowserTTL != nil {
-		actionParams.BrowserTTL = convertBrowserTTLToCloudflare(*params.BrowserTTL)
-	}
-
-	if params.ServeStale != nil {
-		actionParams.ServeStale = convertServeStaleToCloudflare(*params.ServeStale)
-	}
-
-	if params.CacheKey != nil {
-		actionParams.CacheKey = convertCacheKeyToCloudflare(*params.CacheKey)
-	}
-
-	if params.CacheReserve != nil {
-		actionParams.CacheReserve = convertCacheReserveToCloudflare(*params.CacheReserve)
-	}
-
-	if params.OriginCacheControl != nil {
-		actionParams.OriginCacheControl = params.OriginCacheControl
-	}
-
-	if params.RespectStrongETags != nil {
-		actionParams.RespectStrongETags = params.RespectStrongETags
-	}
-
-	if params.OriginErrorPagePassthru != nil {
-		actionParams.OriginErrorPagePassthru = params.OriginErrorPagePassthru
-	}
-
-	if len(params.AdditionalCacheablePorts) > 0 {
-		actionParams.AdditionalCacheablePorts = params.AdditionalCacheablePorts
-	}
-
-	if params.ReadTimeout != nil {
-		readTimeout := uint(*params.ReadTimeout)
-		actionParams.ReadTimeout = &readTimeout
-	}
-
-	rule.ActionParameters = actionParams
 
 	return rule
 }
 
 // Helper conversion functions
-func convertEdgeTTLToCloudflare(edgeTTL v1alpha1.EdgeTTL) *cloudflare.RulesetRuleActionParametersEdgeTTL {
-	cfEdgeTTL := &cloudflare.RulesetRuleActionParametersEdgeTTL{
-		Mode: edgeTTL.Mode,
+func convertEdgeTTLToCloudflare(edgeTTL v1beta1.EdgeTTL) *cloudflare.RulesetRuleActionParametersEdgeTTL {
+	cfEdgeTTL := &cloudflare.RulesetRuleActionParametersEdgeTTL{}
+
+	if edgeTTL.Mode != nil {
+		cfEdgeTTL.Mode = *edgeTTL.Mode
 	}
 
 	if edgeTTL.Default != nil {
@@ -323,13 +306,14 @@ func convertEdgeTTLToCloudflare(edgeTTL v1alpha1.EdgeTTL) *cloudflare.RulesetRul
 
 	if len(edgeTTL.StatusCodeTTL) > 0 {
 		for _, statusTTL := range edgeTTL.StatusCodeTTL {
+			value := int(statusTTL.Value)
 			cfStatusTTL := cloudflare.RulesetRuleActionParametersStatusCodeTTL{
-				Value: &statusTTL.Value,
+				Value: &value,
 			}
 
-			if statusTTL.StatusCodeValue != nil {
-				statusCodeValue := uint(*statusTTL.StatusCodeValue)
-				cfStatusTTL.StatusCodeValue = &statusCodeValue
+			if statusTTL.StatusCode != nil {
+				statusCode := uint(*statusTTL.StatusCode)
+				cfStatusTTL.StatusCodeValue = &statusCode
 			}
 
 			if statusTTL.StatusCodeRange != nil {
@@ -348,9 +332,11 @@ func convertEdgeTTLToCloudflare(edgeTTL v1alpha1.EdgeTTL) *cloudflare.RulesetRul
 	return cfEdgeTTL
 }
 
-func convertBrowserTTLToCloudflare(browserTTL v1alpha1.BrowserTTL) *cloudflare.RulesetRuleActionParametersBrowserTTL {
-	cfBrowserTTL := &cloudflare.RulesetRuleActionParametersBrowserTTL{
-		Mode: browserTTL.Mode,
+func convertBrowserTTLToCloudflare(browserTTL v1beta1.BrowserTTL) *cloudflare.RulesetRuleActionParametersBrowserTTL {
+	cfBrowserTTL := &cloudflare.RulesetRuleActionParametersBrowserTTL{}
+
+	if browserTTL.Mode != nil {
+		cfBrowserTTL.Mode = *browserTTL.Mode
 	}
 
 	if browserTTL.Default != nil {
@@ -361,15 +347,14 @@ func convertBrowserTTLToCloudflare(browserTTL v1alpha1.BrowserTTL) *cloudflare.R
 	return cfBrowserTTL
 }
 
-func convertServeStaleToCloudflare(serveStale v1alpha1.ServeStale) *cloudflare.RulesetRuleActionParametersServeStale {
+func convertServeStaleToCloudflare(serveStale v1beta1.ServeStale) *cloudflare.RulesetRuleActionParametersServeStale {
 	return &cloudflare.RulesetRuleActionParametersServeStale{
 		DisableStaleWhileUpdating: serveStale.DisableStaleWhileUpdating,
 	}
 }
 
-func convertCacheKeyToCloudflare(cacheKey v1alpha1.CacheKey) *cloudflare.RulesetRuleActionParametersCacheKey {
+func convertCacheKeyToCloudflare(cacheKey v1beta1.CacheKey) *cloudflare.RulesetRuleActionParametersCacheKey {
 	cfCacheKey := &cloudflare.RulesetRuleActionParametersCacheKey{
-		CacheByDeviceType:       cacheKey.CacheByDeviceType,
 		IgnoreQueryStringsOrder: cacheKey.IgnoreQueryStringsOrder,
 		CacheDeceptionArmor:     cacheKey.CacheDeceptionArmor,
 	}
@@ -381,7 +366,7 @@ func convertCacheKeyToCloudflare(cacheKey v1alpha1.CacheKey) *cloudflare.Ruleset
 	return cfCacheKey
 }
 
-func convertCustomKeyToCloudflare(customKey v1alpha1.CustomKey) *cloudflare.RulesetRuleActionParametersCustomKey {
+func convertCustomKeyToCloudflare(customKey v1beta1.CustomKey) *cloudflare.RulesetRuleActionParametersCustomKey {
 	cfCustomKey := &cloudflare.RulesetRuleActionParametersCustomKey{}
 
 	if customKey.Query != nil {
@@ -407,17 +392,12 @@ func convertCustomKeyToCloudflare(customKey v1alpha1.CustomKey) *cloudflare.Rule
 	return cfCustomKey
 }
 
-func convertCustomKeyQueryToCloudflare(query v1alpha1.CustomKeyQuery) *cloudflare.RulesetRuleActionParametersCustomKeyQuery {
-	cfQuery := &cloudflare.RulesetRuleActionParametersCustomKeyQuery{
-		Ignore: query.Ignore,
-	}
+func convertCustomKeyQueryToCloudflare(query v1beta1.QueryKey) *cloudflare.RulesetRuleActionParametersCustomKeyQuery {
+	cfQuery := &cloudflare.RulesetRuleActionParametersCustomKeyQuery{}
 
-	if len(query.Include) > 0 || (query.All != nil && *query.All) {
-		cfQuery.Include = &cloudflare.RulesetRuleActionParametersCustomKeyList{}
-		if query.All != nil && *query.All {
-			cfQuery.Include.All = true
-		} else {
-			cfQuery.Include.List = query.Include
+	if len(query.Include) > 0 {
+		cfQuery.Include = &cloudflare.RulesetRuleActionParametersCustomKeyList{
+			List: query.Include,
 		}
 	}
 
@@ -430,25 +410,23 @@ func convertCustomKeyQueryToCloudflare(query v1alpha1.CustomKeyQuery) *cloudflar
 	return cfQuery
 }
 
-func convertCustomKeyHeaderToCloudflare(header v1alpha1.CustomKeyHeader) *cloudflare.RulesetRuleActionParametersCustomKeyHeader {
+func convertCustomKeyHeaderToCloudflare(header v1beta1.HeaderKey) *cloudflare.RulesetRuleActionParametersCustomKeyHeader {
 	return &cloudflare.RulesetRuleActionParametersCustomKeyHeader{
 		RulesetRuleActionParametersCustomKeyFields: cloudflare.RulesetRuleActionParametersCustomKeyFields{
 			Include:       header.Include,
 			CheckPresence: header.CheckPresence,
 		},
-		ExcludeOrigin: header.ExcludeOrigin,
-		Contains:      header.Contains,
 	}
 }
 
-func convertCustomKeyFieldsToCloudflare(fields v1alpha1.CustomKeyFields) *cloudflare.RulesetRuleActionParametersCustomKeyCookie {
+func convertCustomKeyFieldsToCloudflare(cookie v1beta1.CookieKey) *cloudflare.RulesetRuleActionParametersCustomKeyCookie {
 	return &cloudflare.RulesetRuleActionParametersCustomKeyCookie{
-		Include:       fields.Include,
-		CheckPresence: fields.CheckPresence,
+		Include:       cookie.Include,
+		CheckPresence: cookie.CheckPresence,
 	}
 }
 
-func convertCustomKeyUserToCloudflare(user v1alpha1.CustomKeyUser) *cloudflare.RulesetRuleActionParametersCustomKeyUser {
+func convertCustomKeyUserToCloudflare(user v1beta1.UserKey) *cloudflare.RulesetRuleActionParametersCustomKeyUser {
 	return &cloudflare.RulesetRuleActionParametersCustomKeyUser{
 		DeviceType: user.DeviceType,
 		Geo:        user.Geo,
@@ -456,23 +434,10 @@ func convertCustomKeyUserToCloudflare(user v1alpha1.CustomKeyUser) *cloudflare.R
 	}
 }
 
-func convertCustomKeyHostToCloudflare(host v1alpha1.CustomKeyHost) *cloudflare.RulesetRuleActionParametersCustomKeyHost {
+func convertCustomKeyHostToCloudflare(host v1beta1.HostKey) *cloudflare.RulesetRuleActionParametersCustomKeyHost {
 	return &cloudflare.RulesetRuleActionParametersCustomKeyHost{
 		Resolved: host.Resolved,
 	}
-}
-
-func convertCacheReserveToCloudflare(cacheReserve v1alpha1.CacheReserve) *cloudflare.RulesetRuleActionParametersCacheReserve {
-	cfCacheReserve := &cloudflare.RulesetRuleActionParametersCacheReserve{
-		Eligible: cacheReserve.Eligible,
-	}
-
-	if cacheReserve.MinimumFileSize != nil {
-		minFileSize := uint(*cacheReserve.MinimumFileSize)
-		cfCacheReserve.MinimumFileSize = &minFileSize
-	}
-
-	return cfCacheReserve
 }
 
 // IsCacheRuleNotFound checks if error indicates cache rule not found
@@ -488,10 +453,11 @@ func IsCacheRuleNotFound(err error) bool {
 }
 
 // GenerateCacheRuleObservation creates observation from Cloudflare cache rule
-func GenerateCacheRuleObservation(rule *cloudflare.RulesetRule, ruleset *cloudflare.Ruleset) v1alpha1.CacheRuleObservation {
-	observation := v1alpha1.CacheRuleObservation{
+func GenerateCacheRuleObservation(rule *cloudflare.RulesetRule, ruleset *cloudflare.Ruleset) v1beta1.CacheRuleObservation {
+	observation := v1beta1.CacheRuleObservation{
 		ID:        rule.ID,
 		RulesetID: ruleset.ID,
+		Phase:     ruleset.Phase,
 	}
 
 	if rule.Version != nil {
@@ -499,20 +465,14 @@ func GenerateCacheRuleObservation(rule *cloudflare.RulesetRule, ruleset *cloudfl
 	}
 
 	if rule.LastUpdated != nil {
-		lastUpdated := rule.LastUpdated.String()
-		observation.LastUpdated = &lastUpdated
-	}
-
-	if ruleset.LastUpdated != nil {
-		modifiedOn := ruleset.LastUpdated.String()
-		observation.ModifiedOn = &modifiedOn
+		observation.LastModified = rule.LastUpdated.String()
 	}
 
 	return observation
 }
 
 // IsCacheRuleUpToDate determines if the cache rule is up to date
-func IsCacheRuleUpToDate(params *v1alpha1.CacheRuleParameters, rule *cloudflare.RulesetRule) bool {
+func IsCacheRuleUpToDate(params *v1beta1.CacheRuleParameters, rule *cloudflare.RulesetRule) bool {
 	// Check basic fields
 	if params.Expression != rule.Expression {
 		return false

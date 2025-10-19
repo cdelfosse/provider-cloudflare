@@ -22,7 +22,6 @@ import (
 
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,8 +34,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	securityv1alpha1 "github.com/rossigee/provider-cloudflare/apis/security/v1alpha1"
-	v1alpha1 "github.com/rossigee/provider-cloudflare/apis/v1alpha1"
+	securityv1beta1 "github.com/rossigee/provider-cloudflare/apis/security/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 	botmanagement "github.com/rossigee/provider-cloudflare/internal/clients/security/botmanagement"
 	ratelimit "github.com/rossigee/provider-cloudflare/internal/clients/security/ratelimit"
@@ -47,8 +45,6 @@ const (
 	errNotRateLimit       = "managed resource is not a RateLimit custom resource"
 	errNotBotManagement   = "managed resource is not a BotManagement custom resource"
 	errNotTurnstile       = "managed resource is not a Turnstile custom resource"
-	errTrackPCUsage       = "cannot track ProviderConfig usage"
-	errGetPC              = "cannot get ProviderConfig"
 	errGetCreds           = "cannot get credentials"
 	errNewRateLimitClient = "cannot create new RateLimit client"
 	errNewBotMgmtClient   = "cannot create new BotManagement client"
@@ -57,7 +53,7 @@ const (
 
 // SetupRateLimit adds a controller that reconciles RateLimit managed resources.
 func SetupRateLimit(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(securityv1alpha1.RateLimitKind)
+	name := managed.ControllerName(securityv1beta1.RateLimitKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -65,7 +61,7 @@ func SetupRateLimit(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLi
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(securityv1alpha1.RateLimitGroupVersionKind),
+		resource.ManagedKind(securityv1beta1.RateLimitGroupVersionKind),
 		managed.WithExternalConnecter(&rateLimitConnector{
 			kube: mgr.GetClient(),
 			newServiceFn: func(api *cloudflare.API) *ratelimit.CloudflareRateLimitClient {
@@ -81,7 +77,7 @@ func SetupRateLimit(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLi
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&securityv1alpha1.RateLimit{}).
+		For(&securityv1beta1.RateLimit{}).
 		Complete(r)
 }
 
@@ -98,7 +94,7 @@ type rateLimitConnector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *rateLimitConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*securityv1alpha1.RateLimit)
+	_, ok := mg.(*securityv1beta1.RateLimit)
 	if !ok {
 		return nil, errors.New(errNotRateLimit)
 	}
@@ -125,7 +121,7 @@ type rateLimitExternal struct {
 }
 
 func (c *rateLimitExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*securityv1alpha1.RateLimit)
+	cr, ok := mg.(*securityv1beta1.RateLimit)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotRateLimit)
 	}
@@ -158,7 +154,7 @@ func (c *rateLimitExternal) Observe(ctx context.Context, mg resource.Managed) (m
 }
 
 func (c *rateLimitExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*securityv1alpha1.RateLimit)
+	cr, ok := mg.(*securityv1beta1.RateLimit)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotRateLimit)
 	}
@@ -177,7 +173,7 @@ func (c *rateLimitExternal) Create(ctx context.Context, mg resource.Managed) (ma
 }
 
 func (c *rateLimitExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*securityv1alpha1.RateLimit)
+	cr, ok := mg.(*securityv1beta1.RateLimit)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotRateLimit)
 	}
@@ -193,7 +189,7 @@ func (c *rateLimitExternal) Update(ctx context.Context, mg resource.Managed) (ma
 }
 
 func (c *rateLimitExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*securityv1alpha1.RateLimit)
+	cr, ok := mg.(*securityv1beta1.RateLimit)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotRateLimit)
 	}
@@ -210,7 +206,7 @@ func (c *rateLimitExternal) Disconnect(ctx context.Context) error {
 
 // SetupBotManagement adds a controller that reconciles BotManagement managed resources.
 func SetupBotManagement(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(securityv1alpha1.BotManagementKind)
+	name := managed.ControllerName(securityv1beta1.BotManagementKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -218,7 +214,7 @@ func SetupBotManagement(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRa
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(securityv1alpha1.BotManagementGroupVersionKind),
+		resource.ManagedKind(securityv1beta1.BotManagementGroupVersionKind),
 		managed.WithExternalConnecter(&botManagementConnector{
 			kube: mgr.GetClient(),
 			newServiceFn: func(api *cloudflare.API) *botmanagement.CloudflareBotManagementClient {
@@ -234,7 +230,7 @@ func SetupBotManagement(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRa
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&securityv1alpha1.BotManagement{}).
+		For(&securityv1beta1.BotManagement{}).
 		Complete(r)
 }
 
@@ -242,7 +238,6 @@ func SetupBotManagement(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRa
 // is called.
 type botManagementConnector struct {
 	kube         client.Client
-	usage        resource.Tracker
 	newServiceFn func(*cloudflare.API) *botmanagement.CloudflareBotManagementClient
 }
 
@@ -252,18 +247,9 @@ type botManagementConnector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *botManagementConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*securityv1alpha1.BotManagement)
+	_, ok := mg.(*securityv1beta1.BotManagement)
 	if !ok {
 		return nil, errors.New(errNotBotManagement)
-	}
-
-	if err := c.usage.Track(ctx, mg); err != nil {
-		return nil, errors.Wrap(err, errTrackPCUsage)
-	}
-
-	pc := &v1alpha1.ProviderConfig{}
-	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
-		return nil, errors.Wrap(err, errGetPC)
 	}
 
 	// Get client configuration
@@ -288,7 +274,7 @@ type botManagementExternal struct {
 }
 
 func (c *botManagementExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*securityv1alpha1.BotManagement)
+	cr, ok := mg.(*securityv1beta1.BotManagement)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotBotManagement)
 	}
@@ -317,7 +303,7 @@ func (c *botManagementExternal) Observe(ctx context.Context, mg resource.Managed
 }
 
 func (c *botManagementExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*securityv1alpha1.BotManagement)
+	cr, ok := mg.(*securityv1beta1.BotManagement)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotBotManagement)
 	}
@@ -338,7 +324,7 @@ func (c *botManagementExternal) Create(ctx context.Context, mg resource.Managed)
 }
 
 func (c *botManagementExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*securityv1alpha1.BotManagement)
+	cr, ok := mg.(*securityv1beta1.BotManagement)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotBotManagement)
 	}
@@ -357,7 +343,7 @@ func (c *botManagementExternal) Delete(ctx context.Context, mg resource.Managed)
 	// Bot Management is a zone-level configuration, we don't delete it
 	// We could reset it to default values, but that might not be desired
 	// For now, we'll just mark it as deleting but not actually change anything
-	cr, ok := mg.(*securityv1alpha1.BotManagement)
+	cr, ok := mg.(*securityv1beta1.BotManagement)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotBotManagement)
 	}
@@ -375,7 +361,7 @@ func (c *botManagementExternal) Disconnect(ctx context.Context) error {
 
 // SetupTurnstile adds a controller that reconciles Turnstile managed resources.
 func SetupTurnstile(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(securityv1alpha1.TurnstileKind)
+	name := managed.ControllerName(securityv1beta1.TurnstileKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -383,7 +369,7 @@ func SetupTurnstile(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLi
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(securityv1alpha1.TurnstileGroupVersionKind),
+		resource.ManagedKind(securityv1beta1.TurnstileGroupVersionKind),
 		managed.WithExternalConnecter(&turnstileConnector{
 			kube: mgr.GetClient(),
 			newServiceFn: func(api *cloudflare.API) *turnstile.CloudflareTurnstileClient {
@@ -399,7 +385,7 @@ func SetupTurnstile(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLi
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&securityv1alpha1.Turnstile{}).
+		For(&securityv1beta1.Turnstile{}).
 		Complete(r)
 }
 
@@ -416,7 +402,7 @@ type turnstileConnector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *turnstileConnector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*securityv1alpha1.Turnstile)
+	_, ok := mg.(*securityv1beta1.Turnstile)
 	if !ok {
 		return nil, errors.New(errNotTurnstile)
 	}
@@ -443,7 +429,7 @@ type turnstileExternal struct {
 }
 
 func (c *turnstileExternal) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*securityv1alpha1.Turnstile)
+	cr, ok := mg.(*securityv1beta1.Turnstile)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotTurnstile)
 	}
@@ -476,7 +462,7 @@ func (c *turnstileExternal) Observe(ctx context.Context, mg resource.Managed) (m
 }
 
 func (c *turnstileExternal) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*securityv1alpha1.Turnstile)
+	cr, ok := mg.(*securityv1beta1.Turnstile)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotTurnstile)
 	}
@@ -497,7 +483,7 @@ func (c *turnstileExternal) Create(ctx context.Context, mg resource.Managed) (ma
 }
 
 func (c *turnstileExternal) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*securityv1alpha1.Turnstile)
+	cr, ok := mg.(*securityv1beta1.Turnstile)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotTurnstile)
 	}
@@ -513,7 +499,7 @@ func (c *turnstileExternal) Update(ctx context.Context, mg resource.Managed) (ma
 }
 
 func (c *turnstileExternal) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*securityv1alpha1.Turnstile)
+	cr, ok := mg.(*securityv1beta1.Turnstile)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotTurnstile)
 	}

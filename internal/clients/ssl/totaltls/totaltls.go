@@ -23,7 +23,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/ssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/ssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -44,7 +44,7 @@ func NewClient(client TotalTLSAPI) *CloudflareTotalTLSClient {
 }
 
 // Get retrieves Total TLS settings for a zone.
-func (c *CloudflareTotalTLSClient) Get(ctx context.Context, zoneID string) (*v1alpha1.TotalTLSObservation, error) {
+func (c *CloudflareTotalTLSClient) Get(ctx context.Context, zoneID string) (*v1beta1.TotalTLSObservation, error) {
 	rc := &cloudflare.ResourceContainer{
 		Identifier: zoneID,
 	}
@@ -61,7 +61,7 @@ func (c *CloudflareTotalTLSClient) Get(ctx context.Context, zoneID string) (*v1a
 }
 
 // Update updates Total TLS settings for a zone.
-func (c *CloudflareTotalTLSClient) Update(ctx context.Context, params v1alpha1.TotalTLSParameters) (*v1alpha1.TotalTLSObservation, error) {
+func (c *CloudflareTotalTLSClient) Update(ctx context.Context, params v1beta1.TotalTLSParameters) (*v1beta1.TotalTLSObservation, error) {
 	rc := &cloudflare.ResourceContainer{
 		Identifier: params.Zone,
 	}
@@ -77,7 +77,7 @@ func (c *CloudflareTotalTLSClient) Update(ctx context.Context, params v1alpha1.T
 }
 
 // IsUpToDate checks if the Total TLS settings are up to date.
-func (c *CloudflareTotalTLSClient) IsUpToDate(ctx context.Context, params v1alpha1.TotalTLSParameters, obs v1alpha1.TotalTLSObservation) (bool, error) {
+func (c *CloudflareTotalTLSClient) IsUpToDate(ctx context.Context, params v1beta1.TotalTLSParameters, obs v1beta1.TotalTLSObservation) (bool, error) {
 	// Compare configurable parameters
 	if params.Enabled != nil && obs.Enabled != nil && *params.Enabled != *obs.Enabled {
 		return false, nil
@@ -95,7 +95,7 @@ func (c *CloudflareTotalTLSClient) IsUpToDate(ctx context.Context, params v1alph
 }
 
 // convertParametersToTotalTLS converts TotalTLSParameters to cloudflare.TotalTLS.
-func convertParametersToTotalTLS(params v1alpha1.TotalTLSParameters) cloudflare.TotalTLS {
+func convertParametersToTotalTLS(params v1beta1.TotalTLSParameters) cloudflare.TotalTLS {
 	settings := cloudflare.TotalTLS{}
 
 	if params.Enabled != nil {
@@ -114,8 +114,8 @@ func convertParametersToTotalTLS(params v1alpha1.TotalTLSParameters) cloudflare.
 }
 
 // convertTotalTLSToObservation converts cloudflare.TotalTLS to TotalTLSObservation.
-func convertTotalTLSToObservation(settings cloudflare.TotalTLS) *v1alpha1.TotalTLSObservation {
-	obs := &v1alpha1.TotalTLSObservation{
+func convertTotalTLSToObservation(settings cloudflare.TotalTLS) *v1beta1.TotalTLSObservation {
+	obs := &v1beta1.TotalTLSObservation{
 		Enabled:              settings.Enabled,
 		CertificateAuthority: &settings.CertificateAuthority,
 		ValidityDays:         &settings.ValidityDays,

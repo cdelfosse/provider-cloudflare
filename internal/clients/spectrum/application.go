@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/spectrum/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -36,8 +36,8 @@ const (
 // Client is a Cloudflare Spectrum API client
 type Client interface {
 	SpectrumApplication(ctx context.Context, zoneID, applicationID string) (cloudflare.SpectrumApplication, error)
-	CreateSpectrumApplication(ctx context.Context, zoneID string, params *v1alpha1.ApplicationParameters) (cloudflare.SpectrumApplication, error)
-	UpdateSpectrumApplication(ctx context.Context, zoneID, applicationID string, params *v1alpha1.ApplicationParameters) error
+	CreateSpectrumApplication(ctx context.Context, zoneID string, params *v1beta1.ApplicationParameters) (cloudflare.SpectrumApplication, error)
+	UpdateSpectrumApplication(ctx context.Context, zoneID, applicationID string, params *v1beta1.ApplicationParameters) error
 	DeleteSpectrumApplication(ctx context.Context, zoneID, applicationID string) error
 }
 
@@ -61,7 +61,7 @@ func (c *client) SpectrumApplication(ctx context.Context, zoneID, applicationID 
 }
 
 // CreateSpectrumApplication creates a new Spectrum Application
-func (c *client) CreateSpectrumApplication(ctx context.Context, zoneID string, params *v1alpha1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
+func (c *client) CreateSpectrumApplication(ctx context.Context, zoneID string, params *v1beta1.ApplicationParameters) (cloudflare.SpectrumApplication, error) {
 	app := cloudflare.SpectrumApplication{
 		Protocol: params.Protocol,
 		DNS: cloudflare.SpectrumApplicationDNS{
@@ -136,7 +136,7 @@ func (c *client) CreateSpectrumApplication(ctx context.Context, zoneID string, p
 }
 
 // UpdateSpectrumApplication updates an existing Spectrum Application
-func (c *client) UpdateSpectrumApplication(ctx context.Context, zoneID, applicationID string, params *v1alpha1.ApplicationParameters) error {
+func (c *client) UpdateSpectrumApplication(ctx context.Context, zoneID, applicationID string, params *v1beta1.ApplicationParameters) error {
 	app := cloudflare.SpectrumApplication{
 		ID:           applicationID,
 		Protocol:     params.Protocol,
@@ -230,8 +230,8 @@ func IsApplicationNotFound(err error) bool {
 }
 
 // GenerateObservation creates observation data from a Spectrum Application
-func GenerateObservation(app cloudflare.SpectrumApplication) v1alpha1.ApplicationObservation {
-	obs := v1alpha1.ApplicationObservation{}
+func GenerateObservation(app cloudflare.SpectrumApplication) v1beta1.ApplicationObservation {
+	obs := v1beta1.ApplicationObservation{}
 
 	if app.CreatedOn != nil && !app.CreatedOn.IsZero() {
 		obs.CreatedOn = &metav1.Time{Time: *app.CreatedOn}
@@ -245,12 +245,12 @@ func GenerateObservation(app cloudflare.SpectrumApplication) v1alpha1.Applicatio
 }
 
 // LateInitialize fills in any missing fields in the spec from the observed application
-func LateInitialize(spec *v1alpha1.ApplicationParameters, app cloudflare.SpectrumApplication) bool {
+func LateInitialize(spec *v1beta1.ApplicationParameters, app cloudflare.SpectrumApplication) bool {
 	lateInitialized := false
 	
 	// Late initialize EdgeIPs if not set in spec but present in observed app
 	if spec.EdgeIPs == nil && app.EdgeIPs != nil {
-		spec.EdgeIPs = &v1alpha1.SpectrumApplicationEdgeIPs{
+		spec.EdgeIPs = &v1beta1.SpectrumApplicationEdgeIPs{
 			Type: string(app.EdgeIPs.Type),
 		}
 		
@@ -274,7 +274,7 @@ func LateInitialize(spec *v1alpha1.ApplicationParameters, app cloudflare.Spectru
 }
 
 // UpToDate checks if the spec is up to date with the observed application
-func UpToDate(spec *v1alpha1.ApplicationParameters, app cloudflare.SpectrumApplication) bool {
+func UpToDate(spec *v1beta1.ApplicationParameters, app cloudflare.SpectrumApplication) bool {
 	// Check protocol
 	if spec.Protocol != app.Protocol {
 		return false

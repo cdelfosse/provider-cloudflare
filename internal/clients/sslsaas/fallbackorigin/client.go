@@ -22,7 +22,7 @@ import (
 
 	"github.com/cloudflare/cloudflare-go"
 
-	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/sslsaas/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -89,8 +89,8 @@ func IsFallbackOriginNotFound(err error) bool {
 }
 
 // GenerateObservation creates observation data from Fallback Origin
-func GenerateObservation(origin cloudflare.CustomHostnameFallbackOrigin) v1alpha1.FallbackOriginObservation {
-	obs := v1alpha1.FallbackOriginObservation{
+func GenerateObservation(origin cloudflare.CustomHostnameFallbackOrigin) v1beta1.FallbackOriginObservation {
+	obs := v1beta1.FallbackOriginObservation{
 		Status: origin.Status,
 		Errors: origin.Errors,
 	}
@@ -99,7 +99,7 @@ func GenerateObservation(origin cloudflare.CustomHostnameFallbackOrigin) v1alpha
 }
 
 // ParametersToFallbackOrigin converts FallbackOriginParameters to cloudflare.CustomHostnameFallbackOrigin
-func ParametersToFallbackOrigin(params v1alpha1.FallbackOriginParameters) cloudflare.CustomHostnameFallbackOrigin {
+func ParametersToFallbackOrigin(params v1beta1.FallbackOriginParameters) cloudflare.CustomHostnameFallbackOrigin {
 	origin := cloudflare.CustomHostnameFallbackOrigin{}
 
 	if params.Origin != nil {
@@ -110,7 +110,7 @@ func ParametersToFallbackOrigin(params v1alpha1.FallbackOriginParameters) cloudf
 }
 
 // UpToDate checks if the spec is up to date with the observed origin
-func UpToDate(spec *v1alpha1.FallbackOriginParameters, origin cloudflare.CustomHostnameFallbackOrigin) bool {
+func UpToDate(spec *v1beta1.FallbackOriginParameters, origin cloudflare.CustomHostnameFallbackOrigin) bool {
 	// If no origin specified in spec, check if origin is empty
 	if spec.Origin == nil {
 		return origin.Origin == ""

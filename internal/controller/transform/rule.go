@@ -33,7 +33,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-cloudflare/apis/transform/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/transform/v1beta1"
 	clients "github.com/rossigee/provider-cloudflare/internal/clients"
 	transformrule "github.com/rossigee/provider-cloudflare/internal/clients/transform/rule"
 	metrics "github.com/rossigee/provider-cloudflare/internal/metrics"
@@ -55,7 +55,7 @@ const (
 
 // Setup adds a controller that reconciles Transform Rule managed resources.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
-	name := managed.ControllerName(v1alpha1.RuleGroupKind)
+	name := managed.ControllerName(v1beta1.RuleGroupKind)
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter
@@ -64,7 +64,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 
 	hc := metrics.NewInstrumentedHTTPClient(name)
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.RuleGroupVersionKind),
+		resource.ManagedKind(v1beta1.RuleGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube: mgr.GetClient(),
 			newTransformRuleClientFn: func(cfg clients.Config) (transformrule.Client, error) {
@@ -82,7 +82,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o).
-		For(&v1alpha1.Rule{}).
+		For(&v1beta1.Rule{}).
 		Complete(r)
 }
 
@@ -96,7 +96,7 @@ type connector struct {
 // Connect produces a valid configuration for a Cloudflare API
 // instance, and returns it as an external client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Rule)
+	_, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return nil, errors.New(errNotRule)
 	}
@@ -122,7 +122,7 @@ type external struct {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Rule)
+	cr, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotRule)
 	}
@@ -155,7 +155,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Rule)
+	cr, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotRule)
 	}
@@ -179,7 +179,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Rule)
+	cr, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotRule)
 	}
@@ -204,7 +204,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Rule)
+	cr, ok := mg.(*v1beta1.Rule)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotRule)
 	}

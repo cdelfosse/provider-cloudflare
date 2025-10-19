@@ -23,7 +23,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/pkg/errors"
 
-	"github.com/rossigee/provider-cloudflare/apis/security/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/security/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -52,7 +52,7 @@ func NewClientFromAPI(api *cloudflare.API) *CloudflareRateLimitClient {
 }
 
 // Get retrieves a Rate Limit.
-func (c *CloudflareRateLimitClient) Get(ctx context.Context, zoneID, rateLimitID string) (*v1alpha1.RateLimitObservation, error) {
+func (c *CloudflareRateLimitClient) Get(ctx context.Context, zoneID, rateLimitID string) (*v1beta1.RateLimitObservation, error) {
 	rateLimit, err := c.client.RateLimit(ctx, zoneID, rateLimitID)
 	if err != nil {
 		if isNotFound(err) {
@@ -65,9 +65,9 @@ func (c *CloudflareRateLimitClient) Get(ctx context.Context, zoneID, rateLimitID
 }
 
 // Create creates a new Rate Limit.
-func (c *CloudflareRateLimitClient) Create(ctx context.Context, params v1alpha1.RateLimitParameters) (*v1alpha1.RateLimitObservation, error) {
+func (c *CloudflareRateLimitClient) Create(ctx context.Context, params v1beta1.RateLimitParameters) (*v1beta1.RateLimitObservation, error) {
 	createRateLimit := convertParametersToRateLimit(params)
-	
+
 	rateLimit, err := c.client.CreateRateLimit(ctx, params.Zone, createRateLimit)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create rate limit")
@@ -77,10 +77,10 @@ func (c *CloudflareRateLimitClient) Create(ctx context.Context, params v1alpha1.
 }
 
 // Update updates a Rate Limit.
-func (c *CloudflareRateLimitClient) Update(ctx context.Context, rateLimitID string, params v1alpha1.RateLimitParameters) (*v1alpha1.RateLimitObservation, error) {
+func (c *CloudflareRateLimitClient) Update(ctx context.Context, rateLimitID string, params v1beta1.RateLimitParameters) (*v1beta1.RateLimitObservation, error) {
 	updateRateLimit := convertParametersToRateLimit(params)
 	updateRateLimit.ID = rateLimitID
-	
+
 	rateLimit, err := c.client.UpdateRateLimit(ctx, params.Zone, rateLimitID, updateRateLimit)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot update rate limit")
@@ -99,71 +99,71 @@ func (c *CloudflareRateLimitClient) Delete(ctx context.Context, zoneID, rateLimi
 }
 
 // IsUpToDate checks if the Rate Limit is up to date.
-func (c *CloudflareRateLimitClient) IsUpToDate(ctx context.Context, params v1alpha1.RateLimitParameters, obs v1alpha1.RateLimitObservation) (bool, error) {
+func (c *CloudflareRateLimitClient) IsUpToDate(ctx context.Context, params v1beta1.RateLimitParameters, obs v1beta1.RateLimitObservation) (bool, error) {
 	// Compare key parameters
 	if params.Disabled != nil && *params.Disabled != obs.Disabled {
 		return false, nil
 	}
-	
+
 	if params.Description != nil && *params.Description != obs.Description {
 		return false, nil
 	}
-	
+
 	if params.Threshold != obs.Threshold {
 		return false, nil
 	}
-	
+
 	if params.Period != obs.Period {
 		return false, nil
 	}
-	
+
 	if params.Action.Mode != obs.Action.Mode {
 		return false, nil
 	}
-	
+
 	if params.Action.Timeout != nil && obs.Action.Timeout != nil && *params.Action.Timeout != *obs.Action.Timeout {
 		return false, nil
 	}
-	
+
 	// Compare match rules (simplified comparison)
 	if len(params.Match.Request.Methods) != len(obs.Match.Request.Methods) {
 		return false, nil
 	}
-	
+
 	return true, nil
 }
 
 // convertParametersToRateLimit converts RateLimitParameters to cloudflare.RateLimit.
-func convertParametersToRateLimit(params v1alpha1.RateLimitParameters) cloudflare.RateLimit {
+func convertParametersToRateLimit(params v1beta1.RateLimitParameters) cloudflare.RateLimit {
 	rateLimit := cloudflare.RateLimit{
 		Threshold: params.Threshold,
 		Period:    params.Period,
 		Match:     convertTrafficMatcher(params.Match),
 		Action:    convertAction(params.Action),
 	}
-	
+
 	if params.Disabled != nil {
 		rateLimit.Disabled = *params.Disabled
 	}
-	
+
 	if params.Description != nil {
 		rateLimit.Description = *params.Description
 	}
-	
+
 	if params.Bypass != nil {
 		rateLimit.Bypass = convertBypass(params.Bypass)
 	}
-	
+
 	if params.Correlate != nil {
 		rateLimit.Correlate = convertCorrelate(params.Correlate)
 	}
-	
+
 	return rateLimit
 }
 
 // convertRateLimitToObservation converts cloudflare.RateLimit to RateLimitObservation.
-func convertRateLimitToObservation(rateLimit cloudflare.RateLimit) *v1alpha1.RateLimitObservation {
-	obs := &v1alpha1.RateLimitObservation{
+func convertRateLimitToObservation(rateLimit cloudflare.RateLimit) *v1beta1.RateLimitObservation {
+	obs := &v1beta1.RateLimitObservation{
 		ID:          rateLimit.ID,
 		Disabled:    rateLimit.Disabled,
 		Description: rateLimit.Description,
@@ -172,129 +172,135 @@ func convertRateLimitToObservation(rateLimit cloudflare.RateLimit) *v1alpha1.Rat
 		Match:       convertTrafficMatcherFromCloudflare(rateLimit.Match),
 		Action:      convertActionFromCloudflare(rateLimit.Action),
 	}
-	
+
 	if rateLimit.Bypass != nil {
 		obs.Bypass = convertBypassFromCloudflare(rateLimit.Bypass)
 	}
-	
+
 	if rateLimit.Correlate != nil {
 		obs.Correlate = convertCorrelateFromCloudflare(rateLimit.Correlate)
 	}
-	
+
 	return obs
 }
 
-// convertTrafficMatcher converts v1alpha1.RateLimitTrafficMatcher to cloudflare.RateLimitTrafficMatcher.
-func convertTrafficMatcher(matcher v1alpha1.RateLimitTrafficMatcher) cloudflare.RateLimitTrafficMatcher {
-	cfMatcher := cloudflare.RateLimitTrafficMatcher{
-		Request: cloudflare.RateLimitRequestMatcher{
+// convertTrafficMatcher converts v1beta1.RateLimitTrafficMatcher to cloudflare.RateLimitTrafficMatcher.
+func convertTrafficMatcher(matcher v1beta1.RateLimitTrafficMatcher) cloudflare.RateLimitTrafficMatcher {
+	cfMatcher := cloudflare.RateLimitTrafficMatcher{}
+
+	if matcher.Request != nil {
+		cfMatcher.Request = cloudflare.RateLimitRequestMatcher{
 			Methods: matcher.Request.Methods,
 			Schemes: matcher.Request.Schemes,
-		},
+		}
+
+		if matcher.Request.URL != nil {
+			cfMatcher.Request.URLPattern = *matcher.Request.URL
+		}
 	}
-	
-	if matcher.Request.URLPattern != nil {
-		cfMatcher.Request.URLPattern = *matcher.Request.URLPattern
-	}
-	
+
 	if matcher.Response != nil {
 		cfMatcher.Response = cloudflare.RateLimitResponseMatcher{
 			Statuses:      matcher.Response.Statuses,
 			OriginTraffic: matcher.Response.OriginTraffic,
 		}
-		
+
 		if matcher.Response.Headers != nil {
 			cfMatcher.Response.Headers = make([]cloudflare.RateLimitResponseMatcherHeader, len(matcher.Response.Headers))
 			for i, header := range matcher.Response.Headers {
 				cfMatcher.Response.Headers[i] = cloudflare.RateLimitResponseMatcherHeader{
 					Name:  header.Name,
-					Op:    header.Op,
+					Op:    "eq", // Default operation for matching
 					Value: header.Value,
 				}
 			}
 		}
 	}
-	
+
 	return cfMatcher
 }
 
-// convertTrafficMatcherFromCloudflare converts cloudflare.RateLimitTrafficMatcher to v1alpha1.RateLimitTrafficMatcher.
-func convertTrafficMatcherFromCloudflare(matcher cloudflare.RateLimitTrafficMatcher) v1alpha1.RateLimitTrafficMatcher {
-	v1Matcher := v1alpha1.RateLimitTrafficMatcher{
-		Request: v1alpha1.RateLimitRequestMatcher{
+// convertTrafficMatcherFromCloudflare converts cloudflare.RateLimitTrafficMatcher to v1beta1.RateLimitTrafficMatcher.
+func convertTrafficMatcherFromCloudflare(matcher cloudflare.RateLimitTrafficMatcher) v1beta1.RateLimitTrafficMatcher {
+	v1Matcher := v1beta1.RateLimitTrafficMatcher{}
+
+	if len(matcher.Request.Methods) > 0 || len(matcher.Request.Schemes) > 0 || matcher.Request.URLPattern != "" {
+		v1Matcher.Request = &v1beta1.RateLimitMatchRequest{
 			Methods: matcher.Request.Methods,
 			Schemes: matcher.Request.Schemes,
-		},
+		}
+
+		if matcher.Request.URLPattern != "" {
+			v1Matcher.Request.URL = &matcher.Request.URLPattern
+		}
 	}
-	
-	if matcher.Request.URLPattern != "" {
-		v1Matcher.Request.URLPattern = &matcher.Request.URLPattern
-	}
-	
+
 	// Check if response matcher has any data
 	if len(matcher.Response.Statuses) > 0 || matcher.Response.OriginTraffic != nil || len(matcher.Response.Headers) > 0 {
-		v1Matcher.Response = &v1alpha1.RateLimitResponseMatcher{
+		v1Matcher.Response = &v1beta1.RateLimitMatchResponse{
 			Statuses:      matcher.Response.Statuses,
 			OriginTraffic: matcher.Response.OriginTraffic,
 		}
-		
+
 		if len(matcher.Response.Headers) > 0 {
-			v1Matcher.Response.Headers = make([]v1alpha1.RateLimitResponseMatcherHeader, len(matcher.Response.Headers))
+			v1Matcher.Response.Headers = make([]v1beta1.RateLimitKeyValue, len(matcher.Response.Headers))
 			for i, header := range matcher.Response.Headers {
-				v1Matcher.Response.Headers[i] = v1alpha1.RateLimitResponseMatcherHeader{
+				v1Matcher.Response.Headers[i] = v1beta1.RateLimitKeyValue{
 					Name:  header.Name,
-					Op:    header.Op,
 					Value: header.Value,
 				}
 			}
 		}
 	}
-	
+
 	return v1Matcher
 }
 
-// convertAction converts v1alpha1.RateLimitAction to cloudflare.RateLimitAction.
-func convertAction(action v1alpha1.RateLimitAction) cloudflare.RateLimitAction {
+// convertAction converts v1beta1.RateLimitAction to cloudflare.RateLimitAction.
+func convertAction(action v1beta1.RateLimitAction) cloudflare.RateLimitAction {
 	cfAction := cloudflare.RateLimitAction{
 		Mode: action.Mode,
 	}
-	
+
 	if action.Timeout != nil {
 		cfAction.Timeout = *action.Timeout
 	}
-	
+
 	if action.Response != nil {
 		cfAction.Response = &cloudflare.RateLimitActionResponse{
-			ContentType: action.Response.ContentType,
-			Body:        action.Response.Body,
+			ContentType: *action.Response.ContentType,
+			Body:        *action.Response.Body,
 		}
 	}
-	
+
 	return cfAction
 }
 
-// convertActionFromCloudflare converts cloudflare.RateLimitAction to v1alpha1.RateLimitAction.
-func convertActionFromCloudflare(action cloudflare.RateLimitAction) v1alpha1.RateLimitAction {
-	v1Action := v1alpha1.RateLimitAction{
+// convertActionFromCloudflare converts cloudflare.RateLimitAction to v1beta1.RateLimitAction.
+func convertActionFromCloudflare(action cloudflare.RateLimitAction) v1beta1.RateLimitAction {
+	v1Action := v1beta1.RateLimitAction{
 		Mode: action.Mode,
 	}
-	
+
 	if action.Timeout != 0 {
 		v1Action.Timeout = &action.Timeout
 	}
-	
+
 	if action.Response != nil {
-		v1Action.Response = &v1alpha1.RateLimitActionResponse{
-			ContentType: action.Response.ContentType,
-			Body:        action.Response.Body,
+		v1Action.Response = &v1beta1.RateLimitActionResponse{}
+		if action.Response.ContentType != "" {
+			v1Action.Response.ContentType = &action.Response.ContentType
+		}
+		if action.Response.Body != "" {
+			v1Action.Response.Body = &action.Response.Body
 		}
 	}
-	
+
 	return v1Action
 }
 
-// convertBypass converts []v1alpha1.RateLimitKeyValue to []cloudflare.RateLimitKeyValue.
-func convertBypass(bypass []v1alpha1.RateLimitKeyValue) []cloudflare.RateLimitKeyValue {
+// convertBypass converts []v1beta1.RateLimitKeyValue to []cloudflare.RateLimitKeyValue.
+func convertBypass(bypass []v1beta1.RateLimitKeyValue) []cloudflare.RateLimitKeyValue {
 	cfBypass := make([]cloudflare.RateLimitKeyValue, len(bypass))
 	for i, kv := range bypass {
 		cfBypass[i] = cloudflare.RateLimitKeyValue{
@@ -305,11 +311,11 @@ func convertBypass(bypass []v1alpha1.RateLimitKeyValue) []cloudflare.RateLimitKe
 	return cfBypass
 }
 
-// convertBypassFromCloudflare converts []cloudflare.RateLimitKeyValue to []v1alpha1.RateLimitKeyValue.
-func convertBypassFromCloudflare(bypass []cloudflare.RateLimitKeyValue) []v1alpha1.RateLimitKeyValue {
-	v1Bypass := make([]v1alpha1.RateLimitKeyValue, len(bypass))
+// convertBypassFromCloudflare converts []cloudflare.RateLimitKeyValue to []v1beta1.RateLimitKeyValue.
+func convertBypassFromCloudflare(bypass []cloudflare.RateLimitKeyValue) []v1beta1.RateLimitKeyValue {
+	v1Bypass := make([]v1beta1.RateLimitKeyValue, len(bypass))
 	for i, kv := range bypass {
-		v1Bypass[i] = v1alpha1.RateLimitKeyValue{
+		v1Bypass[i] = v1beta1.RateLimitKeyValue{
 			Name:  kv.Name,
 			Value: kv.Value,
 		}
@@ -317,23 +323,23 @@ func convertBypassFromCloudflare(bypass []cloudflare.RateLimitKeyValue) []v1alph
 	return v1Bypass
 }
 
-// convertCorrelate converts *v1alpha1.RateLimitCorrelate to *cloudflare.RateLimitCorrelate.
-func convertCorrelate(correlate *v1alpha1.RateLimitCorrelate) *cloudflare.RateLimitCorrelate {
+// convertCorrelate converts *v1beta1.RateLimitCorrelate to *cloudflare.RateLimitCorrelate.
+func convertCorrelate(correlate *v1beta1.RateLimitCorrelate) *cloudflare.RateLimitCorrelate {
 	if correlate == nil {
 		return nil
 	}
 	return &cloudflare.RateLimitCorrelate{
-		By: correlate.By,
+		By: *correlate.By,
 	}
 }
 
-// convertCorrelateFromCloudflare converts *cloudflare.RateLimitCorrelate to *v1alpha1.RateLimitCorrelate.
-func convertCorrelateFromCloudflare(correlate *cloudflare.RateLimitCorrelate) *v1alpha1.RateLimitCorrelate {
+// convertCorrelateFromCloudflare converts *cloudflare.RateLimitCorrelate to *v1beta1.RateLimitCorrelate.
+func convertCorrelateFromCloudflare(correlate *cloudflare.RateLimitCorrelate) *v1beta1.RateLimitCorrelate {
 	if correlate == nil {
 		return nil
 	}
-	return &v1alpha1.RateLimitCorrelate{
-		By: correlate.By,
+	return &v1beta1.RateLimitCorrelate{
+		By: &correlate.By,
 	}
 }
 
@@ -342,7 +348,7 @@ func isNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
-	
+
 	errStr := strings.ToLower(err.Error())
 	return strings.Contains(errStr, "not found") ||
 		strings.Contains(errStr, "resource not found") ||

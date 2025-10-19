@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rossigee/provider-cloudflare/apis/originssl/v1alpha1"
+	"github.com/rossigee/provider-cloudflare/apis/originssl/v1beta1"
 	"github.com/rossigee/provider-cloudflare/internal/clients"
 )
 
@@ -52,7 +52,7 @@ func NewClientFromAPI(api *cloudflare.API) *CloudflareOriginCertificateClient {
 }
 
 // Get retrieves an Origin CA certificate.
-func (c *CloudflareOriginCertificateClient) Get(ctx context.Context, certificateID string) (*v1alpha1.CertificateObservation, error) {
+func (c *CloudflareOriginCertificateClient) Get(ctx context.Context, certificateID string) (*v1beta1.CertificateObservation, error) {
 	cert, err := c.client.GetOriginCACertificate(ctx, certificateID)
 	if err != nil {
 		if isNotFound(err) {
@@ -65,7 +65,7 @@ func (c *CloudflareOriginCertificateClient) Get(ctx context.Context, certificate
 }
 
 // Create creates a new Origin CA certificate.
-func (c *CloudflareOriginCertificateClient) Create(ctx context.Context, params v1alpha1.CertificateParameters) (*v1alpha1.CertificateObservation, error) {
+func (c *CloudflareOriginCertificateClient) Create(ctx context.Context, params v1beta1.CertificateParameters) (*v1beta1.CertificateObservation, error) {
 	createParams := convertParametersToCreate(params)
 	
 	cert, err := c.client.CreateOriginCACertificate(ctx, createParams)
@@ -78,7 +78,7 @@ func (c *CloudflareOriginCertificateClient) Create(ctx context.Context, params v
 
 // Update updates an Origin CA certificate. Note: Origin CA certificates cannot be updated,
 // so this will return an error.
-func (c *CloudflareOriginCertificateClient) Update(ctx context.Context, certificateID string, params v1alpha1.CertificateParameters) (*v1alpha1.CertificateObservation, error) {
+func (c *CloudflareOriginCertificateClient) Update(ctx context.Context, certificateID string, params v1beta1.CertificateParameters) (*v1beta1.CertificateObservation, error) {
 	return nil, errors.New("origin ca certificates cannot be updated")
 }
 
@@ -93,7 +93,7 @@ func (c *CloudflareOriginCertificateClient) Delete(ctx context.Context, certific
 
 // IsUpToDate checks if the Origin CA certificate is up to date.
 // Since certificates cannot be updated, this always returns true if the certificate exists.
-func (c *CloudflareOriginCertificateClient) IsUpToDate(ctx context.Context, params v1alpha1.CertificateParameters, obs v1alpha1.CertificateObservation) (bool, error) {
+func (c *CloudflareOriginCertificateClient) IsUpToDate(ctx context.Context, params v1beta1.CertificateParameters, obs v1beta1.CertificateObservation) (bool, error) {
 	// Origin CA certificates cannot be updated, so if it exists, it's "up to date"
 	// We can only check if the hostnames match what was requested
 	if len(params.Hostnames) != len(obs.Hostnames) {
@@ -116,7 +116,7 @@ func (c *CloudflareOriginCertificateClient) IsUpToDate(ctx context.Context, para
 }
 
 // convertParametersToCreate converts CertificateParameters to CreateOriginCertificateParams.
-func convertParametersToCreate(params v1alpha1.CertificateParameters) cloudflare.CreateOriginCertificateParams {
+func convertParametersToCreate(params v1beta1.CertificateParameters) cloudflare.CreateOriginCertificateParams {
 	createParams := cloudflare.CreateOriginCertificateParams{
 		Hostnames: params.Hostnames,
 	}
@@ -137,8 +137,8 @@ func convertParametersToCreate(params v1alpha1.CertificateParameters) cloudflare
 }
 
 // convertCertificateToObservation converts an OriginCACertificate to CertificateObservation.
-func convertCertificateToObservation(cert *cloudflare.OriginCACertificate) *v1alpha1.CertificateObservation {
-	obs := &v1alpha1.CertificateObservation{
+func convertCertificateToObservation(cert *cloudflare.OriginCACertificate) *v1beta1.CertificateObservation {
+	obs := &v1beta1.CertificateObservation{
 		ID:              cert.ID,
 		Certificate:     cert.Certificate,
 		Hostnames:       cert.Hostnames,

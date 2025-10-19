@@ -31,9 +31,9 @@
 
 ### **API Coverage**
 - **Total Resources**: 20+ Cloudflare resource types
-- **v1alpha1 (cluster-scoped)**: All existing resources maintained for backward compatibility
-- **v1beta1 (namespaced)**: 7 API groups with namespace isolation support
-- **Dual-scope support**: Both API versions work simultaneously
+- **v1beta1 (namespaced)**: All resources migrated to namespaced v1beta1 APIs
+- **v1alpha1 (removed)**: Legacy cluster-scoped APIs completely removed
+- **Full v2 Migration**: 100% Crossplane v2 native with `.m.` API group naming
 
 ### **v1beta1 Namespaced APIs Available**
 - `cache.cloudflare.m.crossplane.io/v1beta1` - Cache rules with advanced TTL controls
@@ -63,15 +63,15 @@
 - **SSL Management**: Certificate provisioning and management
 
 ### **Enterprise Features**
-- **Namespace Isolation**: v1beta1 resources provide team-level isolation
+- **Namespace Isolation**: All resources provide team-level isolation
 - **RBAC Integration**: Namespace-scoped permissions and access control
 - **Multi-tenancy**: Resource segregation by Kubernetes namespace
-- **Backward Compatibility**: Existing v1alpha1 resources continue working
+- **Full v1beta1**: Complete migration to modern namespaced architecture
 
 ## 📦 **Deployment Information**
 
 ### **Registry**
-- **Primary**: `ghcr.io/rossigee/provider-cloudflare:v0.10.0`
+- **Primary**: `ghcr.io/rossigee/provider-cloudflare:v0.11.0`
 - **Branch**: master
 - **Build System**: Standard Crossplane build submodule
 
@@ -82,12 +82,12 @@ kind: Provider
 metadata:
   name: provider-cloudflare
 spec:
-  package: ghcr.io/rossigee/provider-cloudflare:v0.10.0
+  package: ghcr.io/rossigee/provider-cloudflare:v0.11.0
 ```
 
 ### **Configuration**
 ```yaml
-apiVersion: cloudflare.crossplane.io/v1beta1
+apiVersion: cloudflare.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -116,18 +116,18 @@ spec:
 
 ## 🔄 **Migration Status**
 
-### **FROM v1 to v2 Architecture: COMPLETE**
-- ❌ **v1 ProviderConfigUsageTracker**: Removed
-- ❌ **v1 connector patterns**: Replaced with v2 patterns
-- ❌ **v1 baggage**: Eliminated as requested
-- ✅ **v2-native controllers**: All controllers migrated
-- ✅ **Backward compatibility**: v1alpha1 resources still supported
+### **FROM v1alpha1 to v1beta1: COMPLETE**
+- ❌ **v1alpha1 APIs**: Completely removed (no cluster-scoped resources)
+- ❌ **Legacy patterns**: All v1alpha1 code eliminated
+- ✅ **v1beta1 only**: 100% namespaced resource architecture
+- ✅ **API group naming**: All use `.m.` convention (e.g., `dns.cloudflare.m.crossplane.io`)
+- ✅ **v2-native controllers**: All controllers migrated to v2 patterns
 
-### **Dual-Scope Architecture**
-- **v1alpha1**: Cluster-scoped resources (backward compatibility)
-- **v1beta1**: Namespaced resources (modern multi-tenancy)
-- **Coexistence**: Both API versions work simultaneously
-- **Migration Path**: Gradual migration supported
+### **v1beta1 Only Architecture**
+- **v1beta1**: All resources are namespaced with `.m.` API groups
+- **No v1alpha1**: Legacy cluster-scoped APIs completely removed
+- **Breaking Change**: Requires migration from v0.10.0 or earlier
+- **Migration Required**: Existing v1alpha1 resources must be recreated as v1beta1
 
 ## 🎯 **Strategic Position**
 
@@ -143,6 +143,6 @@ The provider successfully delivers on the requirement to be "v2-native with no b
 
 ---
 
-**Last Updated**: 2025-09-27
-**Commit**: 4901825 - feat: complete Crossplane v2 migration and repository standardization
-**Status**: ✅ **PRODUCTION READY - V2 NATIVE**
+**Last Updated**: 2025-10-20
+**Version**: v0.11.0
+**Status**: ✅ **PRODUCTION READY - V1BETA1 ONLY**

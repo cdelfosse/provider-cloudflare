@@ -70,14 +70,15 @@ jobs:
       - name: Build and Publish All Artifacts
         run: |
           # Use the standardized build system to handle everything
-          export VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
 
           echo "Repository: ${{ github.repository }}"
           echo "Repository owner: ${{ github.repository_owner }}"
           echo "Version: ${VERSION}"
 
           # Build and publish using make targets that handle Docker + Crossplane packages
-          make publish REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}"
+          # IMPORTANT: VERSION must be passed as make variable, not environment variable
+          make publish VERSION="${VERSION}" REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}"
 
           echo "✅ Published to ghcr.io/${{ github.repository_owner }}"
           echo "🏷️  Tags: ${VERSION}, latest"

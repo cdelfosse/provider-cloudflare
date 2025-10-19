@@ -1,258 +1,111 @@
-# TLSA Record Support - Implementation Summary
+# GitHub Actions Release Workflow Fix - v0.11.0
 
-## Issue
-CloudFlare Crossplane provider v0.10.0 does not support TLSA DNS records. The provider sends TLSA data in an incorrect format, causing CloudFlare API validation errors.
+## Problem Summary
 
-## Root Cause
-The provider sends all TLSA fields as a single `content` string, but the CloudFlare API requires separate fields in a `data` object structure.
+The v0.11.0 release workflow completed successfully but failed to actually build and publish container images to the registry. The `make publish` command completed in 0.37 seconds with no output.
 
-**Incorrect Format (Current)**:
-```json
-{
-  "type": "TLSA",
-  "content": "3 1 1 <cert-hash>"
-}
-```
+## Root Cause Analysis
 
-**Correct Format (Required)**:
-```json
-{
-  "type": "TLSA",
-  "data": {
-    "usage": 3,
-    "selector": 1,
-    "matching_type": 1,
-    "certificate": "<cert-hash>"
-  }
-}
-```
+The issue was a **GNU Make variable precedence problem** in `.github/workflows/release.yml`:
 
-## Solution Implemented
-
-### 1. Controller Changes (`internal/controller/dns/record.go`)
-
-**Added TLSA Parsing Function**:
-```go
-func parseTLSAContent(content string) (map[string]interface{}, error)
-```
-- Parses content format: `"usage selector matching_type certificate"`
-- Validates TLSA field ranges per RFC 6698:
-  - usage: 0-3
-  - selector: 0-1
-  - matching_type: 0-2
-  - certificate: non-empty hex string
-
-**Modified Create Method**:
-```go
-// For TLSA records, parse content and use Data field
-if *cr.Spec.ForProvider.Type == "TLSA" {
-    tlsaData, err := parseTLSAContent(cr.Spec.ForProvider.Content)
-    if err != nil {
-        return managed.ExternalCreation{}, errors.Wrap(err, errRecordCreation)
-    }
-    params.Data = tlsaData
-    params.Content = ""
-}
-```
-
-### 2. Client Changes (`internal/clients/records/records.go`)
-
-**Updated UpdateRecord Function**:
-- Added same TLSA detection and parsing logic
-- Ensures updates use correct API format
-- Maintains backward compatibility with standard DNS records
-
-### 3. Unit Tests (`internal/clients/records/records_test.go`)
-
-**Test Coverage**:
-- ✅ Valid TLSA records (DANE-EE, PKIX-TA, DANE-TA)
-- ✅ Invalid usage values (out of range, non-numeric)
-- ✅ Invalid selector values
-- ✅ Invalid matching_type values
-- ✅ Invalid field counts (too few, too many)
-- ✅ Empty certificate validation
-
-### 4. Usage Examples (`examples/dns/tlsa-record.yaml`)
-
-**Three Working Examples**:
-1. **DANE-EE (3 1 1)**: Domain-Issued Certificate, SPKI, SHA-256
-2. **PKIX-TA (0 0 2)**: CA Certificate, Full Cert, SHA-512
-3. **DANE-TA (2 1 1)**: Trust Anchor Assertion, SPKI, SHA-256
-
-## Files Modified
-
-| File | Change | Status |
-|------|--------|--------|
-| `internal/controller/dns/record.go` | Added TLSA parsing + create logic | ✅ Complete |
-| `internal/clients/records/records.go` | Added TLSA update logic | ✅ Complete |
-| `internal/clients/records/records_test.go` | Added comprehensive tests | ✅ Complete |
-| `apis/dns/v1beta1/record_types.go` | Fixed zone API import | ✅ Complete |
-| `examples/dns/tlsa-record.yaml` | Created usage examples | ✅ Complete |
-
-## Testing Status
-
-### Unit Tests
-**Status**: ✅ **Code Complete** (blocked by v1beta1 migration)
-
-The TLSA parsing tests are written and correct, but cannot run due to incomplete v1beta1 API migration in the project.
-
-### Integration Testing
-
-**Once Build Succeeds**:
+### Original Broken Code (Line 73-81)
 ```bash
-# 1. Apply provider configuration
-kubectl apply -f examples/provider-config.yaml
+# Build and Publish All Artifacts
+run: |
+  # Use the standardized build system to handle everything
+  VERSION="${{ steps.version.outputs.version }}"
 
-# 2. Deploy TLSA record
-kubectl apply -f examples/dns/tlsa-record.yaml
+  echo "Repository: ${{ github.repository }}"
+  echo "Repository owner: ${{ github.repository_owner }}"
+  echo "Version: ${VERSION}"
 
-# 3. Verify in CloudFlare
-curl -X GET "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records" \
-  -H "Authorization: Bearer {token}" | jq '.result[] | select(.type=="TLSA")'
+  # Build and publish using make targets that handle Docker + Crossplane packages
+  # IMPORTANT: VERSION must be passed as make variable, not environment variable
+  export VERSION="${VERSION}"
+  make publish REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}"
 ```
 
-**Expected Result**:
-```json
-{
-  "type": "TLSA",
-  "name": "_443._tcp.service.example.com",
-  "data": {
-    "usage": 3,
-    "selector": 1,
-    "matching_type": 1,
-    "certificate": "0b9fa5a59eed715c26c1020c711b4f6ec42d58b0015e14337a39dad301c5afc3"
-  }
-}
+### The Bug
+
+The workflow set `export VERSION="v0.11.0"` as an **environment variable**, but the Makefile at `build/makelib/common.mk:215-223` uses:
+
+```makefile
+# set a semantic version number from git if VERSION is undefined.
+ifeq ($(origin VERSION), undefined)
+# use tags
+VERSION := $(shell git describe --dirty --always --tags ...)
+endif
+export VERSION
 ```
 
-## v1beta1 Migration Status
+### GNU Make Variable Precedence
 
-### Progress: Significant Improvements (2025-10-19)
+Make has three sources for variables with this precedence order:
 
-#### Completed Fixes ✅
-1. **Email Routing (emailrouting/v1beta1)**
-   - Fixed duplicate declarations by consolidating into groupversion_info.go
-   - Deleted duplicate register.go file
+1. **Command-line arguments** (HIGHEST) - `make VAR=value`
+2. **Makefile variables** (MEDIUM) - `VAR := value`
+3. **Environment variables** (LOWEST) - `export VAR=value` before make
 
-2. **Firewall (firewall/v1beta1)**
-   - Fixed import cycle (self-referencing zone package)
-   - Created missing `zz_generated.managed.go` and `zz_generated.managedlist.go`
+The Makefile uses **immediate assignment** (`:=`) which evaluates the shell command at parse time. Even though the environment had `VERSION=v0.11.0`, the Makefile's computed version from `git describe` took precedence.
 
-3. **Spectrum (spectrum/v1beta1)**
-   - Created missing `zz_generated.managed.go` for Application type
-   - Created missing `zz_generated.managedlist.go` for ApplicationList
+Additionally, `ifeq ($(origin VERSION), undefined)` checks if VERSION is undefined, but when VERSION comes from environment, `$(origin VERSION)` returns `"environment"` not `"undefined"`, so the condition is false. However, the `:=` assignment operator means the Makefile variable definition still overrides the environment variable value.
 
-4. **SSL SaaS (sslsaas/v1beta1)**
-   - Fixed import cycles from self-referencing packages
-   - Created missing managed interface files for CustomHostname and FallbackOrigin
+## The Fix
 
-5. **Workers Script Client**
-   - Updated field names: `Logpush` → `LogPush`, `PlacementMode` → `Placement`
-   - Fixed type conversions and test mismatches
+Changed the workflow to pass VERSION as a **make command-line argument** instead:
 
-6. **Cache Client**
-   - Refactored to use nested `ActionParameters` structure
-   - Fixed type name mismatches (CustomKeyQuery → QueryKey, etc.)
-   - Updated observation field mappings
-
-7. **Obsolete Client Code Removal**
-   - Removed clients for deleted resources (workers Route, loadbalancing Monitor/Pool, security types)
-   - Cleaned up fake clients and test code referencing deleted types
-
-#### Remaining Issue: Zone Client ⚠️
-
-**Problem**: Zone v1beta1 API was drastically simplified - removed all `ZoneSettings` related types:
-- `ZoneSettings`, `MinifySettings`, `MobileRedirectSettings`
-- `StrictTransportSecuritySettings`, `SecurityHeaderSettings`
-
-**Impact**: Zone client (`internal/clients/zones/zone.go`, 773 lines) contains extensive settings management code that references non-existent types
-
-**Options**:
-1. **Complete Removal**: Strip all settings code (breaking change, simpler)
-2. **Separate Resource**: Create new ZoneSettings CRD (maintains functionality)
-3. **Restore in v1beta1**: Re-add all settings types (contradicts simplification)
-
-## Next Steps
-
-### 1. Resolve Zone Settings Architecture
-**Decision Required**: Choose one of the three options for zone settings
-
-**Option 1 Recommendation**: For now, comment out settings-related code in zone client to unblock build:
-```go
-// TODO: Zone settings management removed in v1beta1 migration
-// Needs architectural decision on whether to restore as separate CRD
-func LoadSettingsForZone(ctx context.Context, client Client, zoneID string, zs *v1beta1.ZoneSettings) error {
-    return nil  // Temporarily disabled
-}
-```
-
-### 2. Run Make Commands
-Once zone client is addressed:
 ```bash
-make generate  # Should succeed now
-make lint      # Should pass
-make test      # Verify functionality
+# Build and Publish All Artifacts
+run: |
+  # Use the standardized build system to handle everything
+  VERSION="${{ steps.version.outputs.version }}"
+
+  echo "Repository: ${{ github.repository }}"
+  echo "Repository owner: ${{ github.repository_owner }}"
+  echo "Version: ${VERSION}"
+
+  # Build and publish using make targets that handle Docker + Crossplane packages
+  # IMPORTANT: VERSION must be passed as make variable, not environment variable
+  make publish VERSION="${VERSION}" REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}"
 ```
 
-### 2. Test TLSA Implementation
+**Key change**: `make publish VERSION="${VERSION}"` instead of `export VERSION="${VERSION}"; make publish`
+
+Command-line arguments have the **highest precedence** in Make, overriding both Makefile variables and environment variables.
+
+## Verification
+
+After the fix was committed and pushed (commit 8c86a3c), future releases will correctly pass the VERSION to the Makefile, ensuring builds use the release tag version instead of the git-computed version.
+
+## Manual Workaround Applied
+
+For v0.11.0, manual build and publish was executed:
+
 ```bash
-go test -v ./internal/clients/records -run TestParseTLSAContent
+VERSION=v0.11.0 make build
+VERSION=v0.11.0 make publish PLATFORMS=linux_amd64 REGISTRY_ORGS=ghcr.io/rossigee XPKG_REG_ORGS=ghcr.io/rossigee
 ```
 
-### 3. Build and Deploy
-```bash
-make build
-make publish VERSION=v0.10.1
-```
+Successfully published:
+- Container image: `ghcr.io/rossigee/provider-cloudflare:v0.11.0`
+- Container image: `ghcr.io/rossigee/provider-cloudflare:latest`
+- Crossplane package: `ghcr.io/rossigee/provider-cloudflare:v0.11.0`
 
-### 4. Deploy to Cluster
-```bash
-kubectl --context YOUR_CLUSTER patch provider provider-cloudflare \
-  --type='merge' -p='{"spec":{"package":"ghcr.io/rossigee/provider-cloudflare:v0.10.1"}}'
-```
+Digest: `sha256:f314a11fc5c3ca4b6b1970654139fd21bf364c1a87e761f2f4cb1e1031ff1df8`
 
-## Implementation Pattern
+## Impact
 
-This fix follows the same pattern as SRV records (already working in codebase):
-
-**SRV Record Pattern** (lines 217-228 in record.go):
-```go
-if *cr.Spec.ForProvider.Type == "SRV" {
-    srvData := map[string]interface{}{
-        "priority": int(*cr.Spec.ForProvider.Priority),
-        "weight":   int(*cr.Spec.ForProvider.Weight),
-        "port":     int(*cr.Spec.ForProvider.Port),
-        "target":   cr.Spec.ForProvider.Content,
-    }
-    params.Data = srvData
-    params.Priority = nil
-    params.Content = ""
-}
-```
-
-**TLSA Record Pattern** (new implementation):
-```go
-if *cr.Spec.ForProvider.Type == "TLSA" {
-    tlsaData, err := parseTLSAContent(cr.Spec.ForProvider.Content)
-    if err != nil {
-        return managed.ExternalCreation{}, errors.Wrap(err, errRecordCreation)
-    }
-    params.Data = tlsaData
-    params.Content = ""
-}
-```
+- **Affected Version**: v0.11.0 release (manually fixed)
+- **Future Releases**: Fixed by commit 8c86a3c - workflow now passes VERSION correctly
+- **Breaking Change**: None - this was a CI/CD infrastructure bug fix
 
 ## References
 
-- **RFC 6698**: DANE TLSA specification
-- **CloudFlare API**: https://developers.cloudflare.com/api/operations/dns-records-for-a-zone-create-dns-record
-- **TLSA Usage Types**: 0=PKIX-TA, 1=PKIX-EE, 2=DANE-TA, 3=DANE-EE
-- **TLSA Selectors**: 0=Full Certificate, 1=SubjectPublicKeyInfo (SPKI)
-- **TLSA Matching Types**: 0=Exact, 1=SHA-256, 2=SHA-512
+- Commit fixing workflow: 8c86a3c
+- v0.11.0 release commit: 3a0611c
+- GNU Make documentation: https://www.gnu.org/software/make/manual/html_node/Variables.html
+- Make variable precedence: https://www.gnu.org/software/make/manual/html_node/Overriding.html
 
-## Conclusion
+## Date
 
-✅ **TLSA record support is fully implemented and ready to use**
-❌ **Blocked by incomplete v1beta1 API migration in project**
-
-Once the v1beta1 migration is completed, the TLSA functionality will work immediately without further changes.
+2025-10-20

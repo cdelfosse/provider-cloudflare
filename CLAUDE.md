@@ -4,7 +4,7 @@
 Comprehensive Crossplane provider for managing Cloudflare resources via their V4 API. This provider offers complete coverage of Cloudflare's cloud security, performance, and reliability services including DNS, load balancing, WAF, caching, and SSL management.
 
 ## Status
-- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.9.1` 
+- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.12.0`
 - **Branch**: master
 - **CI/CD**: ✅ Standardized GitHub Actions with "CI Builds, Release Publishes" pattern
 - **Build System**: ✅ Standard Crossplane build submodule
@@ -32,7 +32,12 @@ Comprehensive Crossplane provider for managing Cloudflare resources via their V4
 
 ### Application Services
 - **Application**: Spectrum applications for TCP/UDP traffic acceleration
-- **Route**: Cloudflare Worker route bindings for serverless edge computing
+- **Script**: Cloudflare Worker scripts for serverless edge computing
+- **CronTrigger**: Scheduled execution triggers for Worker scripts
+- **Domain**: Custom domain attachments for Workers
+- **KVNamespace**: Key-Value storage namespaces for Workers
+- **Route**: URL route bindings for Worker scripts
+- **Subdomain**: Custom subdomain configuration for Workers
 
 ### SSL/TLS & Certificates
 - **CustomHostname/FallbackOrigin**: SSL for SaaS certificate management
@@ -51,9 +56,10 @@ make publish            # Publish to ghcr.io/rossigee
 SRV records now support the proper Cloudflare API structure with dedicated fields:
 
 ```yaml
-apiVersion: dns.cloudflare.crossplane.io/v1alpha1
+apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
+  namespace: default
   name: example-srv-record
 spec:
   forProvider:
@@ -62,7 +68,7 @@ spec:
     content: "target.example.com"  # Target hostname
     ttl: 300
     priority: 10                   # SRV priority (0-65535)
-    weight: 20                     # SRV weight (0-65535)  
+    weight: 20                     # SRV weight (0-65535)
     port: 8080                     # SRV port (1-65535)
     zone: "your-zone-id"
   providerConfigRef:
@@ -77,9 +83,10 @@ Complete load balancing setup with health monitoring and geographic routing:
 
 ```yaml
 # Health check monitor
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerMonitor
 metadata:
+  namespace: default
   name: api-health-check
 spec:
   forProvider:
@@ -96,9 +103,10 @@ spec:
 
 ---
 # Origin server pool
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerPool
 metadata:
+  namespace: default
   name: us-east-pool
 spec:
   forProvider:
@@ -124,9 +132,10 @@ spec:
 
 ---
 # Geographic load balancer
-apiVersion: loadbalancing.cloudflare.crossplane.io/v1alpha1
+apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancer
 metadata:
+  namespace: default
   name: api-load-balancer
 spec:
   forProvider:
@@ -153,9 +162,10 @@ Advanced caching with custom TTL and bypass conditions:
 
 ```yaml
 # Basic cache rule with TTL
-apiVersion: cache.cloudflare.crossplane.io/v1alpha1
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
+  namespace: default
   name: api-cache-rule
 spec:
   forProvider:
@@ -186,9 +196,10 @@ spec:
 
 ---
 # Cache bypass rule
-apiVersion: cache.cloudflare.crossplane.io/v1alpha1
+apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
+  namespace: default
   name: bypass-admin-cache
 spec:
   forProvider:
@@ -207,9 +218,10 @@ spec:
 Advanced security rules with the modern Ruleset Engine:
 
 ```yaml
-apiVersion: rulesets.cloudflare.crossplane.io/v1alpha1
+apiVersion: rulesets.cloudflare.m.crossplane.io/v1beta1
 kind: Ruleset
 metadata:
+  namespace: default
   name: security-ruleset
 spec:
   forProvider:
@@ -246,9 +258,10 @@ Transform Rules allow you to modify requests and responses using Cloudflare's Ru
 ### URL Rewriting
 
 ```yaml
-apiVersion: transform.cloudflare.crossplane.io/v1alpha1
+apiVersion: transform.cloudflare.m.crossplane.io/v1beta1
 kind: Rule
 metadata:
+  namespace: default
   name: example-url-rewrite
 spec:
   forProvider:
@@ -271,13 +284,14 @@ spec:
 ### Header Modifications
 
 ```yaml
-apiVersion: transform.cloudflare.crossplane.io/v1alpha1
+apiVersion: transform.cloudflare.m.crossplane.io/v1beta1
 kind: Rule
 metadata:
+  namespace: default
   name: example-header-transform
 spec:
   forProvider:
-    zone: "your-zone-id" 
+    zone: "your-zone-id"
     phase: "http_response_headers_transform"
     expression: 'http.request.uri.path matches "^/api/"'
     action: "rewrite"
@@ -299,9 +313,10 @@ spec:
 ### HTTP Redirects
 
 ```yaml
-apiVersion: transform.cloudflare.crossplane.io/v1alpha1
+apiVersion: transform.cloudflare.m.crossplane.io/v1beta1
 kind: Rule
 metadata:
+  namespace: default
   name: example-redirect
 spec:
   forProvider:
@@ -332,9 +347,15 @@ spec:
 
 ## Development Notes
 
+### 2025-10-20: Complete Worker Resources Implementation
+- **Worker Controllers Enabled**: All worker resource controllers now fully functional
+- **Cloudflare API Integration**: Real API calls for Cron Triggers, Domains, KV Namespaces, Routes, and Subdomains
+- **Complete Worker Ecosystem**: Full support for serverless edge computing with all Cloudflare Worker APIs
+- **Production Ready**: Worker resources ready for enterprise deployment
+
 ### 2025-08-03: Complete Provider Enhancement
 - **Load Balancing Implementation**: Full load balancing suite with geographic routing, health monitoring, and traffic steering
-- **Cache Rules Implementation**: Advanced caching rules with custom TTL, bypass conditions, and cache key customization  
+- **Cache Rules Implementation**: Advanced caching rules with custom TTL, bypass conditions, and cache key customization
 - **Modern WAF (Rulesets)**: Complete Ruleset Engine support replacing legacy firewall rules
 - **URI Transformation**: Advanced URL rewriting and query parameter manipulation
 - **Zone Plan Management**: Complete zone plan setting functionality with test coverage
@@ -351,12 +372,121 @@ spec:
 - **Security Enhancement**: Uses distroless container base for improved security
 - **Transform Rules**: Complete URL rewriting, header modification, and redirect support
 
+## Worker Resources Usage
+
+### Worker Script
+
+```yaml
+apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
+kind: Script
+metadata:
+  namespace: default
+  name: my-worker-script
+spec:
+  forProvider:
+    scriptName: "my-worker"
+    script: |
+      addEventListener('fetch', event => {
+        event.respondWith(new Response('Hello from Cloudflare Worker!'))
+      })
+    bindings:
+      - name: "MY_KV"
+        type: "kv_namespace"
+        namespaceId: "your-kv-namespace-id"
+  providerConfigRef:
+    name: default
+```
+
+### Worker Cron Trigger
+
+```yaml
+apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
+kind: CronTrigger
+metadata:
+  namespace: default
+  name: daily-backup-trigger
+spec:
+  forProvider:
+    scriptName: "backup-worker"
+    cron: "0 2 * * *"  # Daily at 2 AM
+  providerConfigRef:
+    name: default
+```
+
+### Worker KV Namespace
+
+```yaml
+apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
+kind: KVNamespace
+metadata:
+  namespace: default
+  name: app-config-namespace
+spec:
+  forProvider:
+    title: "application-configuration"
+  providerConfigRef:
+    name: default
+```
+
+### Worker Route
+
+```yaml
+apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
+kind: Route
+metadata:
+  namespace: default
+  name: api-route
+spec:
+  forProvider:
+    zone: "your-zone-id"
+    pattern: "api.example.com/*"
+    script: "my-api-worker"
+  providerConfigRef:
+    name: default
+```
+
+### Worker Domain
+
+```yaml
+apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
+kind: Domain
+metadata:
+  namespace: default
+  name: custom-worker-domain
+spec:
+  forProvider:
+    accountId: "your-account-id"
+    zoneId: "your-zone-id"
+    hostname: "workers.example.com"
+    service: "my-worker-script"
+    environment: "production"
+  providerConfigRef:
+    name: default
+```
+
+### Worker Subdomain
+
+```yaml
+apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
+kind: Subdomain
+metadata:
+  namespace: default
+  name: worker-subdomain
+spec:
+  forProvider:
+    accountId: "your-account-id"
+    name: "mycompany"
+  providerConfigRef:
+    name: default
+```
+
 ### Resource Implementation Status
-✅ **DNS & Zone Management**: Zone settings, all DNS record types including SRV  
-✅ **Security & Firewall**: Modern Rulesets + legacy Rule/Filter support  
-✅ **Load Balancing**: Geographic routing, health monitoring, traffic steering  
-✅ **Performance**: Advanced cache rules with custom TTL and bypass logic  
-✅ **Applications**: Spectrum TCP/UDP acceleration, Worker route bindings  
+✅ **DNS & Zone Management**: Zone settings, all DNS record types including SRV
+✅ **Security & Firewall**: Modern Rulesets + legacy Rule/Filter support
+✅ **Load Balancing**: Geographic routing, health monitoring, traffic steering
+✅ **Performance**: Advanced cache rules with custom TTL and bypass logic
+✅ **Applications**: Spectrum TCP/UDP acceleration
+✅ **Workers**: Complete worker ecosystem with scripts, cron triggers, domains, KV storage, routes, and subdomains
 ✅ **SSL/TLS**: SSL for SaaS custom hostname and fallback origin management
 
 ## Registry Migration

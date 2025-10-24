@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.12.0] - 2025-10-24
+
+### Fixed
+- **Critical**: Added missing scheme registration for all API resource types to prevent provider startup panics
+- **Release Workflow**: Fixed VERSION variable passing in GitHub Actions release workflow to ensure proper version tagging
+- **CI/CD**: Corrected make variable precedence issues in release pipeline
+
+### Added
+- **Worker Examples**: Complete set of example configurations for all worker resources (CronTrigger, Domain, KVNamespace, Subdomain)
+- **Testing**: Enhanced scheme registration verification tests to catch registration issues early
+
+### Infrastructure
+- **Scheme Registration**: Comprehensive verification of all API types properly registered with Kubernetes scheme
+- **Release Process**: Improved reliability of automated release workflow with correct variable handling
+
+## [v0.11.0] - 2025-10-20
+
+### Added
+- **Complete Worker Resources**: Full implementation of all Cloudflare Worker APIs including Cron Triggers, Domains, KV Namespaces, Routes, and Subdomains
+- **Production Ready Workers**: Enterprise-grade serverless edge computing support with comprehensive API integration
+- **Worker Ecosystem**: Complete worker management capabilities for script deployment, scheduled execution, storage, and custom domains
+
+### Changed
+- **BREAKING**: Migrated all resources to stable v1beta1 APIs for production stability
+- **API Maturity**: All resource APIs now follow Kubernetes API conventions and stability guarantees
+- **Documentation**: Comprehensive worker resource usage examples and deployment guides
+
+### Fixed
+- **Release Infrastructure**: Fixed GitHub Actions workflow VERSION variable handling (manual workaround applied for v0.11.0)
+- **API Compatibility**: Ensured all resource types properly integrate with Crossplane v1.16.0+
+- **Documentation**: Updated all examples and guides to reflect v1beta1 API changes
+
+### Infrastructure
+- **Crossplane Compatibility**: Full compatibility with Crossplane v1.16.0 and Kubernetes API standards
+- **Build System**: Enhanced release workflow with proper version handling for future releases
+- **Testing**: Comprehensive interface-based testing for all worker resource controllers
+
 ## [v0.9.1] - 2025-09-16
 
 ### Fixed

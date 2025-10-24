@@ -87,3 +87,6 @@ type CronTriggerList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []CronTrigger `json:"items"`
 }
+func init() {
+	SchemeBuilder.Register(&CronTrigger{}, &CronTriggerList{})
+}

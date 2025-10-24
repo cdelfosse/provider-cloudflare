@@ -17,9 +17,17 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/reference"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	"github.com/pkg/errors"
+
+	zonev1beta1 "github.com/rossigee/provider-cloudflare/apis/zone/v1beta1"
 )
 
 // RouteParameters are the configurable fields of a DNS Route.
@@ -86,4 +94,41 @@ type RouteList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Route `json:"items"`
+}
+func init() {
+	SchemeBuilder.Register(&Route{}, &RouteList{})
+}
+
+// RoutePattern resolves the pattern field out of a Worker Route's
+// spec. This may be used by other resources to reference the route.
+func RoutePattern() reference.ExtractValueFn {
+	return func(mg resource.Managed) string {
+		r, ok := mg.(*Route)
+		if !ok {
+			return ""
+		}
+		return r.Spec.ForProvider.Pattern
+	}
+}
+
+// ResolveReferences resolves references to the Zone that this Worker Route
+// is managed on.
+func (wr *Route) ResolveReferences(ctx context.Context, c client.Reader) error {
+	r := reference.NewAPIResolver(c, wr)
+
+	// Resolve spec.forProvider.zone
+	rsp, err := r.Resolve(ctx, reference.ResolutionRequest{
+		CurrentValue: reference.FromPtrValue(wr.Spec.ForProvider.Zone),
+		Reference:    wr.Spec.ForProvider.ZoneRef,
+		Selector:     wr.Spec.ForProvider.ZoneSelector,
+		To:           reference.To{Managed: &zonev1beta1.Zone{}, List: &zonev1beta1.ZoneList{}},
+		Extract:      reference.ExternalName(),
+	})
+	if err != nil {
+		return errors.Wrap(err, "spec.forProvider.zone")
+	}
+	wr.Spec.ForProvider.Zone = reference.ToPtrValue(rsp.ResolvedValue)
+	wr.Spec.ForProvider.ZoneRef = rsp.ResolvedReference
+
+	return nil
 }

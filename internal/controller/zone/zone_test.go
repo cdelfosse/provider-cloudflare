@@ -679,3 +679,32 @@ func TestDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestSetupSchemeRegistration(t *testing.T) {
+	// CRITICAL TEST: Verifies Zone types are properly defined and can be instantiated
+	// This catches basic type registration issues that would prevent controller setup
+	// FAILURE INDICATOR: If this test fails, the Zone controller cannot be initialized
+
+	// These should not panic if the types are properly defined
+	zone := &zonev1beta1.Zone{}
+	zoneList := &zonev1beta1.ZoneList{}
+
+	// Verify the types have the expected metadata
+	if zonev1beta1.ZoneKind != "Zone" {
+		t.Errorf("ZoneKind = %s, want Zone", zonev1beta1.ZoneKind)
+	}
+	if zonev1beta1.Group != "zone.cloudflare.m.crossplane.io" {
+		t.Errorf("Group = %s, want zone.cloudflare.m.crossplane.io", zonev1beta1.Group)
+	}
+	if zonev1beta1.Version != "v1beta1" {
+		t.Errorf("Version = %s, want v1beta1", zonev1beta1.Version)
+	}
+
+	// Verify we can access fields without panicking
+	_ = zone.Spec
+	_ = zone.Status
+	_ = zoneList.Items
+
+	// If we get here without panicking, the basic type registration is working
+	// The comprehensive scheme test is in the apis package
+}

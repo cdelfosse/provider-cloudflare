@@ -1,6 +1,7 @@
 apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
+  namespace: default
   name: website-static-assets-cache
 spec:
   forProvider:
@@ -41,6 +42,7 @@ spec:
 apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
+  namespace: default
   name: website-api-cache
 spec:
   forProvider:
@@ -72,6 +74,7 @@ spec:
 apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
+  namespace: default
   name: website-bypass-admin
 spec:
   forProvider:
@@ -87,6 +90,7 @@ spec:
 apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
+  namespace: default
   name: website-html-cache
 spec:
   forProvider:
@@ -129,6 +133,7 @@ spec:
 apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
+  namespace: default
   name: website-dynamic-content
 spec:
   forProvider:

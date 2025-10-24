@@ -24,7 +24,12 @@ comprehensive coverage of Cloudflare's cloud security, performance, and reliabil
 
 ### Applications & Services
 - **`Application`** - Spectrum applications for TCP/UDP traffic acceleration
-- **`Route`** - Cloudflare Worker route bindings for serverless edge computing
+- **`Script`** - Cloudflare Worker scripts for serverless edge computing
+- **`CronTrigger`** - Scheduled execution triggers for Worker scripts
+- **`Domain`** - Custom domain attachments for Workers
+- **`KVNamespace`** - Key-Value storage namespaces for Workers
+- **`Route`** - URL route bindings for Worker scripts
+- **`Subdomain`** - Custom subdomain configuration for Workers
 
 ### SSL/TLS & Certificates
 - **`CustomHostname`** & **`FallbackOrigin`** - SSL for SaaS certificate management

@@ -117,6 +117,13 @@ test.cover: generate
 	@$(GO) test -v -coverprofile=coverage.out ./...
 	@$(GO) tool cover -html=coverage.out -o coverage.html
 
+# Run critical scheme registration tests
+test.scheme: generate
+	@$(INFO) Running critical scheme registration tests...
+	@$(GO) test -v ./apis -run TestVerifySchemeRegistration || $(FAIL)
+	@$(GO) test -v ./internal/controller/zone -run TestSetupSchemeRegistration || $(FAIL)
+	@$(OK) Scheme registration tests passed
+
 # Install CRDs into a cluster
 install-crds: generate
 	kubectl apply -f package/crds

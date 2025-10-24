@@ -1,6 +1,7 @@
 apiVersion: dns.cloudflare.m.crossplane.io/v1beta1
 kind: Record
 metadata:
+  namespace: default
   name: apex
 spec:
   forProvider:

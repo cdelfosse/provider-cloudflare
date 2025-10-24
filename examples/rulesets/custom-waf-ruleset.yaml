@@ -1,6 +1,7 @@
 apiVersion: rulesets.cloudflare.m.crossplane.io/v1beta1
 kind: Ruleset
 metadata:
+  namespace: default
   name: custom-waf-rules
 spec:
   forProvider:

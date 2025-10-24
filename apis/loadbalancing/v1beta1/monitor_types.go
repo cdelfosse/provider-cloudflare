@@ -166,3 +166,7 @@ type LoadBalancerMonitorList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []LoadBalancerMonitor `json:"items"`
 }
+
+func init() {
+	SchemeBuilder.Register(&LoadBalancerMonitor{}, &LoadBalancerMonitorList{})
+}

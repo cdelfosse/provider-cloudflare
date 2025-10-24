@@ -1,6 +1,7 @@
 apiVersion: sslsaas.cloudflare.m.crossplane.io/v1beta1
 kind: CustomHostname
 metadata:
+  namespace: default
   name: example
 spec:
   forProvider:

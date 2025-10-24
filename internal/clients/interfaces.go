@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
 )
 
 // CloudflareClient represents the interface for Cloudflare API operations
@@ -118,4 +119,25 @@ type ClientInterface interface {
 	CreateWorkerRoute(ctx context.Context, rc *cloudflare.ResourceContainer, params cloudflare.CreateWorkerRouteParams) (cloudflare.WorkerRouteResponse, error)
 	UpdateWorkerRoute(ctx context.Context, rc *cloudflare.ResourceContainer, params cloudflare.UpdateWorkerRouteParams) (cloudflare.WorkerRouteResponse, error)
 	DeleteWorkerRoute(ctx context.Context, rc *cloudflare.ResourceContainer, routeID string) (cloudflare.WorkerRouteResponse, error)
+
+	// Additional methods expected by controllers
+	CreateWorkerCronTrigger(ctx context.Context, scriptName string, cron string) (interface{}, error)
+	WorkerCronTrigger(ctx context.Context, scriptName string) (interface{}, error)
+	UpdateWorkerCronTrigger(ctx context.Context, scriptName string, cron string) (interface{}, error)
+	DeleteWorkerCronTrigger(ctx context.Context, scriptName string) error
+
+	CreateWorkerDomain(ctx context.Context, params v1beta1.DomainParameters) (interface{}, error)
+	WorkerDomain(ctx context.Context, accountID, zoneID, domainID string) (interface{}, error)
+	UpdateWorkerDomain(ctx context.Context, accountID, zoneID, domainID string, params v1beta1.DomainParameters) (interface{}, error)
+	DeleteWorkerDomain(ctx context.Context, accountID, zoneID, domainID string) error
+
+	CreateWorkerKVNamespace(ctx context.Context, params v1beta1.KVNamespaceParameters) (interface{}, error)
+	WorkerKVNamespace(ctx context.Context, kvID string) (interface{}, error)
+	UpdateWorkerKVNamespace(ctx context.Context, kvID string, params v1beta1.KVNamespaceParameters) (interface{}, error)
+	DeleteWorkerKVNamespace(ctx context.Context, kvID string) error
+
+	CreateWorkerSubdomain(ctx context.Context, params v1beta1.SubdomainParameters) (interface{}, error)
+	WorkerSubdomain(ctx context.Context, accountID, subdomainName string) (interface{}, error)
+	UpdateWorkerSubdomain(ctx context.Context, accountID, subdomainName string, params v1beta1.SubdomainParameters) (interface{}, error)
+	DeleteWorkerSubdomain(ctx context.Context, accountID, subdomainName string) error
 }

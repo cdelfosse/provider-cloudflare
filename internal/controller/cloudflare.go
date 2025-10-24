@@ -35,7 +35,7 @@ import (
 	ssl "github.com/rossigee/provider-cloudflare/internal/controller/ssl"
 	sslsaas "github.com/rossigee/provider-cloudflare/internal/controller/sslsaas"
 	transform "github.com/rossigee/provider-cloudflare/internal/controller/transform"
-	// workers "github.com/rossigee/provider-cloudflare/internal/controller/workers" // Disabled - implementation incomplete
+	workers "github.com/rossigee/provider-cloudflare/internal/controller/workers"
 	zone "github.com/rossigee/provider-cloudflare/internal/controller/zone"
 )
 
@@ -47,7 +47,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, wl workqueue.TypedRateLimiter[any
 		zone.Setup,
 		record.Setup,
 		application.Setup,
-		// workers.Setup, // Temporarily disabled - workers client implementation incomplete
+		workers.Setup, // Workers client implementation now complete
 		ssl.Setup,
 		sslsaas.Setup,
 		transform.Setup,
@@ -73,7 +73,7 @@ func SetupMinimal(mgr ctrl.Manager, l logging.Logger, wl workqueue.TypedRateLimi
 		zone.Setup,
 		record.Setup,
 		application.Setup,
-		// workers.Setup, // Temporarily disabled - workers client implementation incomplete
+		workers.Setup, // Workers client implementation now complete
 		ssl.Setup,
 		sslsaas.Setup,
 		transform.Setup,

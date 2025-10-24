@@ -368,9 +368,8 @@ func (c *ScriptClient) Create(ctx context.Context, params v1beta1.ScriptParamete
 		return nil, errors.Wrap(err, errCreateScript)
 	}
 
-	// Debug logging for response
 	if resp.ID == "" {
-		return nil, errors.New("DEBUG: Response WorkerMetaData.ID is empty - accountID=" + accountID + ", scriptName=" + createParams.ScriptName)
+		return nil, errors.New("Response WorkerMetaData.ID is empty")
 	}
 	
 	// Success debug logging - convert and return observation

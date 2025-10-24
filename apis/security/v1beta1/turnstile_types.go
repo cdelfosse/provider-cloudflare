@@ -127,3 +127,6 @@ type TurnstileList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Turnstile `json:"items"`
 }
+func init() {
+	SchemeBuilder.Register(&Turnstile{}, &TurnstileList{})
+}

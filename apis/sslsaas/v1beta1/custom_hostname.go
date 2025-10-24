@@ -245,6 +245,10 @@ type CustomHostnameList struct {
 	Items           []CustomHostname `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&CustomHostname{}, &CustomHostnameList{})
+}
+
 // ResolveReferences of this Custom Hostname
 func (dr *CustomHostname) ResolveReferences(ctx context.Context, c client.Reader) error {
 	r := reference.NewAPIResolver(c, dr)

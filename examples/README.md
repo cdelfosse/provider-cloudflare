@@ -35,7 +35,13 @@ This directory contains comprehensive examples for all Cloudflare provider resou
 ### Applications & Services
 
 - **[spectrum/](spectrum/)** - TCP/UDP traffic acceleration applications
-- **[workers/](workers/)** - Cloudflare Worker route bindings
+- **[workers/](workers/)** - Cloudflare Workers resources including:
+  - Worker scripts
+  - Cron triggers for scheduled execution
+  - Custom domains
+  - KV namespaces for storage
+  - Route bindings
+  - Subdomain configuration
 
 ### SSL/TLS & Certificates
 

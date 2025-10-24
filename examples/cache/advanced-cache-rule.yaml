@@ -1,6 +1,7 @@
 apiVersion: cache.cloudflare.m.crossplane.io/v1beta1
 kind: CacheRule
 metadata:
+  namespace: default
   name: advanced-cache-rule
 spec:
   forProvider:

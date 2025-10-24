@@ -76,6 +76,10 @@ type UniversalSSLList struct {
 	Items           []UniversalSSL `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&UniversalSSL{}, &UniversalSSLList{})
+}
+
 // GetCondition of this UniversalSSL.
 func (mg *UniversalSSL) GetCondition(ct rtv1.ConditionType) rtv1.Condition {
 	return mg.Status.GetCondition(ct)

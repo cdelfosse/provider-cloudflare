@@ -1,0 +1,14 @@
+apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
+kind: Domain
+metadata:
+  namespace: default
+  name: example-worker-domain
+spec:
+  forProvider:
+    accountId: "your-account-id"
+    zoneId: "your-zone-id"
+    hostname: "api.example.com"
+    service: "my-worker-script"
+    environment: "production"
+  providerConfigRef:
+    name: default

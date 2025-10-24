@@ -5,6 +5,7 @@
 apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerMonitor
 metadata:
+  namespace: default
   name: production-health-check
 spec:
   forProvider:
@@ -33,6 +34,7 @@ spec:
 apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerPool
 metadata:
+  namespace: default
   name: production-pool-us-east
 spec:
   forProvider:
@@ -79,6 +81,7 @@ spec:
 apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerPool
 metadata:
+  namespace: default
   name: production-pool-us-west
 spec:
   forProvider:
@@ -114,6 +117,7 @@ spec:
 apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancer
 metadata:
+  namespace: default
   name: production-api-lb
 spec:
   forProvider:

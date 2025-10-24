@@ -188,6 +188,10 @@ type ApplicationList struct {
 	Items           []Application `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&Application{}, &ApplicationList{})
+}
+
 // ResolveReferences resolves references to the Zone that this Spectrum Application
 // is managed on.
 func (dr *Application) ResolveReferences(ctx context.Context, c client.Reader) error {

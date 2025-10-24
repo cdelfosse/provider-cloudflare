@@ -1,6 +1,7 @@
 apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerPool
 metadata:
+  namespace: default
   name: us-east-pool
 spec:
   forProvider:

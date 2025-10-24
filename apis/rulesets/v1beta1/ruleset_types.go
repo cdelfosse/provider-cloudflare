@@ -141,3 +141,6 @@ type RulesetList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Ruleset `json:"items"`
 }
+func init() {
+	SchemeBuilder.Register(&Ruleset{}, &RulesetList{})
+}

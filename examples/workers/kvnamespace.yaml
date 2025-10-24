@@ -1,13 +1,10 @@
 apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
-kind: Route
+kind: KVNamespace
 metadata:
   namespace: default
-  name: example
+  name: example-kv-namespace
 spec:
   forProvider:
-    zone: 1234
-    pattern: example.com/*
-    script: worker-script
-
+    title: "my-application-data"
   providerConfigRef:
-    name: example
+    name: default

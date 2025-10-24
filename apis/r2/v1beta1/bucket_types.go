@@ -86,6 +86,10 @@ type BucketList struct {
 	Items           []Bucket `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&Bucket{}, &BucketList{})
+}
+
 // Bucket type metadata.
 var (
 	BucketKind             = "Bucket"

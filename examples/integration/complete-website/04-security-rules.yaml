@@ -1,6 +1,7 @@
 apiVersion: rulesets.cloudflare.m.crossplane.io/v1beta1
 kind: Ruleset
 metadata:
+  namespace: default
   name: website-security-ruleset
 spec:
   forProvider:
@@ -71,6 +72,7 @@ spec:
 apiVersion: rulesets.cloudflare.m.crossplane.io/v1beta1
 kind: Ruleset
 metadata:
+  namespace: default
   name: website-transform-ruleset
 spec:
   forProvider:

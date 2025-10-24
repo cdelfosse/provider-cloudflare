@@ -1,6 +1,7 @@
 apiVersion: spectrum.cloudflare.m.crossplane.io/v1beta1
 kind: Application
 metadata:
+  namespace: default
   name: example
 spec:
   forProvider:

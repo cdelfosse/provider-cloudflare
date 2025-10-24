@@ -1,6 +1,7 @@
 apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancerMonitor
 metadata:
+  namespace: default
   name: web-health-check
 spec:
   forProvider:

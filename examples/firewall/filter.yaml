@@ -1,6 +1,7 @@
 apiVersion: firewall.cloudflare.m.crossplane.io/v1beta1
 kind: Filter
 metadata:
+  namespace: default
   name: wordpress-logins 
 spec:
   forProvider:

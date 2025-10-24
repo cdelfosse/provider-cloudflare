@@ -75,3 +75,6 @@ type KVNamespaceList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []KVNamespace `json:"items"`
 }
+func init() {
+	SchemeBuilder.Register(&KVNamespace{}, &KVNamespaceList{})
+}

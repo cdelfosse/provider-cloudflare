@@ -1,0 +1,11 @@
+apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
+kind: CronTrigger
+metadata:
+  namespace: default
+  name: example-cron-trigger
+spec:
+  forProvider:
+    scriptName: "my-worker-script"
+    cron: "0 */6 * * *"  # Every 6 hours
+  providerConfigRef:
+    name: default

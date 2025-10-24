@@ -107,6 +107,10 @@ type FallbackOriginList struct {
 	Items           []FallbackOrigin `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&FallbackOrigin{}, &FallbackOriginList{})
+}
+
 // ResolveReferences of this Fallback Origin
 func (dr *FallbackOrigin) ResolveReferences(ctx context.Context, c client.Reader) error {
 	r := reference.NewAPIResolver(c, dr)

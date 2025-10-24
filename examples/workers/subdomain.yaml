@@ -1,13 +1,11 @@
 apiVersion: workers.cloudflare.m.crossplane.io/v1beta1
-kind: Route
+kind: Subdomain
 metadata:
   namespace: default
-  name: example
+  name: example-worker-subdomain
 spec:
   forProvider:
-    zone: 1234
-    pattern: example.com/*
-    script: worker-script
-
+    accountId: "your-account-id"
+    name: "myworkers"
   providerConfigRef:
-    name: example
+    name: default

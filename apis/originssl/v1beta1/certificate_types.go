@@ -114,6 +114,10 @@ type CertificateList struct {
 	Items           []Certificate `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&Certificate{}, &CertificateList{})
+}
+
 // GetCondition of this Certificate.
 func (mg *Certificate) GetCondition(ct rtv1.ConditionType) rtv1.Condition {
 	return mg.Status.GetCondition(ct)

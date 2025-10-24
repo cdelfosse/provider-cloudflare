@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
 )
 
 // CloudflareAPIAdapter adapts *cloudflare.API to implement ClientInterface
@@ -134,4 +135,382 @@ func (a *CloudflareAPIAdapter) UpdateWorkerRoute(ctx context.Context, rc *cloudf
 // DeleteWorkerRoute wraps the cloudflare API
 func (a *CloudflareAPIAdapter) DeleteWorkerRoute(ctx context.Context, rc *cloudflare.ResourceContainer, routeID string) (cloudflare.WorkerRouteResponse, error) {
 	return a.api.DeleteWorkerRoute(ctx, rc, routeID)
+}
+
+// Workers Domain operations
+func (a *CloudflareAPIAdapter) AttachWorkersDomain(ctx context.Context, rc *cloudflare.ResourceContainer, domain cloudflare.AttachWorkersDomainParams) (cloudflare.WorkersDomain, error) {
+	return a.api.AttachWorkersDomain(ctx, rc, domain)
+}
+
+func (a *CloudflareAPIAdapter) GetWorkersDomain(ctx context.Context, rc *cloudflare.ResourceContainer, domainID string) (cloudflare.WorkersDomain, error) {
+	return a.api.GetWorkersDomain(ctx, rc, domainID)
+}
+
+func (a *CloudflareAPIAdapter) DetachWorkersDomain(ctx context.Context, rc *cloudflare.ResourceContainer, domainID string) error {
+	return a.api.DetachWorkersDomain(ctx, rc, domainID)
+}
+
+func (a *CloudflareAPIAdapter) ListWorkersDomains(ctx context.Context, rc *cloudflare.ResourceContainer, params cloudflare.ListWorkersDomainParams) ([]cloudflare.WorkersDomain, error) {
+	return a.api.ListWorkersDomains(ctx, rc, params)
+}
+
+// Workers Subdomain operations
+func (a *CloudflareAPIAdapter) WorkersCreateSubdomain(ctx context.Context, rc *cloudflare.ResourceContainer, params cloudflare.WorkersSubdomain) (cloudflare.WorkersSubdomain, error) {
+	return a.api.WorkersCreateSubdomain(ctx, rc, params)
+}
+
+func (a *CloudflareAPIAdapter) WorkersGetSubdomain(ctx context.Context, rc *cloudflare.ResourceContainer) (cloudflare.WorkersSubdomain, error) {
+	return a.api.WorkersGetSubdomain(ctx, rc)
+}
+
+// Additional methods expected by controllers
+
+// CreateWorkerCronTrigger creates a cron trigger for a worker script
+func (a *CloudflareAPIAdapter) CreateWorkerCronTrigger(ctx context.Context, scriptName string, cron string) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: a.GetAccountID(),
+	}
+
+	params := cloudflare.UpdateWorkerCronTriggersParams{
+		ScriptName: scriptName,
+		Crons: []cloudflare.WorkerCronTrigger{
+			{Cron: cron},
+		},
+	}
+
+	triggers, err := a.api.UpdateWorkerCronTriggers(ctx, rc, params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(triggers) > 0 {
+		return map[string]interface{}{
+			"script_name": scriptName,
+			"cron":        triggers[0].Cron,
+			"created":     true,
+		}, nil
+	}
+
+	return nil, nil
+}
+
+// WorkerCronTrigger gets cron triggers for a worker script
+func (a *CloudflareAPIAdapter) WorkerCronTrigger(ctx context.Context, scriptName string) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: a.GetAccountID(),
+	}
+
+	params := cloudflare.ListWorkerCronTriggersParams{
+		ScriptName: scriptName,
+	}
+
+	triggers, err := a.api.ListWorkerCronTriggers(ctx, rc, params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(triggers) > 0 {
+		return map[string]interface{}{
+			"script_name": scriptName,
+			"cron":        triggers[0].Cron,
+		}, nil
+	}
+
+	return map[string]interface{}{
+		"script_name": scriptName,
+		"cron":        "",
+	}, nil
+}
+
+// UpdateWorkerCronTrigger updates cron triggers for a worker script
+func (a *CloudflareAPIAdapter) UpdateWorkerCronTrigger(ctx context.Context, scriptName string, cron string) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: a.GetAccountID(),
+	}
+
+	params := cloudflare.UpdateWorkerCronTriggersParams{
+		ScriptName: scriptName,
+		Crons: []cloudflare.WorkerCronTrigger{
+			{Cron: cron},
+		},
+	}
+
+	triggers, err := a.api.UpdateWorkerCronTriggers(ctx, rc, params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(triggers) > 0 {
+		return map[string]interface{}{
+			"script_name": scriptName,
+			"cron":        triggers[0].Cron,
+			"updated":     true,
+		}, nil
+	}
+
+	return nil, nil
+}
+
+// DeleteWorkerCronTrigger deletes all cron triggers for a worker script
+func (a *CloudflareAPIAdapter) DeleteWorkerCronTrigger(ctx context.Context, scriptName string) error {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: a.GetAccountID(),
+	}
+
+	params := cloudflare.UpdateWorkerCronTriggersParams{
+		ScriptName: scriptName,
+		Crons: []cloudflare.WorkerCronTrigger{}, // Empty array to remove all triggers
+	}
+
+	_, err := a.api.UpdateWorkerCronTriggers(ctx, rc, params)
+	return err
+}
+
+// CreateWorkerDomain attaches a custom domain to workers
+func (a *CloudflareAPIAdapter) CreateWorkerDomain(ctx context.Context, params v1beta1.DomainParameters) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: params.AccountID,
+	}
+
+	apiParams := cloudflare.AttachWorkersDomainParams{
+		ZoneID:   params.ZoneID,
+		Hostname: params.Hostname,
+	}
+
+	domain, err := a.api.AttachWorkersDomain(ctx, rc, apiParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"domain_id": domain.ID,
+		"hostname":  domain.Hostname,
+		"zone_id":   domain.ZoneID,
+		"created":   true,
+	}, nil
+}
+
+// WorkerDomain gets a workers domain
+func (a *CloudflareAPIAdapter) WorkerDomain(ctx context.Context, accountID, zoneID, domainID string) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: accountID,
+	}
+
+	domain, err := a.api.GetWorkersDomain(ctx, rc, domainID)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"domain_id": domain.ID,
+		"hostname":  domain.Hostname,
+		"zone_id":   domain.ZoneID,
+	}, nil
+}
+
+// UpdateWorkerDomain updates a workers domain (detach and reattach)
+func (a *CloudflareAPIAdapter) UpdateWorkerDomain(ctx context.Context, accountID, zoneID, domainID string, params v1beta1.DomainParameters) (interface{}, error) {
+	// First detach the old domain
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: accountID,
+	}
+
+	err := a.api.DetachWorkersDomain(ctx, rc, domainID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Then attach the new domain
+	apiParams := cloudflare.AttachWorkersDomainParams{
+		ZoneID:   params.ZoneID,
+		Hostname: params.Hostname,
+	}
+
+	domain, err := a.api.AttachWorkersDomain(ctx, rc, apiParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"domain_id": domain.ID,
+		"hostname":  domain.Hostname,
+		"zone_id":   domain.ZoneID,
+		"updated":   true,
+	}, nil
+}
+
+// DeleteWorkerDomain detaches a workers domain
+func (a *CloudflareAPIAdapter) DeleteWorkerDomain(ctx context.Context, accountID, zoneID, domainID string) error {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: accountID,
+	}
+
+	return a.api.DetachWorkersDomain(ctx, rc, domainID)
+}
+
+// CreateWorkerKVNamespace creates a KV namespace
+func (a *CloudflareAPIAdapter) CreateWorkerKVNamespace(ctx context.Context, params v1beta1.KVNamespaceParameters) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: a.GetAccountID(),
+	}
+
+	apiParams := cloudflare.CreateWorkersKVNamespaceParams{
+		Title: params.Title,
+	}
+
+	resp, err := a.api.CreateWorkersKVNamespace(ctx, rc, apiParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"id":      resp.Result.ID,
+		"title":   resp.Result.Title,
+		"created": true,
+	}, nil
+}
+
+// WorkerKVNamespace gets a KV namespace
+func (a *CloudflareAPIAdapter) WorkerKVNamespace(ctx context.Context, kvID string) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: a.GetAccountID(),
+	}
+
+	namespaces, _, err := a.api.ListWorkersKVNamespaces(ctx, rc, cloudflare.ListWorkersKVNamespacesParams{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ns := range namespaces {
+		if ns.ID == kvID {
+			return map[string]interface{}{
+				"id":    ns.ID,
+				"title": ns.Title,
+			}, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// UpdateWorkerKVNamespace updates a KV namespace
+func (a *CloudflareAPIAdapter) UpdateWorkerKVNamespace(ctx context.Context, kvID string, params v1beta1.KVNamespaceParameters) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: a.GetAccountID(),
+	}
+
+	apiParams := cloudflare.UpdateWorkersKVNamespaceParams{
+		NamespaceID: kvID,
+		Title:       params.Title,
+	}
+
+	resp, err := a.api.UpdateWorkersKVNamespace(ctx, rc, apiParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"id":      kvID,
+		"title":   params.Title,
+		"updated": resp.Success,
+	}, nil
+}
+
+// DeleteWorkerKVNamespace deletes a KV namespace
+func (a *CloudflareAPIAdapter) DeleteWorkerKVNamespace(ctx context.Context, kvID string) error {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: a.GetAccountID(),
+	}
+
+	_, err := a.api.DeleteWorkersKVNamespace(ctx, rc, kvID)
+	return err
+}
+
+// CreateWorkerSubdomain creates a workers subdomain
+func (a *CloudflareAPIAdapter) CreateWorkerSubdomain(ctx context.Context, params v1beta1.SubdomainParameters) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: params.AccountID,
+	}
+
+	apiParams := cloudflare.WorkersSubdomain{
+		Name: params.Name,
+	}
+
+	subdomain, err := a.api.WorkersCreateSubdomain(ctx, rc, apiParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"name":    subdomain.Name,
+		"created": true,
+	}, nil
+}
+
+// WorkerSubdomain gets the workers subdomain
+func (a *CloudflareAPIAdapter) WorkerSubdomain(ctx context.Context, accountID, subdomainName string) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: accountID,
+	}
+
+	subdomain, err := a.api.WorkersGetSubdomain(ctx, rc)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"name": subdomain.Name,
+	}, nil
+}
+
+// UpdateWorkerSubdomain updates the workers subdomain
+func (a *CloudflareAPIAdapter) UpdateWorkerSubdomain(ctx context.Context, accountID, subdomainName string, params v1beta1.SubdomainParameters) (interface{}, error) {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: accountID,
+	}
+
+	apiParams := cloudflare.WorkersSubdomain{
+		Name: params.Name,
+	}
+
+	subdomain, err := a.api.WorkersCreateSubdomain(ctx, rc, apiParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"name":    subdomain.Name,
+		"updated": true,
+	}, nil
+}
+
+// DeleteWorkerSubdomain deletes the workers subdomain (set to empty)
+func (a *CloudflareAPIAdapter) DeleteWorkerSubdomain(ctx context.Context, accountID, subdomainName string) error {
+	rc := &cloudflare.ResourceContainer{
+		Level: cloudflare.AccountRouteLevel,
+		Identifier: accountID,
+	}
+
+	// Cloudflare doesn't have a direct delete for subdomain, so we set it to empty
+	params := cloudflare.WorkersSubdomain{
+		Name: "",
+	}
+
+	_, err := a.api.WorkersCreateSubdomain(ctx, rc, params)
+	return err
 }

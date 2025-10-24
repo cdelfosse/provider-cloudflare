@@ -237,6 +237,10 @@ type JobList struct {
 	Items           []Job `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&Job{}, &JobList{})
+}
+
 // Job type metadata.
 var (
 	JobKind             = "Job"

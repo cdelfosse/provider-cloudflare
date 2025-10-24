@@ -192,3 +192,6 @@ type ScriptList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Script `json:"items"`
 }
+func init() {
+	SchemeBuilder.Register(&Script{}, &ScriptList{})
+}

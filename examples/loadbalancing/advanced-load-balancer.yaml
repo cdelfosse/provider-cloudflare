@@ -1,6 +1,7 @@
 apiVersion: loadbalancing.cloudflare.m.crossplane.io/v1beta1
 kind: LoadBalancer
 metadata:
+  namespace: default
   name: advanced-api-lb
 spec:
   forProvider:

@@ -96,6 +96,10 @@ type TotalTLSList struct {
 	Items           []TotalTLS `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&TotalTLS{}, &TotalTLSList{})
+}
+
 // GetCondition of this TotalTLS.
 func (mg *TotalTLS) GetCondition(ct rtv1.ConditionType) rtv1.Condition {
 	return mg.Status.GetCondition(ct)

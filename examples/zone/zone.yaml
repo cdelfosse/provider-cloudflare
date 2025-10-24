@@ -1,6 +1,7 @@
 apiVersion: zone.cloudflare.m.crossplane.io/v1beta1
 kind: Zone
 metadata:
+  namespace: default
   name: example
 spec:
   deletionPolicy: Orphan

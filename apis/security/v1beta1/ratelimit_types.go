@@ -220,3 +220,6 @@ type RateLimitList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []RateLimit `json:"items"`
 }
+func init() {
+	SchemeBuilder.Register(&RateLimit{}, &RateLimitList{})
+}

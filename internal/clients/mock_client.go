@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/rossigee/provider-cloudflare/apis/workers/v1beta1"
 )
 
 // MockCloudflareClient implements CloudflareClient for testing
@@ -885,6 +886,218 @@ func (m *MockClient) DeleteWorkerRoute(ctx context.Context, rc *cloudflare.Resou
 	}
 	return cloudflare.WorkerRouteResponse{}, nil
 }
+
+// Additional methods expected by controllers
+
+// CreateWorkerCronTrigger mocks the CreateWorkerCronTrigger method
+func (m *MockClient) CreateWorkerCronTrigger(ctx context.Context, scriptName string, cron string) (interface{}, error) {
+	if err, ok := m.errors["CreateWorkerCronTrigger"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["CreateWorkerCronTrigger"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"script_name": scriptName,
+		"cron":        cron,
+		"created":     true,
+	}, nil
+}
+
+// WorkerCronTrigger mocks the WorkerCronTrigger method
+func (m *MockClient) WorkerCronTrigger(ctx context.Context, scriptName string) (interface{}, error) {
+	if err, ok := m.errors["WorkerCronTrigger"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["WorkerCronTrigger"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"script_name": scriptName,
+		"cron":        "* * * * *",
+	}, nil
+}
+
+// UpdateWorkerCronTrigger mocks the UpdateWorkerCronTrigger method
+func (m *MockClient) UpdateWorkerCronTrigger(ctx context.Context, scriptName string, cron string) (interface{}, error) {
+	if err, ok := m.errors["UpdateWorkerCronTrigger"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["UpdateWorkerCronTrigger"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"script_name": scriptName,
+		"cron":        cron,
+		"updated":     true,
+	}, nil
+}
+
+// DeleteWorkerCronTrigger mocks the DeleteWorkerCronTrigger method
+func (m *MockClient) DeleteWorkerCronTrigger(ctx context.Context, scriptName string) error {
+	if err, ok := m.errors["DeleteWorkerCronTrigger"]; ok {
+		return err
+	}
+	return nil
+}
+
+// CreateWorkerDomain mocks the CreateWorkerDomain method
+func (m *MockClient) CreateWorkerDomain(ctx context.Context, params v1beta1.DomainParameters) (interface{}, error) {
+	if err, ok := m.errors["CreateWorkerDomain"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["CreateWorkerDomain"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"domain_id": params.Hostname,
+		"hostname":  params.Hostname,
+		"zone_id":   params.ZoneID,
+		"created":   true,
+	}, nil
+}
+
+// WorkerDomain mocks the WorkerDomain method
+func (m *MockClient) WorkerDomain(ctx context.Context, accountID, zoneID, domainID string) (interface{}, error) {
+	if err, ok := m.errors["WorkerDomain"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["WorkerDomain"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"domain_id": domainID,
+		"hostname":  "example.com",
+		"zone_id":   zoneID,
+	}, nil
+}
+
+// UpdateWorkerDomain mocks the UpdateWorkerDomain method
+func (m *MockClient) UpdateWorkerDomain(ctx context.Context, accountID, zoneID, domainID string, params v1beta1.DomainParameters) (interface{}, error) {
+	if err, ok := m.errors["UpdateWorkerDomain"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["UpdateWorkerDomain"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"domain_id": params.Hostname,
+		"hostname":  params.Hostname,
+		"zone_id":   params.ZoneID,
+		"updated":   true,
+	}, nil
+}
+
+// DeleteWorkerDomain mocks the DeleteWorkerDomain method
+func (m *MockClient) DeleteWorkerDomain(ctx context.Context, accountID, zoneID, domainID string) error {
+	if err, ok := m.errors["DeleteWorkerDomain"]; ok {
+		return err
+	}
+	return nil
+}
+
+// CreateWorkerKVNamespace mocks the CreateWorkerKVNamespace method
+func (m *MockClient) CreateWorkerKVNamespace(ctx context.Context, params v1beta1.KVNamespaceParameters) (interface{}, error) {
+	if err, ok := m.errors["CreateWorkerKVNamespace"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["CreateWorkerKVNamespace"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"id":      params.Title,
+		"title":   params.Title,
+		"created": true,
+	}, nil
+}
+
+// WorkerKVNamespace mocks the WorkerKVNamespace method
+func (m *MockClient) WorkerKVNamespace(ctx context.Context, kvID string) (interface{}, error) {
+	if err, ok := m.errors["WorkerKVNamespace"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["WorkerKVNamespace"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"id":    kvID,
+		"title": "example-namespace",
+	}, nil
+}
+
+// UpdateWorkerKVNamespace mocks the UpdateWorkerKVNamespace method
+func (m *MockClient) UpdateWorkerKVNamespace(ctx context.Context, kvID string, params v1beta1.KVNamespaceParameters) (interface{}, error) {
+	if err, ok := m.errors["UpdateWorkerKVNamespace"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["UpdateWorkerKVNamespace"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"id":      kvID,
+		"title":   params.Title,
+		"updated": true,
+	}, nil
+}
+
+// DeleteWorkerKVNamespace mocks the DeleteWorkerKVNamespace method
+func (m *MockClient) DeleteWorkerKVNamespace(ctx context.Context, kvID string) error {
+	if err, ok := m.errors["DeleteWorkerKVNamespace"]; ok {
+		return err
+	}
+	return nil
+}
+
+// CreateWorkerSubdomain mocks the CreateWorkerSubdomain method
+func (m *MockClient) CreateWorkerSubdomain(ctx context.Context, params v1beta1.SubdomainParameters) (interface{}, error) {
+	if err, ok := m.errors["CreateWorkerSubdomain"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["CreateWorkerSubdomain"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"name":    params.Name,
+		"created": true,
+	}, nil
+}
+
+// WorkerSubdomain mocks the WorkerSubdomain method
+func (m *MockClient) WorkerSubdomain(ctx context.Context, accountID, subdomainName string) (interface{}, error) {
+	if err, ok := m.errors["WorkerSubdomain"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["WorkerSubdomain"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"name": subdomainName,
+	}, nil
+}
+
+// UpdateWorkerSubdomain mocks the UpdateWorkerSubdomain method
+func (m *MockClient) UpdateWorkerSubdomain(ctx context.Context, accountID, subdomainName string, params v1beta1.SubdomainParameters) (interface{}, error) {
+	if err, ok := m.errors["UpdateWorkerSubdomain"]; ok {
+		return nil, err
+	}
+	if response, ok := m.responses["UpdateWorkerSubdomain"]; ok {
+		return response, nil
+	}
+	return map[string]interface{}{
+		"name":    params.Name,
+		"updated": true,
+	}, nil
+}
+
+// DeleteWorkerSubdomain mocks the DeleteWorkerSubdomain method
+func (m *MockClient) DeleteWorkerSubdomain(ctx context.Context, accountID, subdomainName string) error {
+	if err, ok := m.errors["DeleteWorkerSubdomain"]; ok {
+		return err
+	}
+	return nil
+}
+
+
 
 // NewNotFoundError creates a not found error for testing
 func NewNotFoundError(message string) error {

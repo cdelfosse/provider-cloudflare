@@ -1,6 +1,7 @@
 apiVersion: transform.cloudflare.m.crossplane.io/v1beta1
 kind: Rule
 metadata:
+  namespace: default
   name: example-redirect
   annotations:
     meta.upbound.io/example-id: transform/v1alpha1/rule-redirect

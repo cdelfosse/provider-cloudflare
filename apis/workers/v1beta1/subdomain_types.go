@@ -73,3 +73,6 @@ type SubdomainList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Subdomain `json:"items"`
 }
+func init() {
+	SchemeBuilder.Register(&Subdomain{}, &SubdomainList{})
+}

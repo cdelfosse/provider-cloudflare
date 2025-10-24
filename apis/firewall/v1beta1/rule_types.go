@@ -137,6 +137,10 @@ type RuleList struct {
 	Items           []Rule `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&Rule{}, &RuleList{})
+}
+
 // ResolveReferences of this Rule
 func (fr *Rule) ResolveReferences(ctx context.Context, c client.Reader) error {
 	r := reference.NewAPIResolver(c, fr)

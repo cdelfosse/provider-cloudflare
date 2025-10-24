@@ -100,6 +100,10 @@ type FilterList struct {
 	Items           []Filter `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&Filter{}, &FilterList{})
+}
+
 // ResolveReferences of this Filter
 func (f *Filter) ResolveReferences(ctx context.Context, c client.Reader) error {
 	r := reference.NewAPIResolver(c, f)

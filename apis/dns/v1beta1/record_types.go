@@ -154,6 +154,10 @@ type RecordList struct {
 	Items           []Record `json:"items"`
 }
 
+func init() {
+	SchemeBuilder.Register(&Record{}, &RecordList{})
+}
+
 // RecordFQDN resolves the FQDN field out of a DNS Record's
 // status. This may be used by other resources to
 // avoid calculating the FQDN of a record.

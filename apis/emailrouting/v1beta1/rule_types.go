@@ -145,3 +145,7 @@ type RuleList struct {
 	metav1.ListMeta `json:",inline"`
 	Items           []Rule `json:"items"`
 }
+
+func init() {
+	SchemeBuilder.Register(&Rule{}, &RuleList{})
+}

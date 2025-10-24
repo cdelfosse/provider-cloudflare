@@ -89,3 +89,7 @@ type ProviderConfigUsageList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ProviderConfigUsage `json:"items"`
 }
+
+func init() {
+	SchemeBuilder.Register(&ProviderConfig{}, &ProviderConfigList{}, &ProviderConfigUsage{}, &ProviderConfigUsageList{})
+}

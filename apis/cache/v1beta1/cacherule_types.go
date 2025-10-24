@@ -304,3 +304,7 @@ type CacheRuleList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []CacheRule `json:"items"`
 }
+
+func init() {
+	SchemeBuilder.Register(&CacheRule{}, &CacheRuleList{})
+}

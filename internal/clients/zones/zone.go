@@ -116,9 +116,12 @@ const (
 // toMinifySettings converts an interface from the Cloudflare API
 // into a MinifySettings type.
 func toMinifySettings(in interface{}) *v1beta1.MinifySettings {
-	if m, ok := in.(map[string]interface{}); ok {
+	if m, ok := in.(map[string]interface{}); ok && m != nil {
 		minifySettings := &v1beta1.MinifySettings{}
 		for key, value := range m {
+			if key == "" {
+				continue
+			}
 			sval := clients.ToString(value)
 			switch key {
 			case cfsMinifyCSS:
@@ -137,11 +140,14 @@ func toMinifySettings(in interface{}) *v1beta1.MinifySettings {
 }
 
 // toMobileRedirectSettings converts an interface from the Cloudflare API
-// into a MinifySettings type.
+// into a MobileRedirectSettings type.
 func toMobileRedirectSettings(in interface{}) *v1beta1.MobileRedirectSettings {
-	if m, ok := in.(map[string]interface{}); ok {
+	if m, ok := in.(map[string]interface{}); ok && m != nil {
 		mobileRedirectSettings := &v1beta1.MobileRedirectSettings{}
 		for key, value := range m {
+			if key == "" {
+				continue
+			}
 			switch key {
 			case cfsMobileRedirectStatus:
 				mobileRedirectSettings.Status = clients.ToString(value)
@@ -158,11 +164,15 @@ func toMobileRedirectSettings(in interface{}) *v1beta1.MobileRedirectSettings {
 	return nil
 }
 
-// toStrictTransportSecuritySettings
+// toStrictTransportSecuritySettings converts an interface from the Cloudflare API
+// into a StrictTransportSecuritySettings type.
 func toStrictTransportSecuritySettings(in interface{}) *v1beta1.StrictTransportSecuritySettings {
-	if m, ok := in.(map[string]interface{}); ok {
+	if m, ok := in.(map[string]interface{}); ok && m != nil {
 		stsSettings := &v1beta1.StrictTransportSecuritySettings{}
 		for key, value := range m {
+			if key == "" {
+				continue
+			}
 			switch key {
 			case cfsStrictTransportSecurityEnabled:
 				stsSettings.Enabled = clients.ToBool(value)
@@ -185,9 +195,12 @@ func toStrictTransportSecuritySettings(in interface{}) *v1beta1.StrictTransportS
 // toSecurityHeaderSettings converts an interface from the Cloudflare API
 // into a SecurityHeaderSettings type.
 func toSecurityHeaderSettings(in interface{}) *v1beta1.SecurityHeaderSettings {
-	if m, ok := in.(map[string]interface{}); ok {
+	if m, ok := in.(map[string]interface{}); ok && m != nil {
 		securityHeaderSettings := &v1beta1.SecurityHeaderSettings{}
 		for key, value := range m {
+			if key == "" {
+				continue
+			}
 			switch key { //nolint:gocritic
 			case cfsStrictTransportSecurity:
 				securityHeaderSettings.StrictTransportSecurity = toStrictTransportSecuritySettings(value)
@@ -408,16 +421,31 @@ func LoadSettingsForZone(ctx context.Context,
 		return errors.Wrap(err, errLoadSettings)
 	}
 
+	// Safety check for nil result
+	if sr == nil || sr.Result == nil {
+		return errors.New("received nil ZoneSettingResponse or Result from Cloudflare API")
+	}
+
 	// Parse the result into a map based on key
 	sbk := ZoneSettingsMap{}
 
 	for _, setting := range sr.Result {
+		// Safety check for nil setting
+		if setting.ID == "" {
+			continue
+		}
 		// Ignore settings we cant edit
 		if !setting.Editable {
 			continue
 		}
 		sbk[setting.ID] = setting.Value
 	}
+
+	// Safety check for nil ZoneSettings
+	if zs == nil {
+		return errors.New("ZoneSettings parameter is nil")
+	}
+
 	settingsMapToZone(sbk, zs)
 	return nil
 }

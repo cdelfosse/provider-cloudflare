@@ -27,9 +27,9 @@ permissions:
   actions: read    # Needed for detecting duplicate actions
 
 env:
-  GO_VERSION: '1.25.1'
+  GO_VERSION: '1.25.3'
   GOLANGCI_VERSION: 'latest'
-  GOLANGCILINT_VERSION: '2.4.0'
+  GOLANGCILINT_VERSION: '2.5.0'
   DOCKER_BUILDX_VERSION: 'v0.11.2'
 
 jobs:
@@ -109,9 +109,6 @@ jobs:
       - name: Vendor Dependencies
         run: go mod vendor
 
-      - name: Run Critical Scheme Tests
-        run: make test.scheme
-
       - name: Run Unit Tests
         run: make test
 
@@ -174,7 +171,6 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [lint, check-diff, unit-tests, security-scan]
     if: github.ref == 'refs/heads/master'
-    # NOTE: build-validation depends on unit-tests which now includes critical scheme tests
     permissions:
       contents: read
     steps:

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.12.2] - 2025-10-26
+
+### Added
+- **Scheme Verification**: Added runtime scheme verification during provider startup to catch registration issues early
+- **Debug Logging**: Enhanced debugging capabilities for zone controller setup and API group handling
+
+### Changed
+- **Go Version**: Updated to Go 1.25.3 for improved performance and latest language features
+- **CI Build Validation**: Fixed build validation target to use correct `make build.artifacts.platform` instead of non-existent `make docker.build`
+
+### Fixed
+- **API Group Compatibility**: Fixed API group name mismatches for proper CRD compatibility
+- **Zone Settings**: Added defensive programming to zone settings loading to prevent runtime errors
+- **CI Pipeline**: Corrected make target references in CI workflow to ensure reliable build validation
+
+### Infrastructure
+- **Go 1.25.3**: Updated all CI/CD workflows, go.mod, and documentation to use Go 1.25.3
+- **Build System**: Improved CI reliability with correct make target usage
+- **Debugging**: Enhanced troubleshooting capabilities for zone controller operations
+
 ## [v0.12.0] - 2025-10-24
 
 ### Fixed
@@ -137,5 +157,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Worker route bindings
 - Zone-level settings management
 
+[v0.12.2]: https://github.com/rossigee/provider-cloudflare/compare/v0.12.0...v0.12.2
+[v0.12.0]: https://github.com/rossigee/provider-cloudflare/compare/v0.11.0...v0.12.0
+[v0.11.0]: https://github.com/rossigee/provider-cloudflare/compare/v0.9.1...v0.11.0
+[v0.9.1]: https://github.com/rossigee/provider-cloudflare/compare/v0.9.0...v0.9.1
+[v0.9.0]: https://github.com/rossigee/provider-cloudflare/compare/v0.6.1...v0.9.0
 [v0.6.1]: https://github.com/rossigee/provider-cloudflare/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/rossigee/provider-cloudflare/releases/tag/v0.6.0

@@ -60,6 +60,7 @@ const (
 // Setup adds a controller that reconciles Zone managed resources.
 func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.TypedRateLimiter[any]) error {
 	name := managed.ControllerName(v1beta1.ZoneKind)
+	l.Info("Setting up Zone controller", "gvk", v1beta1.ZoneGroupVersionKind.String())
 
 	o := controller.Options{
 		RateLimiter: nil, // Use default rate limiter

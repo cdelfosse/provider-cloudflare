@@ -4,7 +4,7 @@
 Comprehensive Crossplane provider for managing Cloudflare resources via their V4 API. This provider offers complete coverage of Cloudflare's cloud security, performance, and reliability services including DNS, load balancing, WAF, caching, and SSL management.
 
 ## Status
-- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.12.2`
+- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.13.0`
 - **Branch**: master
 - **CI/CD**: ✅ Standardized GitHub Actions with "CI Builds, Release Publishes" pattern
 - **Build System**: ✅ Standard Crossplane build submodule
@@ -364,7 +364,7 @@ spec:
 
 ### 2025-08-02: v0.115.0 Modernization
 - **API Compatibility Update**: Updated cloudflare-go from legacy version to v0.115.0
-- **Go Modernization**: Updated from Go 1.13 to Go 1.25.1
+- **Go Modernization**: Updated from Go 1.13 to Go 1.25.3
 - **Dependency Updates**: Modernized dependencies including crossplane-runtime v1.16.0
 - **SRV Record Support**: Comprehensive SRV record implementation with proper API structure
 - **Interface-Based Testing**: Modern testing framework with comprehensive mocking

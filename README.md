@@ -41,16 +41,16 @@ comprehensive coverage of Cloudflare's cloud security, performance, and reliabil
 ✅ **Complete Test Coverage** - 100% test coverage for all clients and controllers
 ✅ **Interface-Based Testing** - Modern testing framework with comprehensive mocking
 ✅ **Production Ready** - Used in production environments with proven reliability
-✅ **Modern Go** - Updated to Go 1.25.1 with latest dependencies
+✅ **Modern Go** - Updated to Go 1.25.3 with latest dependencies
 ✅ **Comprehensive Examples** - Detailed usage examples for all resource types
 ✅ **Advanced Capabilities** - Support for complex scenarios like geographic routing, traffic steering, and advanced caching
 
 ## Status
 
-- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.11.0`
+- **Registry**: `ghcr.io/rossigee/provider-cloudflare:v0.13.0`
 - **Build Status**: ✅ `make lint` and `make test` passing
 - **Crossplane v2**: ✅ Fully migrated to v2-native architecture
-- **API Compatibility**: ✅ cloudflare-go v0.115.0, Go 1.25.1
+- **API Compatibility**: ✅ cloudflare-go v0.115.0, Go 1.25.3
 - **Production Ready**: ✅ Complete resource implementation with v1beta1 namespaced resources
 
 See [Current Status](docs/CURRENT-STATUS.md) for detailed technical information.
@@ -85,7 +85,7 @@ kind: Provider
 metadata:
   name: provider-cloudflare
 spec:
-  package: ghcr.io/rossigee/provider-cloudflare:v0.11.0
+  package: ghcr.io/rossigee/provider-cloudflare:v0.13.0
 EOF
 ```
 

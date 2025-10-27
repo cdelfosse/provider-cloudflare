@@ -24,6 +24,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
@@ -72,9 +73,13 @@ func main() {
 
 	rl := workqueue.DefaultTypedControllerRateLimiter[any]()
 	log.Info("Adding CloudFlare APIs to scheme")
-kingpin.FatalIfError(apis.AddToScheme(mgr.GetScheme()), "Cannot add CloudFlare APIs to scheme")
-kingpin.FatalIfError(apis.VerifySchemeRegistration(), "Scheme verification failed")
-log.Info("CloudFlare APIs added to scheme successfully")
+	kingpin.FatalIfError(apis.AddToScheme(mgr.GetScheme()), "Cannot add CloudFlare APIs to scheme")
+	kingpin.FatalIfError(apis.VerifySchemeRegistration(), "Scheme verification failed")
+	log.Info("CloudFlare APIs added to scheme successfully")
 	kingpin.FatalIfError(controller.SetupMinimal(mgr, log, rl), "Cannot setup minimal CloudFlare controllers")
+
+	kingpin.FatalIfError(mgr.AddHealthzCheck("healthz", healthz.Ping), "Cannot add health check")
+	kingpin.FatalIfError(mgr.AddReadyzCheck("readyz", healthz.Ping), "Cannot add ready check")
+
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
 }

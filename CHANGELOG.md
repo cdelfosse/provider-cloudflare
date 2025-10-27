@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.13.0] - 2025-10-27
+
+### Changed
+- **Go Tooling**: Updated golangci-lint to version 2.5.0 (latest stable) for improved linting and Go 1.25.3 compatibility
+
+### Infrastructure
+- **Build System**: Enhanced code quality assurance with latest linting standards
+- **CI/CD**: Consistent golangci-lint versioning between local development and CI environment
+
 ## [v0.12.2] - 2025-10-26
 
 ### Added
@@ -157,6 +166,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Worker route bindings
 - Zone-level settings management
 
+[v0.13.0]: https://github.com/rossigee/provider-cloudflare/compare/v0.12.2...v0.13.0
 [v0.12.2]: https://github.com/rossigee/provider-cloudflare/compare/v0.12.0...v0.12.2
 [v0.12.0]: https://github.com/rossigee/provider-cloudflare/compare/v0.11.0...v0.12.0
 [v0.11.0]: https://github.com/rossigee/provider-cloudflare/compare/v0.9.1...v0.11.0

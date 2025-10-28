@@ -55,11 +55,14 @@ XPKGS = provider-cloudflare
 xpkg.build.provider-cloudflare: do.build.images
 
 # Ensure publish only happens on release branches or tags
-publish.artifacts:
-	@if ! echo "$(BRANCH_NAME)" | sed 's/^[[:space:]]*//;s/[[:space:]]*$$//' | grep -qE "$(subst $(SPACE),|,main|master|release-.*|v[0-9].*)"; then \
+publish.init:
+	@if ! echo "$(BRANCH_NAME)" | tr -d '[:space:]' | grep -qE "$(subst $(SPACE),|,main|master|release-.*|v[0-9].*)"; then \
 		echo "Publishing is only allowed on branches matching: main|master|release-.* or tags matching: v[0-9].* (current: $(BRANCH_NAME))"; \
 		exit 1; \
 	fi
+
+# Override the empty publish.artifacts target to actually do the publishing
+publish.artifacts:
 	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(r).$(x)))
 	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.publish.$(r).$(i)))
 

@@ -56,8 +56,8 @@ xpkg.build.provider-cloudflare: do.build.images
 
 # Ensure publish only happens on release branches or tags
 publish.artifacts:
-	@if ! echo "$(BRANCH_NAME)" | grep -qE "$(subst $(SPACE),|,main|master|release-.*|v[0-9].*)"; then \
-		$(ERR) Publishing is only allowed on branches matching: main|master|release-.* or tags matching: v[0-9].* (current: $(BRANCH_NAME)); \
+	@if ! echo "$(BRANCH_NAME)" | sed 's/^[[:space:]]*//;s/[[:space:]]*$$//' | grep -qE "$(subst $(SPACE),|,main|master|release-.*|v[0-9].*)"; then \
+		echo "Publishing is only allowed on branches matching: main|master|release-.* or tags matching: v[0-9].* (current: $(BRANCH_NAME))"; \
 		exit 1; \
 	fi
 	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(r).$(x)))

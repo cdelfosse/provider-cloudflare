@@ -54,6 +54,11 @@ XPKGS = provider-cloudflare
 # image is present in daemon.
 xpkg.build.provider-cloudflare: do.build.images
 
+# Setup Package Metadata
+CROSSPLANE_VERSION = 2.0.2
+-include build/makelib/local.xpkg.mk
+-include build/makelib/controlplane.mk
+
 # Ensure publish only happens on release branches or tags
 publish.init:
 	@if ! echo "$(BRANCH_NAME)" | tr -d '[:space:]' | grep -qE "$(subst $(SPACE),|,main|master|release-.*|v[0-9].*)"; then \
@@ -65,11 +70,6 @@ publish.init:
 publish.artifacts:
 	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(r).$(x)))
 	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.publish.$(r).$(i)))
-
-# Setup Package Metadata
-CROSSPLANE_VERSION = 2.0.2
--include build/makelib/local.xpkg.mk
--include build/makelib/controlplane.mk
 
 # Targets
 

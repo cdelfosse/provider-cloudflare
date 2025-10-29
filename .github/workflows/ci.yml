@@ -66,6 +66,7 @@ jobs:
 
       - name: Lint
         run: make lint
+        timeout-minutes: 15
 
   check-diff:
     runs-on: ubuntu-24.04
@@ -89,6 +90,7 @@ jobs:
         run: |
           make reviewable
           git diff --exit-code
+        timeout-minutes: 20
 
   unit-tests:
     runs-on: ubuntu-24.04
@@ -111,6 +113,7 @@ jobs:
 
       - name: Run Unit Tests
         run: make test
+        timeout-minutes: 30
 
       - name: Upload Coverage Reports
         uses: codecov/codecov-action@v4
@@ -148,8 +151,9 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: '-no-fail -fmt sarif -out gosec-results.sarif ./...'
+          args: '-no-fail -fmt sarif -out gosec-results.sarif -exclude=G115,G101 -exclude-dir=vendor -exclude-dir=*_test.go -exclude-dir=zz_generated* ./...'
         continue-on-error: true
+        timeout-minutes: 10
 
       - name: Fix Gosec SARIF format
         if: always() && hashFiles('gosec-results.sarif') != ''

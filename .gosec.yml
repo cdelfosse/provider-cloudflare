@@ -1,0 +1,31 @@
+# Gosec security scanner configuration
+# Exclude known false positives and generated code
+
+global:
+  # Skip generated files
+  skip_generated: true
+  # Exclude vendor directory
+  exclude_generated: true
+
+# Exclude specific rules that are causing false positives
+exclude:
+  - G115  # Integer overflow conversion (false positives for port conversions)
+  - G101  # Potential hardcoded credentials (false positive on constant strings)
+
+# Exclude specific files or patterns
+exclude-files:
+  - "vendor/.*"
+  - ".*_test\\.go$"
+  - ".*zz_generated\\..*\\.go$"
+
+# Only scan Go source files
+include:
+  - "*.go"
+
+# Exclude generated and test files from analysis
+skip:
+  - "vendor/"
+  - "**/*_test.go"
+  - "**/zz_generated.*.go"
+  - "**/fake/"
+  - "**/mocks/"

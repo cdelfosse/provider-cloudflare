@@ -68,8 +68,8 @@ publish.init:
 
 # Override the empty publish.artifacts target to actually do the publishing
 publish.artifacts:
-	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(r).$(x)))
-	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.publish.$(r).$(i)))
+	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(subst /,-,$(subst .,_,$(r))).$(x)))
+	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.publish.$(subst /,-,$(subst .,_,$(r))).$(i)))
 
 # Targets
 

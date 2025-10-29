@@ -109,3 +109,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace golang.org/x/net v0.46.0 => golang.org/x/net v0.33.0

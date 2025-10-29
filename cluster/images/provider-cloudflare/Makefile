@@ -30,3 +30,10 @@ img.publish: img.build
 	@$(INFO) docker push $(IMAGE)
 	@docker push $(IMAGE)
 	@$(OK) docker push $(IMAGE)
+
+# ====================================================================================
+# Image Promote
+img.promote:
+	@$(INFO) Promoting image from $(FROM_IMAGE) to $(TO_IMAGE)
+	@docker buildx imagetools create -t $(TO_IMAGE) $(FROM_IMAGE)
+	@$(OK) Promoted image from $(FROM_IMAGE) to $(TO_IMAGE)

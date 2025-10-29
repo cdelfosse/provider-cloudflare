@@ -35,7 +35,5 @@ img.publish: img.build
 # Image Promote
 img.promote:
 	@$(INFO) Promoting image from $(FROM_IMAGE) to $(TO_IMAGE)
-	@docker pull $(FROM_IMAGE)
-	@docker tag $(FROM_IMAGE) $(TO_IMAGE)
-	@docker push $(TO_IMAGE)
+	@docker buildx imagetools create -t $(TO_IMAGE) $(FROM_IMAGE)
 	@$(OK) Promoted image from $(FROM_IMAGE) to $(TO_IMAGE)

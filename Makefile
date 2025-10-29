@@ -71,6 +71,11 @@ publish.artifacts:
 	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(subst /,-,$(subst .,_,$(r))).$(x)))
 	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.publish.$(subst /,-,$(subst .,_,$(r))).$(i)))
 
+# Override the empty promote.artifacts target to actually do the promoting
+promote.artifacts:
+	$(foreach r,$(filter-out $(XPKG_REG_ORGS_NO_PROMOTE),$(XPKG_REG_ORGS)), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.promote.$(subst /,-,$(subst .,_,$(r))).$(x)))
+	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.promote.$(subst /,-,$(subst .,_,$(r))).$(i)))
+
 # Targets
 
 # run `make submodules` after cloning the repository for the first time.

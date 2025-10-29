@@ -62,7 +62,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Vendor Dependencies
-        run: go mod vendor
+        run: |
+          go mod vendor
+          ./fix-crossplane-runtime.sh
 
       - name: Lint
         run: make lint
@@ -84,7 +86,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Vendor Dependencies
-        run: go mod vendor
+        run: |
+          go mod vendor
+          ./fix-crossplane-runtime.sh
 
       - name: Check Diff
         run: |
@@ -109,7 +113,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Vendor Dependencies
-        run: go mod vendor
+        run: |
+          go mod vendor
+          ./fix-crossplane-runtime.sh
 
       - name: Run Unit Tests
         run: make test
@@ -141,7 +147,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Vendor Dependencies
-        run: go mod vendor
+        run: |
+          go mod vendor
+          ./fix-crossplane-runtime.sh
 
       - name: Run Go Vulnerability Check
         run: |
@@ -190,7 +198,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Vendor Dependencies
-        run: go mod vendor
+        run: |
+          go mod vendor
+          ./fix-crossplane-runtime.sh
 
       - name: Validate Build Process
         run: |

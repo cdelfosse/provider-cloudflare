@@ -44,14 +44,6 @@ REGISTRY_ORGS = ghcr.io/rossigee
 XPKG_REG_ORGS ?= ghcr.io/rossigee
 XPKG_REG_ORGS_NO_PROMOTE ?= # ghcr.io/rossigee - removed to enable promotion
 
-# Override build system to add 'latest' as valid channel
-CHANNEL ?= master
-ifneq ($(filter master main alpha beta stable latest,$(CHANNEL)),)
-# Valid channel
-else
-$(error invalid channel $(CHANNEL))
-endif
-
 # Optional registries (can be enabled via environment variables)
 # Harbor publishing has been removed - using only ghcr.io/rossigee
 # To enable Upbound: export ENABLE_UPBOUND_PUBLISH=true make publish XPKG_REG_ORGS=xpkg.upbound.io/rossigee
@@ -66,6 +58,8 @@ xpkg.build.provider-cloudflare: do.build.images
 CROSSPLANE_VERSION = 2.0.2
 -include build/makelib/local.xpkg.mk
 -include build/makelib/controlplane.mk
+
+# Build system channel validation is used (stable is valid)
 
 # Ensure publish only happens on release branches or tags
 publish.init:

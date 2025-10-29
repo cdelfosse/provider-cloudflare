@@ -96,15 +96,18 @@ jobs:
             XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}" \
             BRANCH_NAME=master
 
-          # Promote version tag to latest (using latest channel)
+          # Promote version tag to stable channel
           make promote.artifacts \
             REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" \
             XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}" \
-            CHANNEL=latest \
+            CHANNEL=stable \
             BRANCH_NAME=master
 
+          # Create latest tag pointing to stable
+          docker buildx imagetools create -t "ghcr.io/${{ github.repository_owner }}/provider-cloudflare:latest" "ghcr.io/${{ github.repository_owner }}/provider-cloudflare:stable"
+
           echo "✅ Published to ghcr.io/${{ github.repository_owner }}"
-          echo "🏷️  Tags: ${VERSION}, latest"
+          echo "🏷️  Tags: ${VERSION}, stable, latest"
 
       - name: Verify Publication
         run: |

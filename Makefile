@@ -44,6 +44,14 @@ REGISTRY_ORGS = ghcr.io/rossigee
 XPKG_REG_ORGS ?= ghcr.io/rossigee
 XPKG_REG_ORGS_NO_PROMOTE ?= # ghcr.io/rossigee - removed to enable promotion
 
+# Override build system to add 'latest' as valid channel
+CHANNEL ?= master
+ifneq ($(filter master main alpha beta stable latest,$(CHANNEL)),)
+# Valid channel
+else
+$(error invalid channel $(CHANNEL))
+endif
+
 # Optional registries (can be enabled via environment variables)
 # Harbor publishing has been removed - using only ghcr.io/rossigee
 # To enable Upbound: export ENABLE_UPBOUND_PUBLISH=true make publish XPKG_REG_ORGS=xpkg.upbound.io/rossigee
@@ -70,6 +78,45 @@ publish.init:
 publish.artifacts:
 	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(subst /,-,$(subst .,_,$(r))).$(x)))
 	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.publish.$(subst /,-,$(subst .,_,$(r))).$(i)))
+
+# Override target definitions to use sanitized registry names
+# 1: registry 2: image 3: sanitized registry name
+define repo.targets
+img.release.publish.$(3).$(2):
+	@$(MAKE) -C cluster/images/$(2) IMAGE_PLATFORMS=linux/amd64,linux/arm64 IMAGE=$(1)/$(2):$(VERSION) img.publish
+img.release.publish: img.release.publish.$(3).$(2)
+
+img.release.promote.$(3).$(2):
+	@$(MAKE) -C cluster/images/$(2) TO_IMAGE=$(1)/$(2):$(CHANNEL) FROM_IMAGE=$(1)/$(2):$(VERSION) img.promote
+	@[ "$(CHANNEL)" = "master" ] || [ "$(CHANNEL)" = "latest" ] || $(MAKE) -C cluster/images/$(2) TO_IMAGE=$(1)/$(2):$(VERSION)-$(CHANNEL) FROM_IMAGE=$(1)/$(2):$(VERSION) img.promote
+img.release.promote: img.release.promote.$(3).$(2)
+
+img.release.clean.$(3).$(2):
+	@[ -z "$$$$(docker images -q $(1)/$(2):$(VERSION))" ] || docker rmi $(1)/$(2):$(VERSION)
+	@[ -z "$$$$(docker images -q $(1)/$(2):$(VERSION)-$(CHANNEL))" ] || [ "$(CHANNEL)" = "master" ] || [ "$(CHANNEL)" = "latest" ] || docker rmi $(1)/$(2):$(VERSION)-$(CHANNEL)
+	@[ -z "$$$$(docker images -q $(1)/$(2):$(CHANNEL))" ] || docker rmi $(1)/$(2):$(CHANNEL)
+img.release.clean: img.release.clean.$(3).$(2)
+endef
+$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),$(eval $(call repo.targets,$(r),$(i),$(subst /,-,$(subst .,_,$(r)))))))
+
+# 1: registry/org 2: repo 3: sanitized registry name
+define xpkg.release.targets
+xpkg.release.publish.$(3).$(2):
+	@$(INFO) Pushing package $(1)/$(2):$(VERSION)
+	@$(CROSSPLANE_CLI) xpkg push \
+		$(foreach p,$(XPKG_LINUX_PLATFORMS),--package-files $(XPKG_OUTPUT_DIR)/$(p)/$(2)-$(VERSION).xpkg ) \
+		$(1)/$(2):$(VERSION) || $(FAIL)
+	@$(OK) Pushed package $(1)/$(2):$(VERSION)
+xpkg.release.publish: xpkg.release.publish.$(3).$(2)
+
+xpkg.release.promote.$(3).$(2):
+	@$(INFO) Promoting package from $(1)/$(2):$(VERSION) to $(1)/$(2):$(CHANNEL)
+	@docker buildx imagetools create -t $(1)/$(2):$(CHANNEL) $(1)/$(2):$(VERSION)
+	@[ "$(CHANNEL)" = "master" ] || [ "$(CHANNEL)" = "latest" ] || docker buildx imagetools create -t $(1)/$(2):$(VERSION)-$(CHANNEL) $(1)/$(2):$(VERSION)
+	@$(OK) Promoted package from $(1)/$(2):$(VERSION) to $(1)/$(2):$(CHANNEL)
+xpkg.release.promote: xpkg.release.promote.$(3).$(2)
+endef
+$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),$(eval $(call xpkg.release.targets,$(r),$(x),$(subst /,-,$(subst .,_,$(r)))))))
 
 # Override the empty promote.artifacts target to actually do the promoting
 promote.artifacts:

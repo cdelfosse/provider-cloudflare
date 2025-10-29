@@ -42,7 +42,7 @@ REGISTRY_ORGS = ghcr.io/rossigee
 # Setup XPKG - Standardized registry configuration
 # Primary registry: GitHub Container Registry under rossigee
 XPKG_REG_ORGS ?= ghcr.io/rossigee
-XPKG_REG_ORGS_NO_PROMOTE ?= ghcr.io/rossigee
+XPKG_REG_ORGS_NO_PROMOTE ?= # ghcr.io/rossigee - removed to enable promotion
 
 # Optional registries (can be enabled via environment variables)
 # Harbor publishing has been removed - using only ghcr.io/rossigee

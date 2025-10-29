@@ -96,11 +96,11 @@ jobs:
             XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}" \
             BRANCH_NAME=master
 
-          # Promote version tag to latest (using stable channel)
+          # Promote version tag to latest (using latest channel)
           make promote.artifacts \
             REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" \
             XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}" \
-            CHANNEL=stable \
+            CHANNEL=latest \
             BRANCH_NAME=master
 
           echo "✅ Published to ghcr.io/${{ github.repository_owner }}"

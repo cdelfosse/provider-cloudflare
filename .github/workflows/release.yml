@@ -17,17 +17,54 @@ on:
 
 jobs:
   # Use official provider-workflows with custom registry configuration
+  # WORKAROUND: Skip unshallow operation by using shallow checkout
   release:
-    uses: crossplane-contrib/provider-workflows/.github/workflows/publish-provider.yml@main
-    with:
-      repository: ${{ github.event.repository.name }}
-      version: ${{ github.event.inputs.version || github.ref_name }}
-      go-version: '1.25.3'
-      registry_org: 'rossigee'  # Publish to ghcr.io/rossigee
-      mirror: false             # Disable mirroring to xpkg.upbound.io
-      cleanup-disk: true
-    secrets:
-      GHCR_PAT: ${{ secrets.PAT_TOKEN }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout (shallow to avoid submodule unshallow issues)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # Use shallow checkout to avoid unshallow issues
+          submodules: true
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.3'
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_TOKEN }}
+
+      - name: Extract Version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build and Publish
+        run: |
+          # Set version for build
+          export VERSION="${{ steps.version.outputs.version }}"
+
+          # Build the provider
+          make build
+
+          # Build and push Docker image
+          make docker.build
+          make docker.push
+
+          # Publish crossplane package
+          make publish
+        env:
+          REGISTRY_ORGS: ghcr.io/rossigee
+          VERSION: ${{ steps.version.outputs.version }}
 
   # Add GitHub release creation (preserves your custom feature)
   github-release:

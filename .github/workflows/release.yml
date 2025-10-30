@@ -10,9 +10,9 @@ on:
       - 'v*'
 
 jobs:
-  # Use the standardized provider-workflows publish workflow
+  # Use local provider-workflows publish workflow (fixed for submodule issues)
   publish:
-    uses: crossplane-contrib/provider-workflows/.github/workflows/publish-provider.yml@main
+    uses: ./.github/workflows/publish-provider-local.yml
     with:
       repository: provider-cloudflare
       version: ${{ github.ref_name }}

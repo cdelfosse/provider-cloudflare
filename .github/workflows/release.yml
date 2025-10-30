@@ -87,6 +87,13 @@ jobs:
           generate_release_notes: true
 
   # Add publication verification (preserves your custom verification)
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_TOKEN }}
+
   verify-publication:
     needs: release
     runs-on: ubuntu-24.04

@@ -8,5 +8,8 @@ WORKDIR /
 # Copy pre-built provider binary
 COPY _output/bin/${TARGETOS}_${TARGETARCH}/provider /usr/local/bin/provider
 
+# Copy package metadata for xpkg
+COPY package /package
+
 USER 65532:65532
 ENTRYPOINT ["/usr/local/bin/provider"]

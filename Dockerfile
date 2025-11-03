@@ -21,10 +21,16 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # Use distroless as minimal base image
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY --from=build /workspace/provider .
-COPY package/ package/
-# Create required package.yaml from crossplane.yaml
-COPY package/crossplane.yaml package.yaml
-USER 65532:65532
 
+# Copy controller binary
+COPY --from=build /workspace/provider /provider
+
+# Copy package metadata to the image root so Crossplane can find it
+COPY package/crossplane.yaml /package.yaml
+
+# Copy CRDs into a dedicated folder that the package will expose
+# IMPORTANT: use trailing slashes to copy directory contents
+COPY package/crds/ /crds/
+
+USER 65532:65532
 ENTRYPOINT ["/provider"]

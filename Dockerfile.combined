@@ -18,7 +18,7 @@ COPY _output/bin/${TARGETOS}_${TARGETARCH}/provider /usr/local/bin/provider
 COPY package/crossplane.yaml /package.yaml
 
 # Copy extracted CRDs from first stage
-COPY --from=crds-extractor /crds/ /crds/
+COPY --from=crds-extractor /crds /crds
 
 USER 65532:65532
 ENTRYPOINT ["/usr/local/bin/provider"]

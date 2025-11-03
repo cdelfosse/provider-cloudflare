@@ -1,3 +1,9 @@
+# Stage 1: Extract CRDs from tarball
+FROM alpine:latest AS crds-extractor
+COPY package-crds.tar.gz /tmp/
+RUN mkdir -p /crds && tar -xzf /tmp/package-crds.tar.gz -C /crds/
+
+# Stage 2: Final image
 FROM gcr.io/distroless/static:nonroot
 
 ARG TARGETOS
@@ -10,7 +16,9 @@ COPY _output/bin/${TARGETOS}_${TARGETARCH}/provider /usr/local/bin/provider
 
 # Copy package metadata to root for Crossplane to find
 COPY package/crossplane.yaml /package.yaml
-COPY package/crds/*.yaml /crds/
+
+# Copy extracted CRDs from first stage
+COPY --from=crds-extractor /crds/ /crds/
 
 USER 65532:65532
 ENTRYPOINT ["/usr/local/bin/provider"]

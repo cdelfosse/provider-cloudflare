@@ -51,6 +51,9 @@ jobs:
           ls package/crds/ | wc -l
           echo "=== First 5 CRDs ==="
           ls package/crds/ | head -5
+          echo "=== Creating CRDs tarball for Docker build ==="
+          tar -czf package-crds.tar.gz -C package/crds .
+          echo "=== Tarball created: $(ls -lh package-crds.tar.gz) ==="
 
       - name: Build and push provider image (serves as both controller and package)
         uses: docker/build-push-action@v5

@@ -1,0 +1,80 @@
+name: Publish Provider
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.3'
+      
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Get version
+        id: version
+        run: echo "VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+      
+      - name: Build Linux binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o _output/bin/linux_amd64/provider ./cmd/provider
+          GOOS=linux GOARCH=arm64 go build -o _output/bin/linux_arm64/provider ./cmd/provider
+      
+      - name: Build and push controller image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.multiarch
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }}
+            ghcr.io/cdelfosse/provider-cloudflare-controller:latest
+      
+      - name: Install Crossplane CLI
+        run: |
+          curl -sL "https://releases.crossplane.io/stable/current/bin/linux_amd64/crank" -o /usr/local/bin/crossplane
+          chmod +x /usr/local/bin/crossplane
+      
+      - name: Build xpkg
+        run: |
+          crossplane xpkg build \
+            --package-root=package \
+            --embed-runtime-image=ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }} \
+            --package-file=provider-cloudflare-${{ steps.version.outputs.VERSION }}.xpkg
+      
+      - name: Push xpkg
+        run: |
+          crossplane xpkg push \
+            --package-files provider-cloudflare-${{ steps.version.outputs.VERSION }}.xpkg \
+            ghcr.io/cdelfosse/provider-cloudflare:${{ steps.version.outputs.VERSION }}
+      
+      - name: Push xpkg as latest
+        if: github.ref_type == 'tag'
+        run: |
+          crossplane xpkg push \
+            --package-files provider-cloudflare-${{ steps.version.outputs.VERSION }}.xpkg \
+            ghcr.io/cdelfosse/provider-cloudflare:latest

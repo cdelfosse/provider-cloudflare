@@ -107,5 +107,7 @@ metadata:
       - [Crossplane Slack](https://slack.crossplane.io/) - #providers channel
 
 spec:
+  controller:
+    image: ghcr.io/cdelfosse/provider-cloudflare-controller:v0.13.0
   crossplane:
     version: ">=v1.14.0"

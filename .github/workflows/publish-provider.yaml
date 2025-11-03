@@ -65,6 +65,7 @@ jobs:
       - name: Build and push xpkg from runtime image
         run: |
           crossplane xpkg build \
+            --package-root=package \
             --embed-runtime-image=ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }} \
             --package-file=provider-cloudflare-${{ steps.version.outputs.VERSION }}.xpkg
 

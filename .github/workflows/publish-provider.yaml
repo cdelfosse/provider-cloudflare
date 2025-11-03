@@ -43,6 +43,15 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -o _output/bin/linux_amd64/provider ./cmd/provider
           GOOS=linux GOARCH=arm64 go build -o _output/bin/linux_arm64/provider ./cmd/provider
 
+      - name: Verify package directory contents
+        run: |
+          echo "=== Listing package directory ==="
+          ls -la package/
+          echo "=== Counting CRDs ==="
+          ls package/crds/ | wc -l
+          echo "=== First 5 CRDs ==="
+          ls package/crds/ | head -5
+
       - name: Build and push provider image (serves as both controller and package)
         uses: docker/build-push-action@v5
         with:

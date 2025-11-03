@@ -43,7 +43,7 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -o _output/bin/linux_amd64/provider ./cmd/provider
           GOOS=linux GOARCH=arm64 go build -o _output/bin/linux_arm64/provider ./cmd/provider
 
-      - name: Build and push combined provider image
+      - name: Build and push provider image (serves as both controller and package)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -51,31 +51,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
+            ghcr.io/cdelfosse/provider-cloudflare:${{ steps.version.outputs.VERSION }}
+            ghcr.io/cdelfosse/provider-cloudflare:latest
             ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }}
             ghcr.io/cdelfosse/provider-cloudflare-controller:latest
-
-      - name: Install Crossplane CLI
-        run: |
-          curl -sL "https://releases.crossplane.io/stable/current/bin/linux_amd64/crank" -o /usr/local/bin/crossplane
-          chmod +x /usr/local/bin/crossplane
-
-      - name: Pull controller image for local access
-        run: docker pull ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }}
-
-      - name: Build and push xpkg from runtime image
-        run: |
-          crossplane xpkg build \
-            --package-root=package \
-            --embed-runtime-image=ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }} \
-            --package-file=provider-cloudflare-${{ steps.version.outputs.VERSION }}.xpkg
-
-          crossplane xpkg push \
-            --package-files provider-cloudflare-${{ steps.version.outputs.VERSION }}.xpkg \
-            ghcr.io/cdelfosse/provider-cloudflare:${{ steps.version.outputs.VERSION }}
-
-      - name: Push xpkg as latest
-        if: github.ref_type == 'tag'
-        run: |
-          crossplane xpkg push \
-            --package-files provider-cloudflare-${{ steps.version.outputs.VERSION }}.xpkg \
-            ghcr.io/cdelfosse/provider-cloudflare:latest

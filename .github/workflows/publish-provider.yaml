@@ -59,6 +59,9 @@ jobs:
           curl -sL "https://releases.crossplane.io/stable/current/bin/linux_amd64/crank" -o /usr/local/bin/crossplane
           chmod +x /usr/local/bin/crossplane
 
+      - name: Pull controller image for embedding
+        run: docker pull ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }}
+
       - name: Build and push xpkg from controller image
         run: |
           crossplane xpkg build \

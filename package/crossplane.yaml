@@ -1,4 +1,4 @@
-apiVersion: meta.pkg.crossplane.io/v1alpha1
+apiVersion: meta.pkg.crossplane.io/v1
 kind: Provider
 metadata:
   name: provider-cloudflare
@@ -10,6 +10,7 @@ metadata:
     meta.crossplane.io/category: Infrastructure
     meta.crossplane.io/keywords: cloudflare,dns,cdn,security,waf,firewall,ssl,load-balancer
     meta.crossplane.io/iconURI: https://raw.githubusercontent.com/rossigee/provider-cloudflare/master/.github/cloudflare-icon.svg
+    meta.crossplane.io/runtime-image: ghcr.io/cdelfosse/provider-cloudflare-controller:v0.13.0
     
     # Short description for marketplace listing
     meta.crossplane.io/description: |
@@ -107,7 +108,5 @@ metadata:
       - [Crossplane Slack](https://slack.crossplane.io/) - #providers channel
 
 spec:
-  controller:
-    image: ghcr.io/cdelfosse/provider-cloudflare-controller:v0.13.0
   crossplane:
     version: ">=v1.14.0"

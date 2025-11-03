@@ -54,9 +54,6 @@ jobs:
             ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }}
             ghcr.io/cdelfosse/provider-cloudflare-controller:latest
       
-      - name: Pull controller image for xpkg embedding
-        run: docker pull ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }}
-
       - name: Install Crossplane CLI
         run: |
           curl -sL "https://releases.crossplane.io/stable/current/bin/linux_amd64/crank" -o /usr/local/bin/crossplane
@@ -66,7 +63,6 @@ jobs:
         run: |
           crossplane xpkg build \
             --package-root=package \
-            --embed-runtime-image=ghcr.io/cdelfosse/provider-cloudflare-controller:${{ steps.version.outputs.VERSION }} \
             --package-file=provider-cloudflare-${{ steps.version.outputs.VERSION }}.xpkg
       
       - name: Push xpkg

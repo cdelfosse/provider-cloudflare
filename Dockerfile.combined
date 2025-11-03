@@ -8,8 +8,9 @@ WORKDIR /
 # Copy pre-built provider binary
 COPY _output/bin/${TARGETOS}_${TARGETARCH}/provider /usr/local/bin/provider
 
-# Copy package metadata for xpkg
-COPY package /package
+# Copy package metadata to root for Crossplane to find
+COPY package/crossplane.yaml /package.yaml
+COPY package/crds /crds/
 
 USER 65532:65532
 ENTRYPOINT ["/usr/local/bin/provider"]
